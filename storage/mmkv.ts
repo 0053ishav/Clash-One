@@ -1,9 +1,9 @@
-import { MMKV } from "react-native-mmkv";
-
+import { createMMKV } from 'react-native-mmkv';
 /**
  * Single shared MMKV instance for the entire app.
  * Do NOT create multiple instances.
  */
-export const storage = new MMKV({
+
+export const storage = createMMKV({
   id: "clash-widget-storage",
 });

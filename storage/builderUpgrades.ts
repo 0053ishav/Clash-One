@@ -5,7 +5,6 @@ import { autoCompleteBuilderUpgrades } from "@/utils/autoCompleteUpgrades";
 
 export function getBuilderUpgrades (): BuilderUpgrade[] {
   const raw = storage.getString(STORAGE_KEYS.BUILDER_UPGRADES);
-  // const upgrades: BuilderUpgrade[] = raw ? JSON.parse(raw) : [];
 
   let upgrades: BuilderUpgrade[] = [];
 
@@ -15,7 +14,13 @@ export function getBuilderUpgrades (): BuilderUpgrade[] {
     upgrades = [];
   }
   
-  const updated = autoCompleteBuilderUpgrades(upgrades);
+  const normalized = upgrades.map((u) => ({
+    ...u,
+    currentLevel: u.currentLevel ?? undefined,
+    nextLevel: u.nextLevel ?? undefined,
+  }));
+
+  const updated = autoCompleteBuilderUpgrades(normalized);
 
   storage.set(
     STORAGE_KEYS.BUILDER_UPGRADES,
@@ -23,6 +28,14 @@ export function getBuilderUpgrades (): BuilderUpgrade[] {
   );
 
   return updated;
+}
+
+export function getActiveBuilderUpgrades (): BuilderUpgrade[] {
+  const now = Date.now();
+
+  return getBuilderUpgrades().filter(
+    (u) => !u.isCompleted && u.endTime > now
+  );
 }
 
 export function saveBuilderUpgrades (upgrades: BuilderUpgrade[]) {
@@ -35,12 +48,6 @@ export function saveBuilderUpgrades (upgrades: BuilderUpgrade[]) {
 export function addBuilderUpgrade (upgrade: BuilderUpgrade) {
   const current = getBuilderUpgrades();
   saveBuilderUpgrades([...current, upgrade]);
-}
-
-export function getActiveBuilderUpgrades (): BuilderUpgrade[] {
-  return getBuilderUpgrades().filter(
-    (u) => !u.isCompleted && Date.now() < u.endTime
-  );
 }
 
 export async function clearAllBuilderUpgrades () {

@@ -1,144 +1,414 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UploadJsonScreen() {
   const router = useRouter();
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
+
+  // Initial animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   return (
-    <View style={styles.root}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.sectionTitle}>PLAYER DATA IMPORT</Text>
+    <SafeAreaView style={styles.root}>
+      <View style={styles.root}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <Animated.View
+            style={[
+              styles.header,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={24} color="#fbbf24" />
+            </Pressable>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerTitle}>Import Player Data</Text>
+              <Text style={styles.headerSubtitle}>
+                Semi-automatic upgrade tracking
+              </Text>
+            </View>
+          </Animated.View>
 
-        <View style={styles.card}>
-          <View style={styles.infoRow}>
-            <Ionicons
-              name="shield-checkmark-outline"
-              size={20}
-              color="#6b7280"
-            />
-            <Text style={styles.description}>
-              Your player file stays on your device. It is never uploaded or
-              shared.
+          {/* Security Info */}
+          <Animated.View
+            style={[
+              styles.card,
+              styles.securityCard,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <View style={styles.securityContent}>
+              <View style={styles.securityIconBg}>
+                <Ionicons name="shield-checkmark" size={24} color="#22c55e" />
+              </View>
+              <View style={styles.securityText}>
+                <Text style={styles.securityTitle}>Your data is safe</Text>
+                <Text style={styles.securityDescription}>
+                  Player data stays on your device. Never uploaded or shared.
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* How to Export */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="book" size={20} color="#fbbf24" />
+              <Text style={styles.cardTitle}>How to Export</Text>
+            </View>
+
+            <View style={styles.steps}>
+              {[
+                "Open Clash of Clans",
+                "Go to Settings → More Settings",
+                'Tap "Export Player Data"',
+                "Upload the JSON file here",
+              ].map((step, index) => (
+                <View key={index} style={styles.stepContainer}>
+                  <View style={styles.stepNumber}>
+                    <Text style={styles.stepNumberText}>{index + 1}</Text>
+                  </View>
+                  <Text style={styles.step}>{step}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* File Info */}
+          <View style={styles.card}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}>
+                <Ionicons name="document-text" size={18} color="#0ea5e9" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoTitle}>JSON File Format</Text>
+                <Text style={styles.infoDescription}>
+                  Supports .json files from Clash of Clans
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.buttonGroup}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.uploadButton,
+                pressed && styles.uploadButtonPressed,
+              ]}
+              onPress={() => {
+                console.log("Upload JSON pressed");
+              }}
+            >
+              <Ionicons name="cloud-upload" size={20} color="#0f172a" />
+              <Text style={styles.uploadButtonText}>Upload JSON</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.cancelButton,
+                pressed && styles.cancelButtonPressed,
+              ]}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+
+          {/* Help Section */}
+          <View style={styles.helpSection}>
+            <Text style={styles.helpTitle}>Need help?</Text>
+            <Text style={styles.helpText}>
+              Make sure you&apos;re exporting the correct JSON file from Clash
+              of Clans settings.
             </Text>
           </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>How to Export</Text>
-
-          <View style={styles.steps}>
-            <Text style={styles.step}>1. Open Clash of Clans</Text>
-            <Text style={styles.step}>2. Go to Settings → More Settings</Text>
-            <Text style={styles.step}>3. Tap “Export Player Data”</Text>
-            <Text style={styles.step}>4. Upload the JSON file here</Text>
-          </View>
-        </View>
-
-        <Pressable
-          style={styles.uploadButton}
-          onPress={() => {
-            console.log("Upload JSON pressed");
-          }}
-        >
-          <Ionicons name="cloud-upload-outline" size={18} color="#000" />
-          <Text style={styles.uploadButtonText}>Upload JSON</Text>
-        </Pressable>
-
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backText}>Cancel</Text>
-        </Pressable>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#eef2f7",
+    backgroundColor: "#0f172a",
   },
 
   container: {
-    padding: 20,
+    paddingTop: 0,
     paddingBottom: 60,
   },
 
-  sectionTitle: {
+  header: {
+    paddingTop: 20,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    backgroundColor: "#1e293b",
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 24,
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(251, 191, 36, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  headerContent: {
+    flex: 1,
+    gap: 4,
+  },
+
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#fbbf24",
+  },
+
+  headerSubtitle: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#6b7280",
-    letterSpacing: 1,
-    marginBottom: 14,
-    textTransform: "uppercase",
+    color: "#94a3b8",
+    fontWeight: "500",
   },
 
   card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 18,
-    padding: 18,
+    marginHorizontal: 20,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
+    elevation: 6,
+  },
+
+  securityCard: {
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+    borderWidth: 1.5,
+    borderColor: "rgba(34, 197, 94, 0.2)",
+  },
+
+  securityContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  securityIconBg: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "rgba(34, 197, 94, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  securityText: {
+    flex: 1,
+    gap: 4,
+  },
+
+  securityTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#22c55e",
+  },
+
+  securityDescription: {
+    fontSize: 12,
+    color: "#86efac",
+    lineHeight: 18,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#1f2328",
-    marginBottom: 14,
+    color: "#f1f5f9",
+  },
+
+  steps: {
+    gap: 12,
+  },
+
+  stepContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#fbbf24",
+    justifyContent: "center",
+    alignItems: "center",
+    minWidth: 32,
+  },
+
+  stepNumberText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+
+  step: {
+    fontSize: 14,
+    color: "#cbd5e1",
+    fontWeight: "500",
+    flex: 1,
   },
 
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
 
-  description: {
+  infoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(14, 165, 233, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  infoContent: {
     flex: 1,
-    fontSize: 14,
-    color: "#6b7280",
-    lineHeight: 20,
+    gap: 2,
   },
 
-  steps: {
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#f1f5f9",
+  },
+
+  infoDescription: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+
+  buttonGroup: {
+    marginHorizontal: 20,
+    marginTop: 8,
     gap: 10,
-  },
-
-  step: {
-    fontSize: 14,
-    color: "#374151",
   },
 
   uploadButton: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    gap: 8,
-    backgroundColor: "#ffd33d",
-    paddingVertical: 16,
-    borderRadius: 16,
-    elevation: 4,
-    marginTop: 10,
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#fbbf24",
+    shadowColor: "#fbbf24",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+
+  uploadButtonPressed: {
+    opacity: 0.85,
   },
 
   uploadButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    color: "#000",
+    color: "#0f172a",
   },
 
-  backText: {
-    textAlign: "center",
-    marginTop: 18,
+  cancelButton: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#334155",
+  },
+
+  cancelButtonPressed: {
+    opacity: 0.8,
+  },
+
+  cancelText: {
     fontSize: 14,
-    color: "#6b7280",
+    fontWeight: "600",
+    color: "#cbd5e1",
+  },
+
+  helpSection: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: "#fbbf24",
+    backgroundColor: "rgba(251, 191, 36, 0.05)",
+    borderRadius: 8,
+  },
+
+  helpTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fbbf24",
+    marginBottom: 6,
+  },
+
+  helpText: {
+    fontSize: 12,
+    color: "#94a3b8",
+    lineHeight: 18,
   },
 });

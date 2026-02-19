@@ -10,5 +10,4 @@ export const BUILDINGS = [
   "X-Bow",
   "Air Defense",
   "Monolith",
-  "Custom",
 ];

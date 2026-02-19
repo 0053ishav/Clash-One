@@ -1,43 +1,48 @@
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { setOnboardingComplete } from "@/storage/appConfig";
 import { configureNotifications } from "@/utils/notificationEngine";
+import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
+import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  AppState,
   Dimensions,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { requestWidgetUpdate } from "react-native-android-widget";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
 const SLIDES = [
   {
-    title: "Track Your Builders",
-    description:
-      "Manually track your active upgrades and know exactly when builders are free.",
-    image: require("@/assets/images/builder/builder-working.png"),
-  },
-  {
-    title: "Smart Widget",
-    description:
-      "See countdown and progress directly from your home screen widget.",
-    image: require("@/assets/images/builder/builder-board.png"),
-  },
-  {
-    title: "Stay Ahead",
-    description: "Never waste builder time again. Optimize your upgrade flow.",
+    title: "How Many Builders Do You Have?",
+    description: "Select your total builders to track upgrades accurately.",
     image: require("@/assets/images/builder/builder-idle.png"),
+    icon: "construct",
+    type: "builderConfig",
   },
   {
-    title: "Enable Notifications",
-    description:
-      "Get notified exactly when upgrades finish so you never waste builder time.",
+    title: "Track Builders from Your Home Screen",
+    description: "See real-time builder status directly from your widget.",
+    image: require("@/assets/images/builder/builder-board.png"),
+    icon: "grid",
+  },
+  {
+    title: "Never Waste Builder Time",
+    description: "Get notified instantly when upgrades finish.",
     image: require("@/assets/images/builder/builder-complete.png"),
+    icon: "notifications",
     type: "notification",
   },
 ];
@@ -47,6 +52,30 @@ export default function OnboardingScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(0);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const { profile, updateProfile } = usePlayerProfile();
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, [index, fadeAnim]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (state) => {
+      if (state === "active") {
+        const settings = await Notifications.getPermissionsAsync();
+        if (settings.granted) {
+          setNotificationsGranted(true);
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   const handleNext = () => {
     if (index < SLIDES.length - 1) {
@@ -60,79 +89,225 @@ export default function OnboardingScreen() {
     }
   };
 
+  type PermissionResult = "granted" | "denied" | "blocked";
+
+  const ensureNotificationPermission = async (): Promise<PermissionResult> => {
+    const settings = await Notifications.getPermissionsAsync();
+
+    if (settings.granted) {
+      setNotificationsGranted(true);
+      return "granted";
+    }
+
+    if (settings.canAskAgain) {
+      const { status } = await Notifications.requestPermissionsAsync();
+
+      if (status === "granted") {
+        await configureNotifications();
+        setNotificationsGranted(true);
+        return "granted";
+      }
+
+      return "denied";
+    }
+
+    // Blocked
+    setShowPermissionModal(true);
+    return "blocked";
+  };
+
   const finishOnboarding = async () => {
+    if (index === SLIDES.length - 1) {
+      const result = await ensureNotificationPermission();
+
+      if (result === "blocked") {
+        return;
+      }
+    }
+
     setOnboardingComplete();
+
+    await requestWidgetUpdate({
+      widgetName: "BuilderStatusWidget",
+      renderWidget: renderBuilderWidget,
+    });
+
     router.replace("/(tabs)");
   };
 
+  const handleScroll = (e: any) => {
+    const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+    setIndex(newIndex);
+  };
+
   return (
-    <View style={styles.container}>
-      {/* Skip */}
-      <Pressable style={styles.skip} onPress={finishOnboarding}>
-        <Text style={styles.skipText}>Skip</Text>
-      </Pressable>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        {/* Slides */}
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScroll}
+          scrollEventThrottle={16}
+        >
+          {SLIDES.map((slide, i) => (
+            <Animated.View
+              key={i}
+              style={[
+                styles.slide,
+                { width },
+                {
+                  opacity: fadeAnim,
+                },
+              ]}
+            >
+              {/* Icon Background */}
+              <View style={styles.iconWrapper}>
+                <View style={styles.iconBg}>
+                  <Ionicons
+                    name={slide.icon as any}
+                    size={40}
+                    color="#fbbf24"
+                  />
+                </View>
+              </View>
 
-      {/* Slides */}
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => {
-          const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-          setIndex(newIndex);
-        }}
-      >
-        {SLIDES.map((slide, i) => (
-          <View key={i} style={[styles.slide, { width }]}>
-            <Image source={slide.image} style={styles.image} />
-            <Text style={styles.title}>{slide.title}</Text>
-            <Text style={styles.description}>{slide.description}</Text>
+              {/* Image */}
+              <Image source={slide.image} style={styles.image} />
 
-            {slide.type === "notification" && (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.enableButton,
-                  notificationsGranted && styles.enableButtonActive,
-                  pressed && { opacity: 0.85 },
-                ]}
-                onPress={async () => {
-                  const { status } =
-                    await Notifications.requestPermissionsAsync();
+              {/* Title */}
+              <Text style={styles.title}>{slide.title}</Text>
 
-                  if (status === "granted") {
-                    await configureNotifications();
-                    setNotificationsGranted(true);
-                  }
-                }}
-              >
-                <Text style={styles.enableButtonText}>
-                  {notificationsGranted
-                    ? "Notifications Enabled ✓"
-                    : "Enable Notifications"}{" "}
-                </Text>
-              </Pressable>
-            )}
+              {/* Description */}
+              <Text style={styles.description}>{slide.description}</Text>
+
+              {/* Notification Button */}
+              {slide.type === "notification" && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.enableButton,
+                    notificationsGranted && styles.enableButtonActive,
+                    pressed && styles.enableButtonPressed,
+                  ]}
+                  onPress={async () => {
+                    await ensureNotificationPermission();
+                  }}
+                >
+                  <Ionicons
+                    name={
+                      notificationsGranted
+                        ? "checkmark-circle"
+                        : "notifications"
+                    }
+                    size={20}
+                    color={notificationsGranted ? "#fff" : "#0f172a"}
+                  />
+                  <Text style={styles.enableButtonText}>
+                    {notificationsGranted
+                      ? "Notifications Enabled"
+                      : "Enable Notifications"}
+                  </Text>
+                </Pressable>
+              )}
+
+              {slide.type === "builderConfig" && (
+                <View style={{ marginTop: 32 }}>
+                  <View style={styles.builderRow}>
+                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                      <Pressable
+                        key={num}
+                        onPress={() => {
+                          updateProfile({ normalBuilderCount: num });
+                        }}
+                        style={[
+                          styles.builderButton,
+                          profile.normalBuilderCount === num &&
+                            styles.builderButtonActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.builderButtonText,
+                            profile.normalBuilderCount === num &&
+                              styles.builderButtonTextActive,
+                          ]}
+                        >
+                          {num}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text
+                    style={{ marginTop: 12, fontSize: 12, color: "#475569" }}
+                  >
+                    Most active players have 5 builders
+                  </Text>
+                </View>
+              )}
+            </Animated.View>
+          ))}
+        </ScrollView>
+
+        {/* Progress Indicators */}
+        <View style={styles.progressContainer}>
+          <View style={styles.dotsWrapper}>
+            {SLIDES.map((_, i) => (
+              <View
+                key={i}
+                style={[styles.dot, i === index && styles.dotActive]}
+              />
+            ))}
           </View>
-        ))}
-      </ScrollView>
 
-      {/* Dots */}
-      <View style={styles.dots}>
-        {SLIDES.map((_, i) => (
-          <Text key={i} style={[styles.dot, i === index && styles.dotActive]}>
-            ●
+          {/* Progress Text */}
+          <Text style={styles.progressText}>
+            {index + 1} of {SLIDES.length}
           </Text>
-        ))}
-      </View>
+        </View>
 
-      {/* Button */}
-      <Pressable style={styles.button} onPress={handleNext}>
-        <Text style={styles.buttonText}>
-          {index === SLIDES.length - 1 ? "Get Started" : "Next"}
-        </Text>
-      </Pressable>
-    </View>
+        {/* Action Button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleNext}
+        >
+          <Text style={styles.buttonText}>
+            {index === SLIDES.length - 1 ? "Get Started" : "Next"}
+          </Text>
+          <Ionicons
+            name={
+              index === SLIDES.length - 1 ? "arrow-forward" : "chevron-forward"
+            }
+            size={20}
+            color="#0f172a"
+          />
+        </Pressable>
+      </View>
+      <ConfirmModal
+        visible={showPermissionModal}
+        title="Enable Notifications"
+        message="Notifications are disabled. To receive builder alerts, enable notifications in your device settings."
+        confirmText="Open Settings"
+        cancelText="Continue Anyway"
+        onConfirm={() => {
+          setShowPermissionModal(false);
+          Linking.openSettings();
+        }}
+        onCancel={() => {
+          setShowPermissionModal(false);
+          setOnboardingComplete();
+          requestWidgetUpdate({
+            widgetName: "BuilderStatusWidget",
+            renderWidget: renderBuilderWidget,
+          });
+          router.replace("/(tabs)");
+        }}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -147,93 +322,206 @@ const styles = StyleSheet.create({
     top: 50,
     right: 20,
     zIndex: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
 
   skipText: {
-    color: "#9ca3af",
+    color: "#94a3b8",
     fontSize: 14,
+    fontWeight: "600",
   },
 
   slide: {
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
+    paddingBottom: 60,
+  },
+
+  iconWrapper: {
+    marginBottom: 24,
+  },
+
+  iconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: "rgba(251, 191, 36, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "rgba(251, 191, 36, 0.2)",
   },
 
   image: {
-    width: 120,
-    height: 120,
-    marginBottom: 40,
+    width: 140,
+    height: 140,
+    marginBottom: 36,
     resizeMode: "contain",
   },
 
   title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#ffffff",
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#f8fafc",
     textAlign: "center",
     marginBottom: 12,
+    letterSpacing: -0.5,
   },
 
   description: {
-    fontSize: 15,
-    color: "#9ca3af",
+    fontSize: 14,
+    color: "#64748b",
     textAlign: "center",
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
 
   enableButton: {
-    marginTop: 28,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 16,
-    backgroundColor: "#ffd33d",
+    marginTop: 32,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    backgroundColor: "#fbbf24",
+    shadowColor: "#fbbf24",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
 
   enableButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#000",
+    color: "#0f172a",
     letterSpacing: 0.3,
   },
 
   enableButtonActive: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#22c55e",
+    shadowColor: "#22c55e",
   },
 
-  dots: {
+  enableButtonPressed: {
+    opacity: 0.85,
+  },
+
+  privacyButton: {
+    marginTop: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    backgroundColor: "#0ea5e9",
+    shadowColor: "#0ea5e9",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+
+  privacyButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#ffffff",
+    letterSpacing: 0.3,
+  },
+
+  privacyButtonPressed: {
+    opacity: 0.85,
+  },
+
+  progressContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 12,
+  },
+
+  dotsWrapper: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 24,
+    gap: 8,
   },
 
   dot: {
-    fontSize: 10,
-    marginHorizontal: 6,
-    color: "#475569",
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#334155",
   },
 
   dotActive: {
-    color: "#ffd33d",
+    backgroundColor: "#fbbf24",
+    width: 24,
+  },
+
+  progressText: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "600",
   },
 
   button: {
-    marginHorizontal: 40,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: "#ffd33d",
+    marginHorizontal: 20,
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 50,
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 18,
+    backgroundColor: "#fbbf24",
+    marginBottom: 40,
+    elevation: 8,
+  },
+
+  buttonPressed: {
+    opacity: 0.85,
   },
 
   buttonText: {
     fontWeight: "700",
     fontSize: 16,
-    color: "#000",
+    color: "#0f172a",
+  },
+  builderRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    marginTop: 24,
+  },
+
+  builderButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+
+  builderButtonActive: {
+    backgroundColor: "#fbbf24",
+    borderColor: "#fbbf24",
+  },
+
+  builderButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#94a3b8",
+  },
+
+  builderButtonTextActive: {
+    color: "#0f172a",
   },
 });

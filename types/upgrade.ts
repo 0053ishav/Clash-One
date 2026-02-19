@@ -8,6 +8,10 @@ export type BuilderUpgrade = {
   endTime: number;         // epoch ms
   builderType: "NORMAL" | "GOBLIN";
   isCompleted: boolean;
+  currentLevel?: number;
+  nextLevel?: number;
+  source?: "MANUAL" | "JSON";
+  builderSlot: number | "G";
 };
 
 export type LabUpgrade = {
@@ -18,4 +22,3 @@ export type LabUpgrade = {
   endTime: number;
   isCompleted: boolean;
 };
- 

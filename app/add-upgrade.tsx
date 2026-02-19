@@ -3,24 +3,28 @@ import { BUILDINGS } from "@/constants/buildings";
 import {
   cancelBuilderNotification,
   scheduleBuilderNotification,
-} from "@/services/builderNotificationService";
-import { getBuilderCount } from "@/storage/builderConfig";
+} from "@/services/notifications/builderNotificationService";
 import {
   addBuilderUpgrade,
   getActiveBuilderUpgrades,
   getBuilderUpgrades,
   saveBuilderUpgrades,
 } from "@/storage/builderUpgrades";
-import { canAddBuilderUpgrade } from "@/utils/canAddBuilderUpgrade";
+import { assignBuilderSlot } from "@/utils/assignBuilderSlot";
 import { createBuilderUpgrade } from "@/utils/createBuilderUpgrade";
 
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { BuilderUpgrade } from "@/types/upgrade";
+import { calculateGoblinCost, canUseGoblinBuilder } from "@/utils/goblin";
 import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Keyboard,
+  ActivityIndicator,
+  Animated,
+  Easing,
   Modal,
   Pressable,
   ScrollView,
@@ -30,27 +34,36 @@ import {
   View,
 } from "react-native";
 import { requestWidgetUpdate } from "react-native-android-widget";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddUpgradeScreen() {
   const router = useRouter();
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
 
   const [name, setName] = useState("Archer Tower");
   const [days, setDays] = useState("");
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
 
+  const [currentLevel, setCurrentLevel] = useState("");
+  const [nextLevel, setNextLevel] = useState("");
+
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const firstTextInputRef = useRef<TextInput>(null);
   const secondTextInputRef = useRef<TextInput>(null);
   const thirdTextInputRef = useRef<TextInput>(null);
   const fourthTextInputRef = useRef<TextInput>(null);
+  const fifthTextInputRef = useRef<TextInput>(null);
+  const sixthTextInputRef = useRef<TextInput>(null);
 
   const [selectedBuilding, setSelectedBuilding] =
     useState<string>("Archer Tower");
   const [showDropdown, setShowDropdown] = useState(false);
-
   const { editId: rawEditId } = useLocalSearchParams();
   const editId =
     typeof rawEditId === "string"
@@ -61,215 +74,484 @@ export default function AddUpgradeScreen() {
 
   const isEditMode = !!editId;
 
+  // Initial animation
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
   useEffect(() => {
     if (!isEditMode) return;
+    try {
+      const upgrades = getBuilderUpgrades();
+      const existing = upgrades.find((u) => u.id === editId);
 
-    const upgrades = getBuilderUpgrades();
-    const existing = upgrades.find((u) => u.id === editId);
+      if (!existing) {
+        setModalTitle("Error");
+        setModalMessage("Upgrade not found. Returning to list.");
+        setModalVisible(true);
+        return;
+      }
 
-    if (!existing) return;
+      const isPredefined = BUILDINGS.includes(existing.name);
 
-    const isPredefined = BUILDINGS.includes(existing.name);
+      if (isPredefined) {
+        setSelectedBuilding(existing.name);
+      } else {
+        setSelectedBuilding("Custom");
+      }
 
-    if (isPredefined) {
-      setSelectedBuilding(existing.name);
-    } else {
-      setSelectedBuilding("Custom");
+      setName(existing.name);
+
+      if (existing.currentLevel !== undefined) {
+        setCurrentLevel(String(existing.currentLevel));
+      }
+
+      if (existing.nextLevel !== undefined) {
+        setNextLevel(String(existing.nextLevel));
+      }
+
+      if (existing.endTime && existing.startTime) {
+        const totalMinutes = Math.floor(
+          (existing.endTime - existing.startTime) / 60000,
+        );
+
+        const d = Math.floor(totalMinutes / 1440);
+        const h = Math.floor((totalMinutes % 1440) / 60);
+        const m = totalMinutes % 60;
+
+        setDays(String(d));
+        setHours(String(h));
+        setMinutes(String(m));
+      }
+    } catch (error) {
+      console.error("Error loading upgrade: ", error);
+      setModalTitle("Error");
+      setModalMessage("Failed to load upgrade data.");
+      setModalVisible(true);
     }
-
-    setName(existing.name);
-
-    const totalMinutes = Math.floor(
-      (existing.endTime - existing.startTime) / 60000,
-    );
-
-    const d = Math.floor(totalMinutes / 1440);
-    const h = Math.floor((totalMinutes % 1440) / 60);
-    const m = totalMinutes % 60;
-
-    setDays(String(d));
-    setHours(String(h));
-    setMinutes(String(m));
   }, [editId, isEditMode]);
 
-  const pressButton = async () => {
-    const activeUpgrades = getActiveBuilderUpgrades();
-
-    const canAdd = canAddBuilderUpgrade({
-      activeUpgrades,
-      normalBuilderCount: getBuilderCount(),
-      goblinBuilderUnlocked: false,
-    });
-
-    if (!isEditMode && !canAdd) {
-      setModalTitle("All builders busy");
-      setModalMessage(
-        "Wait for a builder to finish before starting a new upgrade.",
-      );
-      setModalVisible(true);
+  useEffect(() => {
+    if (currentLevel.trim() === "") {
+      setNextLevel("");
       return;
     }
 
+    const parsed = Number(currentLevel);
+
+    if (!isNaN(parsed) && parsed >= 0) {
+      setNextLevel(String(parsed + 1));
+    } else {
+      setNextLevel("");
+    }
+  }, [currentLevel]);
+
+  const showError = (title: string, message: string) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+
+  const totalMinutes =
+    Number(days || 0) * 1440 + Number(hours || 0) * 60 + Number(minutes || 0);
+
+  const { profile } = usePlayerProfile();
+  const activeUpgrades = getActiveBuilderUpgrades();
+
+  const goblinGemCost =
+    totalMinutes > 0 ? calculateGoblinCost(totalMinutes) : 0;
+
+  const normalBusy = activeUpgrades.filter((u) => u.builderSlot !== "G").length;
+
+  const normalFree = profile.normalBuilderCount - normalBusy;
+
+  const allowGoblin = canUseGoblinBuilder(profile, activeUpgrades);
+
+  let willUseGoblin = !isEditMode && normalFree <= 0 && allowGoblin;
+
+  const validateInput = (): boolean => {
     if (!name.trim()) {
-      setModalTitle("Missing name");
-      setModalMessage("Please enter an upgrade name.");
-      setModalVisible(true);
-      return;
+      showError("Missing name", "Please enter an upgrade name.");
+      return false;
     }
-
-    const totalMinutes =
-      Number(days || 0) * 1440 + Number(hours || 0) * 60 + Number(minutes || 0);
 
     if (totalMinutes > 60 * 24 * 30) {
-      setModalTitle("Too long");
-      setModalMessage("Maximum upgrade duration is 30 days.");
-      setModalVisible(true);
-      return;
+      showError("Too long", "Maximum upgrade duration is 30 days.");
+      return false;
     }
 
     if (totalMinutes <= 0) {
-      setModalTitle("Invalid duration");
-      setModalMessage("Upgrade duration must be greater than zero.");
-      setModalVisible(true);
-      return;
+      showError(
+        "Invalid duration",
+        "Upgrade duration must be greater than zero.",
+      );
+      return false;
     }
-    const finalName = selectedBuilding === "Custom" ? name : selectedBuilding;
 
-    const baseUpgrade = await createBuilderUpgrade({
-      name: finalName,
-      days: Number(days || 0),
-      hours: Number(hours || 0),
-      minutes: Number(minutes || 0),
-    });
+    // Validate level progression if both are provided
+    const parsedCurrent =
+      currentLevel.trim() !== "" ? Number(currentLevel) : undefined;
 
-    // Preserve ID if editing
-    const finalUpgrade = isEditMode
-      ? { ...baseUpgrade, id: editId as string }
-      : baseUpgrade;
+    // Validate level values are positive
+    if (parsedCurrent !== undefined && parsedCurrent < 0) {
+      showError("Invalid level", "Level must be a positive number.");
+      return false;
+    }
 
-    if (isEditMode) {
-      await cancelBuilderNotification(editId as string);
-      const current = getBuilderUpgrades();
-      const filtered = current.filter((u) => u.id !== editId);
-      saveBuilderUpgrades([...filtered, finalUpgrade]);
+    // Validate level progression if both are provided
+    // if (parsedCurrent !== undefined && parsedNext !== undefined) {
+    //   if (parsedNext !== parsedCurrent + 1) {
+    //     showError(
+    //       "Invalid levels",
+    //       `Next level must be exactly ${parsedCurrent + 1} (current level + 1).`,
+    //     );
+    //     return false;
+    //   }
+    // }
+    return true;
+  };
+
+  const pressButton = async () => {
+    if (loading) return;
+    if (!validateInput()) return;
+
+    try {
+      setLoading(true);
+
+      let slot: number | "G" | undefined;
+
+      if (!isEditMode) {
+        if (normalFree > 0) {
+          slot = assignBuilderSlot(
+            activeUpgrades,
+            profile.normalBuilderCount,
+            false,
+          );
+        } else if (allowGoblin) {
+          slot = "G";
+          willUseGoblin = true;
+        } else {
+          showError(
+            "All builders busy",
+            "All builders are currently working. Wait for one to finish.",
+          );
+          return;
+        }
+      }
+
+      const builderType = willUseGoblin ? "GOBLIN" : "NORMAL";
+
+      const parsedCurrent =
+        currentLevel.trim() !== "" && !isNaN(Number(currentLevel))
+          ? Number(currentLevel)
+          : undefined;
+
+      const parsedNext =
+        parsedCurrent !== undefined ? parsedCurrent + 1 : undefined;
+
+      // const finalName = selectedBuilding === "Custom" ? name : selectedBuilding;
+
+      const baseUpgrade = await createBuilderUpgrade({
+        name,
+        days: Number(days || 0),
+        hours: Number(hours || 0),
+        minutes: Number(minutes || 0),
+        builderType,
+        currentLevel: parsedCurrent,
+        nextLevel: parsedNext,
+      });
+
+      let finalUpgrade: BuilderUpgrade;
+
+      if (isEditMode) {
+        const upgrades = getBuilderUpgrades();
+        const existing = upgrades.find((u) => u.id === editId);
+
+        if (!existing) {
+          showError("Error", "Original upgrade not found.");
+          return;
+        }
+        finalUpgrade = {
+          ...baseUpgrade,
+          id: editId as string,
+          builderSlot: existing.builderSlot,
+        };
+        await cancelBuilderNotification(editId as string);
+
+        const filtered = upgrades.filter((u) => u.id !== editId);
+        saveBuilderUpgrades([...filtered, finalUpgrade]);
+      } else {
+        finalUpgrade = {
+          ...baseUpgrade,
+          builderSlot: slot!,
+        };
+        addBuilderUpgrade(finalUpgrade);
+      }
+
+      // Widget Update (non-blocking)
+      try {
+        await requestWidgetUpdate({
+          widgetName: "BuilderStatusWidget",
+          renderWidget: renderBuilderWidget,
+        });
+      } catch (widgetError) {
+        console.warn("Widget update failed:", widgetError);
+        // Don't block save if widget update fails
+      }
+
+      startSmartWidgetScheduler();
+
+      // Schedule notification with error handling
+      try {
+        await scheduleBuilderNotification(
+          finalUpgrade.id,
+          finalUpgrade.name,
+          finalUpgrade.endTime,
+        );
+      } catch (notificationError) {
+        console.warn("Notification scheduling failed:", notificationError);
+        // Don't block save if notification fails
+      }
+
+      router.back();
+    } catch (error) {
+      console.error("Error saving upgrade:", error);
+      showError(
+        "Save failed",
+        "An error occurred while saving. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBuildingSelect = (item: string) => {
+    setSelectedBuilding(item);
+
+    if (item === "Custom") {
+      // Always clear name for custom entry
+      setName("");
+      // Focus the custom name input after a brief delay to allow modal to close
+      setTimeout(() => {
+        firstTextInputRef.current?.focus();
+      }, 100);
     } else {
-      addBuilderUpgrade(finalUpgrade);
+      setName(item);
     }
 
-    await requestWidgetUpdate({
-      widgetName: "BuilderStatusWidget",
-      renderWidget: renderBuilderWidget,
-    });
-
-    startSmartWidgetScheduler();
-
-    await scheduleBuilderNotification(
-      finalUpgrade.id,
-      finalUpgrade.name,
-      finalUpgrade.endTime,
-    );
-
-    router.back();
+    setShowDropdown(false);
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#eef2f7" }}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Upgrade Name */}
-        {/* Building Selector */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Building</Text>
-
-          <Pressable
-            style={styles.dropdown}
-            onPress={() => setShowDropdown(true)}
-          >
-            <View style={styles.dropdownRow}>
-              <Text style={styles.dropdownText}>{selectedBuilding}</Text>
-              <Ionicons name="chevron-down" size={18} color="#6b7280" />
-            </View>
-          </Pressable>
-
-          {selectedBuilding === "Custom" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter building name"
-              placeholderTextColor="#afaeae"
-              value={name}
-              onChangeText={setName}
-              autoFocus
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                Keyboard.dismiss();
-                secondTextInputRef.current?.focus();
-              }}
-            />
-          )}
-        </View>
-
-        {/* Duration */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Duration</Text>
-          <View style={styles.durationRow}>
-            <TextInput
-              ref={secondTextInputRef}
-              style={styles.durationInput}
-              placeholder="Days"
-              placeholderTextColor="#afaeae"
-              keyboardType="number-pad"
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                thirdTextInputRef.current?.focus();
-              }}
-              value={days}
-              onChangeText={setDays}
-            />
-            <TextInput
-              ref={thirdTextInputRef}
-              style={styles.durationInput}
-              placeholder="Hours"
-              placeholderTextColor="#afaeae"
-              keyboardType="number-pad"
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                fourthTextInputRef.current?.focus();
-              }}
-              value={hours}
-              onChangeText={setHours}
-            />
-            <TextInput
-              ref={fourthTextInputRef}
-              style={styles.durationInput}
-              placeholder="Minutes"
-              placeholderTextColor="#afaeae"
-              keyboardType="number-pad"
-              returnKeyType="done"
-              value={minutes}
-              onChangeText={setMinutes}
-            />
-          </View>
-        </View>
-
-        {/* Start Button */}
-        <Pressable
-          style={styles.startButton}
-          onPress={async () => {
-            pressButton();
-          }}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.startButtonText}>
-            {isEditMode ? "Update Upgrade" : "Start Upgrade"}
-          </Text>
-        </Pressable>
+          {/* Header */}
+          <Animated.View
+            style={[
+              styles.header,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={24} color="#fbbf24" />
+            </Pressable>
+            <View style={styles.headerContent}>
+              <Text style={styles.headerTitle}>
+                {isEditMode ? "Edit Upgrade" : "Add Upgrade"}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {isEditMode
+                  ? "Update your upgrade details"
+                  : "Create a new upgrade"}
+              </Text>
+            </View>
+          </Animated.View>
 
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </Pressable>
+          {/* Building Selector */}
+          <Animated.View
+            style={[
+              styles.field,
+              {
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <Text style={styles.label}>Building</Text>
 
+            <Pressable
+              style={styles.dropdown}
+              onPress={() => setShowDropdown(true)}
+            >
+              <View style={styles.dropdownRow}>
+                <Text style={styles.dropdownText}>{selectedBuilding}</Text>
+                <Ionicons name="chevron-down" size={18} color="#fbbf24" />
+              </View>
+            </Pressable>
+
+            {selectedBuilding === "Custom" && (
+              <TextInput
+                ref={firstTextInputRef}
+                style={styles.input}
+                placeholder="Enter building name"
+                placeholderTextColor="#64748b"
+                value={name}
+                onChangeText={setName}
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  secondTextInputRef.current?.focus();
+                }}
+              />
+            )}
+          </Animated.View>
+
+          {/* Duration */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Duration</Text>
+            <View style={styles.durationRow}>
+              <TextInput
+                ref={secondTextInputRef}
+                style={styles.durationInput}
+                placeholder="Days"
+                placeholderTextColor="#64748b"
+                keyboardType="number-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  thirdTextInputRef.current?.focus();
+                }}
+                value={days}
+                onChangeText={setDays}
+              />
+              <TextInput
+                ref={thirdTextInputRef}
+                style={styles.durationInput}
+                placeholder="Hours"
+                placeholderTextColor="#64748b"
+                keyboardType="number-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  fourthTextInputRef.current?.focus();
+                }}
+                value={hours}
+                onChangeText={setHours}
+              />
+              <TextInput
+                ref={fourthTextInputRef}
+                style={styles.durationInput}
+                placeholder="Minutes"
+                placeholderTextColor="#64748b"
+                keyboardType="number-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  fifthTextInputRef.current?.focus();
+                }}
+                value={minutes}
+                onChangeText={setMinutes}
+              />
+            </View>
+          </View>
+
+          {willUseGoblin && (
+            <View style={styles.goblinPreview}>
+              <View style={styles.goblinBadge}>
+                <Text style={styles.goblinBadgeText}>GOBLIN</Text>
+              </View>
+              <Text style={styles.goblinCostText}>💎 {goblinGemCost} Gems</Text>
+            </View>
+          )}
+
+          {/* Levels (Optional) */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Levels (Optional)</Text>
+
+            <View style={styles.levelRow}>
+              <TextInput
+                ref={fifthTextInputRef}
+                style={styles.levelInput}
+                placeholder="Current"
+                placeholderTextColor="#64748b"
+                keyboardType="number-pad"
+                value={currentLevel}
+                onSubmitEditing={() => {
+                  sixthTextInputRef.current?.focus();
+                }}
+                onChangeText={setCurrentLevel}
+                returnKeyType="next"
+              />
+
+              <Ionicons name="arrow-forward" size={18} color="#fbbf24" />
+
+              <TextInput
+                ref={sixthTextInputRef}
+                style={[styles.levelInput, styles.levelInputDisabled]}
+                placeholder="Next"
+                placeholderTextColor="#afaeae"
+                keyboardType="number-pad"
+                value={nextLevel}
+                editable={false}
+              />
+            </View>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.buttonGroup}>
+            <Pressable
+              style={[
+                styles.startButton,
+                loading && styles.startButtonDisabled,
+              ]}
+              onPress={pressButton}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#0f172a" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#0f172a" />
+                  <Text style={styles.startButtonText}>
+                    {willUseGoblin
+                      ? `Hire Goblin (${goblinGemCost} 💎)`
+                      : isEditMode
+                        ? "Update Upgrade"
+                        : "Start Upgrade"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.back()}
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.cancelButton,
+                pressed && styles.cancelButtonPressed,
+              ]}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+
+        {/* Confirmation Modal */}
         <ConfirmModal
           visible={modalVisible}
           title={modalTitle}
@@ -280,128 +562,253 @@ export default function AddUpgradeScreen() {
           onConfirm={() => setModalVisible(false)}
         />
 
+        {/* Building Dropdown Modal */}
         <Modal transparent visible={showDropdown} animationType="fade">
           <Pressable
             style={styles.modalOverlay}
             onPress={() => setShowDropdown(false)}
           >
             <View style={styles.dropdownSheet}>
+              <View style={styles.dropdownHeader}>
+                <Text style={styles.dropdownTitle}>Select Building</Text>
+                <Pressable onPress={() => setShowDropdown(false)}>
+                  <Ionicons name="close" size={24} color="#f1f5f9" />
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.dropdownItem,
+                  pressed && styles.dropdownItemPressed,
+                ]}
+                onPress={() => handleBuildingSelect("Custom")}
+              >
+                <Ionicons name="pencil" size={18} color="#fbbf24" />
+                <Text style={styles.dropdownItemText}>Custom</Text>
+              </Pressable>
+
               {BUILDINGS.map((item) => (
                 <Pressable
                   key={item}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedBuilding(item);
-                    if (item === "Custom") {
-                      if (BUILDINGS.includes(name)) {
-                        setName("");
-                      } else {
-                        setName(item);
-                      }
-                    }
-                    setShowDropdown(false);
-                  }}
+                  style={({ pressed }) => [
+                    styles.dropdownItem,
+                    pressed && styles.dropdownItemPressed,
+                  ]}
+                  onPress={() => handleBuildingSelect(item)}
                 >
+                  <Ionicons name="hammer" size={18} color="#fbbf24" />
                   <Text style={styles.dropdownItemText}>{item}</Text>
                 </Pressable>
               ))}
             </View>
           </Pressable>
         </Modal>
-      </ScrollView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  goblinPreview: {
+    marginTop: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    padding: 12,
+    borderRadius: 12,
+  },
+
+  goblinBadge: {
+    backgroundColor: "#a855f7",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+
+  goblinBadgeText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+
+  goblinCostText: {
+    color: "#fbbf24",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
   container: {
     flex: 1,
-    backgroundColor: "#eef2f7",
+    backgroundColor: "#0f172a",
   },
 
   scrollContent: {
-    padding: 20,
-    paddingBottom: 60,
+    paddingTop: 0,
+    paddingBottom: 80,
   },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    marginBottom: 24,
+  header: {
+    paddingTop: 20,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    backgroundColor: "#1e293b",
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(251, 191, 36, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  headerContent: {
+    flex: 1,
+    gap: 4,
+  },
+
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#fbbf24",
+  },
+
+  headerSubtitle: {
+    fontSize: 12,
+    color: "#94a3b8",
+    fontWeight: "500",
   },
 
   field: {
-    marginBottom: 28,
+    marginBottom: 24,
+    marginHorizontal: 20,
+    marginTop: 20,
   },
 
   label: {
     fontSize: 12,
-    marginBottom: 8,
-    color: "#6b7280",
+    marginBottom: 10,
+    color: "#64748b",
     textTransform: "uppercase",
     letterSpacing: 1,
-    fontWeight: "600",
+    fontWeight: "700",
   },
 
   input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: "#334155",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    backgroundColor: "#1e293b",
+    color: "#f1f5f9",
+    marginTop: 8,
   },
 
   durationRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
   },
 
   durationInput: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: "#334155",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    backgroundColor: "#1e293b",
+    color: "#f1f5f9",
+  },
+
+  levelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  levelInput: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: "#334155",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    backgroundColor: "#1e293b",
+    color: "#f1f5f9",
+  },
+
+  levelInputDisabled: {
+    backgroundColor: "#e5e7eb",
+    color: "#6b7280",
+  },
+
+  buttonGroup: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    gap: 10,
   },
 
   startButton: {
-    marginTop: 10,
-    paddingVertical: 18,
-    borderRadius: 18,
-    backgroundColor: "#ffd33d",
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#fbbf24",
+    shadowColor: "#fbbf24",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    elevation: 8,
+  },
+
+  startButtonDisabled: {
+    opacity: 0.7,
   },
 
   startButtonText: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#000",
+    color: "#0f172a",
+  },
+
+  cancelButton: {
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    backgroundColor: "#334155",
+  },
+
+  cancelButtonPressed: {
+    opacity: 0.8,
   },
 
   cancelText: {
-    textAlign: "center",
-    color: "#6b7280",
-    marginTop: 8,
-    fontWeight: "500",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#cbd5e1",
   },
 
   dropdown: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: "#ffffff",
+    borderWidth: 1.5,
+    borderColor: "#334155",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "#1e293b",
   },
 
   dropdownRow: {
@@ -411,33 +818,59 @@ const styles = StyleSheet.create({
   },
 
   dropdownText: {
-    fontSize: 16,
+    fontSize: 15,
+    color: "#f1f5f9",
+    fontWeight: "500",
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    paddingHorizontal: 24,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "flex-end",
   },
 
   dropdownSheet: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    paddingVertical: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
+    backgroundColor: "#1e293b",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: 50,
+    maxHeight: "80%",
+  },
+
+  dropdownHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+
+  dropdownTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#f1f5f9",
   },
 
   dropdownItem: {
-    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#334155",
+  },
+
+  dropdownItemPressed: {
+    backgroundColor: "rgba(251, 191, 36, 0.1)",
   },
 
   dropdownItemText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#f1f5f9",
+    flex: 1,
   },
 });

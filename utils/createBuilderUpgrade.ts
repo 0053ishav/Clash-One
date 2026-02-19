@@ -7,7 +7,9 @@ export async function createBuilderUpgrade(params: {
   hours: number;
   minutes: number;
   builderType?: "NORMAL" | "GOBLIN";
-}): Promise<BuilderUpgrade> {
+  currentLevel?: number
+  nextLevel?: number
+}): Promise<Omit<BuilderUpgrade, "builderSlot">> {
   const durationMinutes =
     params.days * 24 * 60 +
     params.hours * 60 +
@@ -16,7 +18,7 @@ export async function createBuilderUpgrade(params: {
   const startTime = Date.now();
   const endTime = startTime + durationMinutes * 60 * 1000;
 
-  const id = await Crypto.randomUUID();
+  const id = Crypto.randomUUID();
 
   return {
     id,
@@ -26,5 +28,7 @@ export async function createBuilderUpgrade(params: {
     endTime,
     builderType: params.builderType ?? "NORMAL",
     isCompleted: false,
+    currentLevel: params.currentLevel,
+    nextLevel: params.nextLevel,
   };
 }

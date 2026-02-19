@@ -10,6 +10,8 @@ export function renderBuilderWidget() {
         subtitle={data.subtitle}
         progress={data.progress}
         showProgress={data.showProgress}
+        levelText={data.levelText}
+        builderCountText={data.builderCountText}
       />
     );
   } catch {
@@ -19,6 +21,8 @@ export function renderBuilderWidget() {
         subtitle="All builders free"
         progress={0}
         showProgress
+        levelText=""
+        builderCountText=""
       />
     );
   }

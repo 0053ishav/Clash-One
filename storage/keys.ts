@@ -5,5 +5,6 @@ export const STORAGE_KEYS = {
   LAB_UPGRADE: "lab_upgrade",
   ONBOARDING_KEY:"onboarding_complete",
   NOTIFICATION_KEY: "notifications_enabled",
-  GOBLIN_BANNER_DISMISSED_UNTIL: "goblin_banner_dismissed_until"
+  GOBLIN_BANNER_DISMISSED_UNTIL: "goblin_banner_dismissed_until",
+  REMOTE_CONFIG: "remote_config",
 };

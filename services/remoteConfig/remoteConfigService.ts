@@ -1,4 +1,4 @@
-import { resetGoblinBannerDismissal } from "@/storage/goblinStorage";
+import { loadRemoteConfigFromStorage, resetGoblinBannerDismissal, saveRemoteConfigToStorage } from "@/storage/goblinStorage";
 
 export type GoblinRemoteConfig = {
   goblinBuilderEnabled: boolean;
@@ -25,9 +25,13 @@ let lastFetchTime: number = 0;
 let isInitialized = false;
 
 export async function initRemoteConfig(): Promise<void> {
-  if (isInitialized) {
-    return;
+  if (isInitialized) return;
+
+  const cachedFromStorage = loadRemoteConfigFromStorage();
+  if (cachedFromStorage) {
+    cachedConfig = cachedFromStorage;
   }
+
   try {
     const response = await fetch(CONFIG_URL, {
       method: "GET",
@@ -41,6 +45,8 @@ export async function initRemoteConfig(): Promise<void> {
     const parsed = await response.json();
 
     validateAndSetConfig(parsed);
+
+    saveRemoteConfigToStorage(cachedConfig);
 
     lastFetchTime = Date.now();
     isInitialized = true;

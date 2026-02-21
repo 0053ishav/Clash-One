@@ -1,8 +1,10 @@
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Animated,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,24 +15,30 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UploadJsonScreen() {
   const router = useRouter();
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(50));
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
 
-  // Initial animation
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+  const openClashSettings = async () => {
+    const url = "https://link.clashofclans.com/en/?action=OpenMoreSettings";
+
+    const supported = await Linking.canOpenURL(url);
+
+    if (supported) {
+      router.push("https://link.clashofclans.com/en/?action=OpenMoreSettings");
+    } else {
+      setModalTitle("Unable to open Clash of Clans");
+      setModalMessage(
+        "Please open the game manually and go to Settings → More Settings.",
+      );
+      setModalVisible(true);
+    }
+  };
+
+  const handlePasteVillageData = () => {
+    // You will implement clipboard read + parse here
+    console.log("Paste Village Data pressed");
+  };
 
   return (
     <SafeAreaView style={styles.root}>
@@ -40,36 +48,20 @@ export default function UploadJsonScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <Animated.View
-            style={[
-              styles.header,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
+          <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="chevron-back" size={24} color="#fbbf24" />
             </Pressable>
             <View style={styles.headerContent}>
               <Text style={styles.headerTitle}>Import Player Data</Text>
               <Text style={styles.headerSubtitle}>
-                Semi-automatic upgrade tracking
+                Sync active builders from game
               </Text>
             </View>
-          </Animated.View>
+          </View>
 
           {/* Security Info */}
-          <Animated.View
-            style={[
-              styles.card,
-              styles.securityCard,
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
+          <Animated.View style={[styles.card, styles.securityCard]}>
             <View style={styles.securityContent}>
               <View style={styles.securityIconBg}>
                 <Ionicons name="shield-checkmark" size={24} color="#22c55e" />
@@ -94,8 +86,8 @@ export default function UploadJsonScreen() {
               {[
                 "Open Clash of Clans",
                 "Go to Settings → More Settings",
-                'Tap "Export Player Data"',
-                "Upload the JSON file here",
+                'Scroll to Data Export and tap "Copy"',
+                "Return here and paste village data",
               ].map((step, index) => (
                 <View key={index} style={styles.stepContainer}>
                   <View style={styles.stepNumber}>
@@ -107,19 +99,18 @@ export default function UploadJsonScreen() {
             </View>
           </View>
 
-          {/* File Info */}
-          <View style={styles.card}>
-            <View style={styles.infoRow}>
-              <View style={styles.infoIcon}>
-                <Ionicons name="document-text" size={18} color="#0ea5e9" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoTitle}>JSON File Format</Text>
-                <Text style={styles.infoDescription}>
-                  Supports .json files from Clash of Clans
-                </Text>
-              </View>
-            </View>
+          {/* Open Game Button */}
+          <View style={styles.buttonGroup}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.uploadButton,
+                pressed && styles.uploadButtonPressed,
+              ]}
+              onPress={openClashSettings}
+            >
+              <Ionicons name="open-outline" size={20} color="#0f172a" />
+              <Text style={styles.uploadButtonText}>Open Clash Settings</Text>
+            </Pressable>
           </View>
 
           {/* Action Buttons */}
@@ -129,12 +120,10 @@ export default function UploadJsonScreen() {
                 styles.uploadButton,
                 pressed && styles.uploadButtonPressed,
               ]}
-              onPress={() => {
-                console.log("Upload JSON pressed");
-              }}
+              onPress={handlePasteVillageData}
             >
-              <Ionicons name="cloud-upload" size={20} color="#0f172a" />
-              <Text style={styles.uploadButtonText}>Upload JSON</Text>
+              <Ionicons name="clipboard-outline" size={20} color="#0f172a" />
+              <Text style={styles.uploadButtonText}>Paste Village Data</Text>
             </Pressable>
 
             <Pressable
@@ -148,16 +137,25 @@ export default function UploadJsonScreen() {
             </Pressable>
           </View>
 
-          {/* Help Section */}
-          <View style={styles.helpSection}>
-            <Text style={styles.helpTitle}>Need help?</Text>
-            <Text style={styles.helpText}>
-              Make sure you&apos;re exporting the correct JSON file from Clash
-              of Clans settings.
+          {/* Disclaimer Section */}
+          <View style={styles.disclaimerSection}>
+            <Text style={styles.disclaimerTitle}>Disclaimer</Text>
+            <Text style={styles.disclaimerText}>
+              Clash Widget is an unofficial fan-made companion app and is not
+              affiliated with, endorsed, sponsored, or approved by Supercell.
             </Text>
           </View>
         </ScrollView>
       </View>
+      <ConfirmModal
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        confirmText="OK"
+        cancelText=""
+        onCancel={() => setModalVisible(false)}
+        onConfirm={() => setModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -388,7 +386,7 @@ const styles = StyleSheet.create({
     color: "#cbd5e1",
   },
 
-  helpSection: {
+  disclaimerSection: {
     marginHorizontal: 20,
     marginTop: 24,
     paddingHorizontal: 16,
@@ -399,14 +397,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  helpTitle: {
+  disclaimerTitle: {
     fontSize: 13,
     fontWeight: "700",
     color: "#fbbf24",
     marginBottom: 6,
   },
 
-  helpText: {
+  disclaimerText: {
     fontSize: 12,
     color: "#94a3b8",
     lineHeight: 18,

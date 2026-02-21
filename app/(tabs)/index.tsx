@@ -1,5 +1,6 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { cancelBuilderNotification } from "@/services/notifications/builderNotificationService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
@@ -28,8 +29,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Animated,
-  Easing,
   Image,
   LayoutAnimation,
   Modal,
@@ -44,14 +43,11 @@ import {
   requestWidgetUpdate,
   WidgetPreview,
 } from "react-native-android-widget";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(50));
-  const [loadingScaleAnim] = useState(new Animated.Value(0.8));
-  const [contentFadeAnim] = useState(new Animated.Value(0));
 
   const [activeUpgrades, setActiveUpgrades] = useState<BuilderUpgrade[]>([]);
   const [selectedUpgrade, setSelectedUpgrade] = useState<BuilderUpgrade | null>(
@@ -60,77 +56,13 @@ export default function HomeScreen() {
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Initial animation
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
-
-  // Loading animation - pulse effect
-  useEffect(() => {
-    if (!isLoading) return;
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(loadingScaleAnim, {
-          toValue: 1.05,
-          duration: 600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(loadingScaleAnim, {
-          toValue: 0.95,
-          duration: 600,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [isLoading, loadingScaleAnim]);
-
-  useEffect(() => {
-    if (isLoading) {
-      contentFadeAnim.setValue(0);
-    } else {
-      Animated.timing(contentFadeAnim, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isLoading, contentFadeAnim]);
 
   const refreshUpgrades = useCallback(() => {
     setActiveUpgrades(getActiveBuilderUpgrades());
   }, []);
 
   useEffect(() => {
-    const initialize = async () => {
-      try {
-        refreshUpgrades();
-        await new Promise((res) => setTimeout(res, 800));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initialize();
+    refreshUpgrades();
   }, [refreshUpgrades]);
 
   useEffect(() => {
@@ -140,8 +72,8 @@ export default function HomeScreen() {
       setActiveUpgrades((prev) => {
         const finished = prev.find((u) => u.endTime <= now);
 
-        if (finished && !completedId) {
-          setCompletedId(finished.id);
+        if (finished) {
+          setCompletedId((current) => current ?? finished.id);
         }
 
         return prev;
@@ -149,7 +81,7 @@ export default function HomeScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [completedId]);
+  }, []);
 
   useEffect(() => {
     if (!completedId) return;
@@ -196,7 +128,10 @@ export default function HomeScreen() {
   const { profile } = usePlayerProfile();
   const builderCount = profile.normalBuilderCount;
 
-  const isGoblinActive = isWorkForHireActive();
+  const { config } = useRemoteConfig();
+
+  const isGoblinActive = config.goblinBuilderEnabled && isWorkForHireActive();
+
   const eventEndsAt = getCurrentWorkForHireEventEnd();
 
   const showBanner = !!eventEndsAt && shouldShowGoblinBanner(eventEndsAt);
@@ -253,429 +188,383 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.container}>
-        {/* Loading Overlay */}
-        {isLoading && (
-          <View style={styles.loadingOverlay}>
-            <Animated.View
-              style={[
-                styles.loadingContent,
-                {
-                  transform: [{ scale: loadingScaleAnim }],
-                },
-              ]}
-            >
-              <View style={styles.glowBg} />
-
-              <View style={styles.imageWrapper}>
-                <Image
-                  source={require("@/assets/images/builder/builder-working.png")}
-                  style={styles.builderImage}
-                  resizeMode="contain"
-                />
-              </View>
-
-              <Text style={styles.loadingTitle}>Waking Builders...</Text>
-            </Animated.View>
-          </View>
-        )}
-        <Animated.View
-          style={[
-            styles.contentWrapper,
-            {
-              opacity: contentFadeAnim,
-            },
-          ]}
+    <View style={styles.container}>
+      <View style={styles.contentWrapper}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#fbbf24"
+            />
+          }
         >
-          <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor="#fbbf24"
-              />
-            }
-          >
-            {showBanner && eventEndsAt && (
-              <GoblinEventBanner
-                eventEndsAt={eventEndsAt}
-                onDismiss={() => {
-                  setGoblinBannerDismissedUntil(eventEndsAt);
-                }}
-              />
-            )}
-            {/* Header */}
-            <Animated.View
-              style={[
-                styles.header,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                },
-              ]}
-            >
+          {showBanner && eventEndsAt && (
+            <GoblinEventBanner
+              eventEndsAt={eventEndsAt}
+              onDismiss={() => {
+                setGoblinBannerDismissedUntil(eventEndsAt);
+              }}
+            />
+          )}
+          {/* Header */}
+          <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+            <View>
               <Text style={styles.headerTitle}>Builder Status</Text>
               <Text style={styles.headerSubtitle}>Track your upgrades</Text>
-            </Animated.View>
-            {/* Premium Status Card */}
-            <Animated.View
-              style={[
-                styles.statusCardContainer,
-                {
-                  opacity: fadeAnim,
-                },
-              ]}
-            >
-              <View style={styles.statusCard}>
-                <View style={styles.statusCardContent}>
-                  <View style={styles.statusIconContainer}>
-                    <Image
-                      source={
-                        status.allFree
-                          ? require("@/assets/images/builder/builder-idle.png")
-                          : require("@/assets/images/builder/builder-working.png")
-                      }
-                      style={styles.statusCardIcon}
-                      resizeMode="contain"
-                    />
-                  </View>
-
-                  <View style={styles.statusInfo}>
-                    <Text style={styles.statusCardLabel}>
-                      {status.allFree
-                        ? "All Builders Free"
-                        : `Next Builder Ready: ${nextBuilderLabel}`}
-                    </Text>
-
-                    <Text style={styles.statusCardTime}>
-                      {status.allFree
-                        ? "Ready to build"
-                        : formatCountdown(remainingMs)}
-                    </Text>
-                    <View style={styles.builderIndicators}>
-                      {/* Normal Builders */}
-                      {Array.from({ length: profile.normalBuilderCount }).map(
-                        (_, i) => {
-                          const isBusy = activeUpgrades.some(
-                            (u) => u.builderSlot === i,
-                          );
-
-                          return (
-                            <View
-                              key={`normal-${i}`}
-                              style={[
-                                styles.builderDot,
-                                isBusy
-                                  ? styles.builderDotBusy
-                                  : styles.builderDotFree,
-                              ]}
-                            />
-                          );
-                        },
-                      )}
-
-                      {/* Goblin Slot */}
-                      {isGoblinActive &&
-                        (() => {
-                          const goblinBusy = activeUpgrades.some(
-                            (u) => u.builderSlot === "G",
-                          );
-
-                          const goblinCanBeUsed = canUseGoblinBuilder(
-                            profile,
-                            activeUpgrades,
-                          );
-                          return (
-                            <View
-                              style={[
-                                styles.builderDot,
-                                goblinBusy
-                                  ? styles.goblinDotBusy
-                                  : goblinCanBeUsed
-                                    ? styles.goblinDotFree
-                                    : styles.goblinDotInactive,
-                              ]}
-                            />
-                          );
-                        })()}
-                    </View>
-                  </View>
-                </View>
-              </View>
-            </Animated.View>
-            {/* Add Upgrade Button */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.addButton,
-                pressed && styles.addButtonPressed,
-              ]}
-              onPress={() => router.push("/add-upgrade")}
-            >
-              <Ionicons name="add-circle" size={24} color="#0f172a" />
-              <Text style={styles.addButtonText}>Add Upgrade</Text>
-            </Pressable>
-            {/* Active Upgrades Section */}
-            {sortedUpgrades.length > 0 && (
-              <View style={styles.upgradesSection}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Active Upgrades</Text>
-                  <View style={styles.upgradeBadge}>
-                    <Text style={styles.upgradeBadgeText}>
-                      {sortedUpgrades.length}
-                    </Text>
-                  </View>
-                </View>
-
-                {sortedUpgrades.map((u, index) => {
-                  const remainingMs = Math.max(u.endTime - Date.now(), 0);
-                  const totalMs = u.endTime - u.startTime;
-                  const progress = calculateProgress(u.startTime, u.endTime);
-                  const isGoblin = u.builderSlot === "G";
-                  const builderLabel = isGoblin
-                    ? "🟢 G"
-                    : `B${(u.builderSlot as number) + 1}`;
-                  const isCompleted = completedId === u.id;
-
-                  return (
-                    <Pressable
-                      key={u.id}
-                      style={[
-                        styles.upgradeCard,
-                        isCompleted && styles.upgradeCardCompleted,
-                        isGoblin && styles.goblinUpgradeCard,
-                      ]}
-                      onLongPress={() => handleRowLongPress(u)}
-                    >
-                      <View
-                        style={[
-                          styles.upgradeContent,
-                          isCompleted && styles.upgradeContentCompleted,
-                        ]}
-                      >
-                        {/* Builder Number Badge */}
-                        <View
-                          style={[
-                            styles.builderBadge,
-                            isGoblin && styles.goblinBadge,
-                          ]}
-                        >
-                          <Text style={styles.builderBadgeText}>
-                            {builderLabel}
-                          </Text>
-                        </View>
-
-                        {/* Main Content */}
-                        <View style={styles.upgradeMain}>
-                          {/* Left Section - Building Icon & Name */}
-                          <View style={styles.upgradeLeft}>
-                            <View style={styles.iconContainer}>
-                              <Image
-                                source={require("@/assets/images/builder/builder-working.png")}
-                                style={styles.upgradeIcon}
-                                resizeMode="contain"
-                              />
-                            </View>
-
-                            <View style={styles.upgradeNameSection}>
-                              <Text style={styles.upgradeName}>
-                                {formatBuildingName(u.name)}
-                              </Text>
-
-                              {/* Levels Badge */}
-                              {u.currentLevel !== undefined &&
-                                u.nextLevel !== undefined && (
-                                  <View style={styles.levelsBadge}>
-                                    <Text style={styles.levelsText}>
-                                      Lv {u.currentLevel} → Lv {u.nextLevel}
-                                    </Text>
-                                  </View>
-                                )}
-                            </View>
-                          </View>
-
-                          {/* Right Section - Time Display */}
-                          <View style={styles.upgradeRight}>
-                            <Text style={styles.remainingTime}>
-                              {formatCountdown(remainingMs)}
-                            </Text>
-                            <Text style={styles.totalTimeText}>
-                              of {formatCountdown(totalMs)}
-                            </Text>
-                          </View>
-                        </View>
-
-                        {/* Progress Bar */}
-                        <View style={styles.progressTrack}>
-                          <View
-                            style={[
-                              styles.progressBar,
-                              {
-                                width: `${progress * 100}%`,
-                              },
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-
-                <View style={styles.refreshHint}>
-                  <Ionicons name="arrow-down" size={16} color="#64748b" />
-                  <Text style={styles.refreshHintText}>
-                    Pull down to refresh
-                  </Text>
-                </View>
-              </View>
-            )}
-            {/* Empty State */}
-            {!isLoading && sortedUpgrades.length === 0 && (
-              <View style={styles.emptyStateContainer}>
-                <View style={styles.emptyIconWrapper}>
+            </View>
+            <View>
+              <Pressable onPress={() => router.push("/upload-json")}>
+                <Ionicons name="sync-sharp" size={22} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+          {/* Premium Status Card */}
+          <View style={styles.statusCardContainer}>
+            <View style={styles.statusCard}>
+              <View style={styles.statusCardContent}>
+                <View style={styles.statusIconContainer}>
                   <Image
-                    source={require("@/assets/images/builder/builder-idle.png")}
-                    style={styles.emptyIcon}
+                    source={
+                      status.allFree
+                        ? require("@/assets/images/builder/builder-idle.png")
+                        : require("@/assets/images/builder/builder-working.png")
+                    }
+                    style={styles.statusCardIcon}
                     resizeMode="contain"
                   />
                 </View>
-                <Text style={styles.emptyTitle}>No Active Upgrades</Text>
-                <Text style={styles.emptySubtitle}>
-                  Start your first upgrade to begin tracking
-                </Text>
 
-                <Pressable
-                  style={styles.emptyButton}
-                  onPress={() => router.push("/add-upgrade")}
-                >
-                  <Text style={styles.emptyButtonText}>Get Started</Text>
-                </Pressable>
+                <View style={styles.statusInfo}>
+                  <Text style={styles.statusCardLabel}>
+                    {status.allFree
+                      ? "All Builders Free"
+                      : `Next Builder Ready: ${nextBuilderLabel}`}
+                  </Text>
+
+                  <Text style={styles.statusCardTime}>
+                    {status.allFree
+                      ? "Ready to build"
+                      : formatCountdown(remainingMs)}
+                  </Text>
+                  <View style={styles.builderIndicators}>
+                    {/* Normal Builders */}
+                    {Array.from({ length: profile.normalBuilderCount }).map(
+                      (_, i) => {
+                        const isBusy = activeUpgrades.some(
+                          (u) => u.builderSlot === i,
+                        );
+
+                        return (
+                          <View
+                            key={`normal-${i}`}
+                            style={[
+                              styles.builderDot,
+                              isBusy
+                                ? styles.builderDotBusy
+                                : styles.builderDotFree,
+                            ]}
+                          />
+                        );
+                      },
+                    )}
+
+                    {/* Goblin Slot */}
+                    {isGoblinActive &&
+                      (() => {
+                        const goblinBusy = activeUpgrades.some(
+                          (u) => u.builderSlot === "G",
+                        );
+
+                        const goblinCanBeUsed = canUseGoblinBuilder(
+                          profile,
+                          activeUpgrades,
+                        );
+                        return (
+                          <View
+                            style={[
+                              styles.builderDot,
+                              goblinBusy
+                                ? styles.goblinDotBusy
+                                : goblinCanBeUsed
+                                  ? styles.goblinDotFree
+                                  : styles.goblinDotInactive,
+                            ]}
+                          />
+                        );
+                      })()}
+                  </View>
+                </View>
               </View>
-            )}
-            {__DEV__ && sortedUpgrades.length > 0 && (
-              <Pressable
-                style={styles.devButton}
-                onPress={() => {
-                  const first = sortedUpgrades[0];
-                  setCompletedId(first.id);
-                  setTimeout(() => setCompletedId(null), 8000);
-                }}
-              >
-                <Text style={styles.devButtonText}>Test Completion</Text>
-              </Pressable>
-            )}
-            {__DEV__ && (
-              <WidgetPreview
-                renderWidget={() => (
-                  <BuilderStatusWidget
-                    title={data.title}
-                    subtitle={data.subtitle}
-                    progress={data.progress}
-                    showProgress={data.showProgress}
-                  />
-                )}
-                width={320}
-                height={200}
-              />
-            )}
-            {__DEV__ && (
-              <Pressable
-                style={styles.resetButton}
-                onPress={() => {
-                  setOnboardingIncomplete();
-                  router.replace("/onboarding");
-                }}
-              >
-                <Text style={styles.resetButtonText}>Reset Onboarding</Text>
-              </Pressable>
-            )}
-          </ScrollView>
-        </Animated.View>
-        {/* Action Modal */}
-        <Modal transparent visible={actionModalVisible} animationType="slide">
+            </View>
+          </View>
+          {/* Add Upgrade Button */}
           <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setActionModalVisible(false)}
+            style={({ pressed }) => [
+              styles.addButton,
+              pressed && styles.addButtonPressed,
+            ]}
+            onPress={() => router.push("/add-upgrade")}
           >
-            <View style={styles.modalContent}>
-              <View style={styles.modalHandle} />
+            <Ionicons name="add-circle" size={24} color="#0f172a" />
+            <Text style={styles.addButtonText}>Add Upgrade</Text>
+          </Pressable>
+          {/* Active Upgrades Section */}
+          {sortedUpgrades.length > 0 && (
+            <View style={styles.upgradesSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Active Upgrades</Text>
+                <View style={styles.upgradeBadge}>
+                  <Text style={styles.upgradeBadgeText}>
+                    {sortedUpgrades.length}
+                  </Text>
+                </View>
+              </View>
 
-              <Text style={styles.modalTitle}>{selectedUpgrade?.name}</Text>
+              {sortedUpgrades.map((u, index) => {
+                const remainingMs = Math.max(u.endTime - Date.now(), 0);
+                const totalMs = u.endTime - u.startTime;
+                const progress = calculateProgress(u.startTime, u.endTime);
+                const isGoblin = u.builderSlot === "G";
+                const builderLabel = isGoblin
+                  ? "G"
+                  : `B${(u.builderSlot as number) + 1}`;
+                const isCompleted = completedId === u.id;
 
-              <View style={styles.modalDivider} />
+                return (
+                  <Pressable
+                    key={u.id}
+                    style={[
+                      styles.upgradeCard,
+                      isCompleted && styles.upgradeCardCompleted,
+                      isGoblin && styles.goblinUpgradeCard,
+                    ]}
+                    onLongPress={() => handleRowLongPress(u)}
+                  >
+                    <View
+                      style={[
+                        styles.upgradeContent,
+                        isCompleted && styles.upgradeContentCompleted,
+                      ]}
+                    >
+                      {/* Builder Number Badge */}
+                      <View
+                        style={[
+                          styles.builderBadge,
+                          isGoblin && styles.goblinBadge,
+                        ]}
+                      >
+                        <Text style={styles.builderBadgeText}>
+                          {builderLabel}
+                        </Text>
+                      </View>
+
+                      {/* Main Content */}
+                      <View style={styles.upgradeMain}>
+                        {/* Left Section - Building Icon & Name */}
+                        <View style={styles.upgradeLeft}>
+                          <View style={styles.iconContainer}>
+                            <Image
+                              source={require("@/assets/images/builder/builder-working.png")}
+                              style={styles.upgradeIcon}
+                              resizeMode="contain"
+                            />
+                          </View>
+
+                          <View style={styles.upgradeNameSection}>
+                            <Text style={styles.upgradeName}>
+                              {formatBuildingName(u.name)}
+                            </Text>
+
+                            {/* Levels Badge */}
+                            {u.currentLevel !== undefined &&
+                              u.nextLevel !== undefined && (
+                                <View style={styles.levelsBadge}>
+                                  <Text style={styles.levelsText}>
+                                    Lv {u.currentLevel} → Lv {u.nextLevel}
+                                  </Text>
+                                </View>
+                              )}
+                          </View>
+                        </View>
+
+                        {/* Right Section - Time Display */}
+                        <View style={styles.upgradeRight}>
+                          <Text style={styles.remainingTime}>
+                            {formatCountdown(remainingMs)}
+                          </Text>
+                          <Text style={styles.totalTimeText}>
+                            of {formatCountdown(totalMs)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Progress Bar */}
+                      <View style={styles.progressTrack}>
+                        <View
+                          style={[
+                            styles.progressBar,
+                            {
+                              width: `${progress * 100}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              <View style={styles.refreshHint}>
+                <Ionicons name="arrow-down" size={16} color="#64748b" />
+                <Text style={styles.refreshHintText}>Pull down to refresh</Text>
+              </View>
+            </View>
+          )}
+          {/* Empty State */}
+          {sortedUpgrades.length === 0 && (
+            <View style={styles.emptyStateContainer}>
+              <View style={styles.emptyIconWrapper}>
+                <Image
+                  source={require("@/assets/images/builder/builder-idle.png")}
+                  style={styles.emptyIcon}
+                  resizeMode="contain"
+                />
+              </View>
+              <Text style={styles.emptyTitle}>No Active Upgrades</Text>
+              <Text style={styles.emptySubtitle}>
+                Start your first upgrade to begin tracking
+              </Text>
 
               <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  pressed && styles.modalButtonPressed,
-                ]}
-                onPress={() => {
-                  setActionModalVisible(false);
-                  router.push({
-                    pathname: "/add-upgrade",
-                    params: { editId: selectedUpgrade?.id },
-                  });
-                }}
+                style={styles.emptyButton}
+                onPress={() => router.push("/add-upgrade")}
               >
-                <Ionicons name="pencil" size={18} color="#fbbf24" />
-                <Text style={styles.modalButtonText}>Edit Upgrade</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  pressed && styles.modalButtonPressed,
-                ]}
-                onPress={async () => {
-                  if (!selectedUpgrade) return;
-
-                  await cancelBuilderNotification(selectedUpgrade.id);
-                  deleteBuilderUpgrade(selectedUpgrade.id);
-                  await requestWidgetUpdate({
-                    widgetName: "BuilderStatusWidget",
-                    renderWidget: renderBuilderWidget,
-                  });
-
-                  startSmartWidgetScheduler();
-                  refreshUpgrades();
-                  setActionModalVisible(false);
-                }}
-              >
-                <Ionicons name="trash" size={18} color="#ef4444" />
-                <Text
-                  style={[styles.modalButtonText, styles.modalButtonDelete]}
-                >
-                  Delete Upgrade
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalCancel,
-                  pressed && styles.modalCancelPressed,
-                ]}
-                onPress={() => setActionModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.emptyButtonText}>Get Started</Text>
               </Pressable>
             </View>
-          </Pressable>
-        </Modal>
-
-        {/* Floating Action Button */}
+          )}
+          {__DEV__ && sortedUpgrades.length > 0 && (
+            <Pressable
+              style={styles.devButton}
+              onPress={() => {
+                const first = sortedUpgrades[0];
+                setCompletedId(first.id);
+                setTimeout(() => setCompletedId(null), 8000);
+              }}
+            >
+              <Text style={styles.devButtonText}>Test Completion</Text>
+            </Pressable>
+          )}
+          {__DEV__ && (
+            <WidgetPreview
+              renderWidget={() => (
+                <BuilderStatusWidget
+                  title={data.title}
+                  subtitle={data.subtitle}
+                  progress={data.progress}
+                  showProgress={data.showProgress}
+                />
+              )}
+              width={320}
+              height={200}
+            />
+          )}
+          {__DEV__ && (
+            <Pressable
+              style={styles.resetButton}
+              onPress={() => {
+                setOnboardingIncomplete();
+                router.replace("/onboarding");
+              }}
+            >
+              <Text style={styles.resetButtonText}>Reset Onboarding</Text>
+            </Pressable>
+          )}
+        </ScrollView>
+      </View>
+      {/* Action Modal */}
+      <Modal transparent visible={actionModalVisible} animationType="slide">
         <Pressable
-          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-          onPress={() => router.push("/add-upgrade")}
+          style={styles.modalOverlay}
+          onPress={() => setActionModalVisible(false)}
         >
-          <View style={styles.fabContent}>
-            <Ionicons name="add" size={32} color="#0f172a" />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+
+            <Text style={styles.modalTitle}>{selectedUpgrade?.name}</Text>
+
+            <View style={styles.modalDivider} />
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.modalButton,
+                pressed && styles.modalButtonPressed,
+              ]}
+              onPress={() => {
+                setActionModalVisible(false);
+                router.push({
+                  pathname: "/add-upgrade",
+                  params: { editId: selectedUpgrade?.id },
+                });
+              }}
+            >
+              <Ionicons name="pencil" size={18} color="#fbbf24" />
+              <Text style={styles.modalButtonText}>Edit Upgrade</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.modalButton,
+                pressed && styles.modalButtonPressed,
+              ]}
+              onPress={async () => {
+                if (!selectedUpgrade) return;
+
+                await cancelBuilderNotification(selectedUpgrade.id);
+                deleteBuilderUpgrade(selectedUpgrade.id);
+                await requestWidgetUpdate({
+                  widgetName: "BuilderStatusWidget",
+                  renderWidget: renderBuilderWidget,
+                });
+
+                startSmartWidgetScheduler();
+                refreshUpgrades();
+                setActionModalVisible(false);
+              }}
+            >
+              <Ionicons name="trash" size={18} color="#ef4444" />
+              <Text style={[styles.modalButtonText, styles.modalButtonDelete]}>
+                Delete Upgrade
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.modalCancel,
+                pressed && styles.modalCancelPressed,
+              ]}
+              onPress={() => setActionModalVisible(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </Pressable>
           </View>
         </Pressable>
-      </View>
-    </SafeAreaView>
+      </Modal>
+
+      {/* Floating Action Button */}
+      <Pressable
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        onPress={() => router.push("/add-upgrade")}
+      >
+        <View style={styles.fabContent}>
+          <Ionicons name="add" size={32} color="#0f172a" />
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -767,7 +656,9 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingBottom: 32,
     paddingHorizontal: 20,
     backgroundColor: "#1e293b",

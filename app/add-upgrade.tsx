@@ -23,23 +23,20 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
-  Easing,
+  Image,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
 import { requestWidgetUpdate } from "react-native-android-widget";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddUpgradeScreen() {
   const router = useRouter();
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const [slideAnim] = useState(new Animated.Value(50));
 
   const [name, setName] = useState("Archer Tower");
   const [days, setDays] = useState("");
@@ -73,23 +70,6 @@ export default function AddUpgradeScreen() {
         : undefined;
 
   const isEditMode = !!editId;
-
-  // Initial animation
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
     if (!isEditMode) return;
@@ -179,7 +159,8 @@ export default function AddUpgradeScreen() {
 
   const allowGoblin = canUseGoblinBuilder(profile, activeUpgrades);
 
-  let willUseGoblin = !isEditMode && normalFree <= 0 && allowGoblin;
+  let willUseGoblin =
+    !isEditMode && normalFree <= 0 && allowGoblin && totalMinutes > 0;
 
   const validateInput = (): boolean => {
     if (!name.trim()) {
@@ -232,6 +213,17 @@ export default function AddUpgradeScreen() {
 
       let slot: number | "G" | undefined;
 
+      const freshActiveUpgrades = getActiveBuilderUpgrades();
+
+      const goblinAlreadyActive = freshActiveUpgrades.some(
+        (u) => u.builderSlot === "G",
+      );
+
+      if (goblinAlreadyActive) {
+        showError("Goblin Busy", "You already hired the Goblin Builder.");
+        return;
+      }
+
       if (!isEditMode) {
         if (normalFree > 0) {
           slot = assignBuilderSlot(
@@ -251,7 +243,7 @@ export default function AddUpgradeScreen() {
         }
       }
 
-      const builderType = willUseGoblin ? "GOBLIN" : "NORMAL";
+      const builderType = slot === "G" ? "GOBLIN" : "NORMAL";
 
       const parsedCurrent =
         currentLevel.trim() !== "" && !isNaN(Number(currentLevel))
@@ -260,8 +252,6 @@ export default function AddUpgradeScreen() {
 
       const parsedNext =
         parsedCurrent !== undefined ? parsedCurrent + 1 : undefined;
-
-      // const finalName = selectedBuilding === "Custom" ? name : selectedBuilding;
 
       const baseUpgrade = await createBuilderUpgrade({
         name,
@@ -300,7 +290,6 @@ export default function AddUpgradeScreen() {
         addBuilderUpgrade(finalUpgrade);
       }
 
-      // Widget Update (non-blocking)
       try {
         await requestWidgetUpdate({
           widgetName: "BuilderStatusWidget",
@@ -308,12 +297,10 @@ export default function AddUpgradeScreen() {
         });
       } catch (widgetError) {
         console.warn("Widget update failed:", widgetError);
-        // Don't block save if widget update fails
       }
 
       startSmartWidgetScheduler();
 
-      // Schedule notification with error handling
       try {
         await scheduleBuilderNotification(
           finalUpgrade.id,
@@ -322,7 +309,6 @@ export default function AddUpgradeScreen() {
         );
       } catch (notificationError) {
         console.warn("Notification scheduling failed:", notificationError);
-        // Don't block save if notification fails
       }
 
       router.back();
@@ -341,9 +327,7 @@ export default function AddUpgradeScreen() {
     setSelectedBuilding(item);
 
     if (item === "Custom") {
-      // Always clear name for custom entry
       setName("");
-      // Focus the custom name input after a brief delay to allow modal to close
       setTimeout(() => {
         firstTextInputRef.current?.focus();
       }, 100);
@@ -363,15 +347,7 @@ export default function AddUpgradeScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <Animated.View
-            style={[
-              styles.header,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
+          <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="chevron-back" size={24} color="#fbbf24" />
             </Pressable>
@@ -385,17 +361,10 @@ export default function AddUpgradeScreen() {
                   : "Create a new upgrade"}
               </Text>
             </View>
-          </Animated.View>
+          </View>
 
           {/* Building Selector */}
-          <Animated.View
-            style={[
-              styles.field,
-              {
-                opacity: fadeAnim,
-              },
-            ]}
-          >
+          <View style={styles.field}>
             <Text style={styles.label}>Building</Text>
 
             <Pressable
@@ -422,7 +391,7 @@ export default function AddUpgradeScreen() {
                 }}
               />
             )}
-          </Animated.View>
+          </View>
 
           {/* Duration */}
           <View style={styles.field}>
@@ -472,10 +441,21 @@ export default function AddUpgradeScreen() {
 
           {willUseGoblin && (
             <View style={styles.goblinPreview}>
-              <View style={styles.goblinBadge}>
-                <Text style={styles.goblinBadgeText}>GOBLIN</Text>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+              >
+                <View style={styles.goblinBadge}>
+                  <Text style={styles.goblinBadgeText}>GOBLIN Builder</Text>
+                </View>
+                <Text style={styles.goblinReason}>All builders are busy</Text>
               </View>
-              <Text style={styles.goblinCostText}>💎 {goblinGemCost} Gems</Text>
+              <View style={styles.gemRow}>
+                <Image
+                  source={require("@/assets/images/gem.png")}
+                  style={styles.gemIcon}
+                />
+                <Text style={styles.goblinCostText}>{goblinGemCost} Gems</Text>
+              </View>
             </View>
           )}
 
@@ -529,7 +509,7 @@ export default function AddUpgradeScreen() {
                   <Ionicons name="checkmark-circle" size={20} color="#0f172a" />
                   <Text style={styles.startButtonText}>
                     {willUseGoblin
-                      ? `Hire Goblin (${goblinGemCost} 💎)`
+                      ? "Hire Goblin Builder"
                       : isEditMode
                         ? "Update Upgrade"
                         : "Start Upgrade"}
@@ -637,6 +617,24 @@ const styles = StyleSheet.create({
     color: "#fbbf24",
     fontWeight: "700",
     fontSize: 14,
+  },
+
+  gemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  gemIcon: {
+    width: 18,
+    height: 18,
+    resizeMode: "contain",
+  },
+
+  goblinReason: {
+    fontSize: 12,
+    color: "#c084fc",
+    fontWeight: "600",
   },
 
   container: {

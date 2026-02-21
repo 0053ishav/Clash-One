@@ -1,14 +1,38 @@
+import { GoblinRemoteConfig } from "@/services/remoteConfig/remoteConfigService";
 import { STORAGE_KEYS } from "@/storage/keys";
 import { storage } from "@/storage/mmkv";
 
-const KEYS = STORAGE_KEYS.GOBLIN_BANNER_DISMISSED_UNTIL
+const BANNER_KEY = STORAGE_KEYS.GOBLIN_BANNER_DISMISSED_UNTIL
+const REMOTECONFIG_KEY = STORAGE_KEYS.REMOTE_CONFIG
+
+/**
+ * Store goblin remote config
+ */
+export function saveRemoteConfigToStorage(
+  config: GoblinRemoteConfig
+) {
+  try {
+    storage.set(REMOTECONFIG_KEY, JSON.stringify(config));
+  } catch (e) {
+    console.warn("Failed to cache remote config", e);
+  }
+}
+
+export function loadRemoteConfigFromStorage(): GoblinRemoteConfig | null {
+  try {
+    const raw = storage.getString(REMOTECONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Store banner dismissal timestamp (epoch ms)
  */
 export function setGoblinBannerDismissedUntil(timestamp: number): void {
   try {
-    storage.set(KEYS, timestamp);
+    storage.set(BANNER_KEY, timestamp);
   } catch (error) {
     console.warn("Failed to store goblin banner dismissal", error);
   }
@@ -19,7 +43,7 @@ export function setGoblinBannerDismissedUntil(timestamp: number): void {
  */
 export function getGoblinBannerDismissedUntil(): number | null {
   try {
-    const value = storage.getNumber(KEYS);
+    const value = storage.getNumber(BANNER_KEY);
     return typeof value === "number" ? value : null;
   } catch (error) {
     console.warn("Failed to read goblin banner dismissal", error);
@@ -32,7 +56,7 @@ export function getGoblinBannerDismissedUntil(): number | null {
  */
 export function resetGoblinBannerDismissal(): void {
   try {
-    storage.remove(KEYS);
+    storage.remove(BANNER_KEY);
   } catch (error) {
     console.warn("Failed to reset goblin banner dismissal", error);
   }

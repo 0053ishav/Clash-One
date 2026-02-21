@@ -1,7 +1,4 @@
-import {
-  __enableGoblinForTesting,
-  initRemoteConfig,
-} from "@/services/remoteConfig/remoteConfigService";
+import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import * as Notifications from "expo-notifications";
@@ -10,7 +7,6 @@ import { useEffect } from "react";
 
 export default function RootLayout() {
   useEffect(() => {
-    initRemoteConfig();
     startSmartWidgetScheduler();
   }, []);
 
@@ -25,12 +21,6 @@ export default function RootLayout() {
     });
   }, []);
 
-  useEffect(() => {
-    if (__DEV__) {
-      __enableGoblinForTesting();
-    }
-  }, []);
-
   const pathname = usePathname();
   const complete = isOnboardingComplete();
 
@@ -41,15 +31,17 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="upload-json" options={{ headerShown: false }} />
-      <Stack.Screen name="add-upgrade" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-    </Stack>
+    <RemoteConfigProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="upload-json" options={{ headerShown: false }} />
+        <Stack.Screen name="add-upgrade" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      </Stack>
+    </RemoteConfigProvider>
   );
 }

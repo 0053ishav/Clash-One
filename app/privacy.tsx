@@ -40,15 +40,7 @@ export default function PrivacyScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <Animated.View
-            style={[
-              styles.header,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
+          <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="chevron-back" size={24} color="#fbbf24" />
             </Pressable>
@@ -56,7 +48,7 @@ export default function PrivacyScreen() {
               <Text style={styles.headerTitle}>Privacy Policy</Text>
               <Text style={styles.headerSubtitle}>Your data matters to us</Text>
             </View>
-          </Animated.View>
+          </View>
 
           {/* Last Updated */}
           <Animated.View
@@ -224,6 +216,19 @@ export default function PrivacyScreen() {
               We may update this privacy policy occasionally. Changes will be
               reflected here with an updated &quot;Last Updated&quot; date. Your
               continued use of the app constitutes acceptance of the new policy.
+            </Text>
+          </View>
+
+          {/* Disclaimer */}
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="alert-circle" size={20} color="#f97316" />
+              <Text style={styles.sectionTitle}>Disclaimer</Text>
+            </View>
+            <Text style={styles.sectionText}>
+              Clash Widget is an unofficial companion app and is not affiliated
+              with, endorsed, sponsored, or specifically approved by Supercell.
+              Clash of Clans and all related assets are trademarks of Supercell.
             </Text>
           </View>
 

@@ -59,3 +59,24 @@ export function deleteBuilderUpgrade (id: string) {
   const updated = current.filter((u) => u.id !== id);
   saveBuilderUpgrades(updated);
 }
+
+export function replaceAllBuilderUpgrades(
+  newUpgrades: BuilderUpgrade[]
+) {
+  const raw = storage.getString(STORAGE_KEYS.BUILDER_UPGRADES);
+  const existing = raw ? JSON.parse(raw) : [];
+
+  const nonBuilderUpgrades = existing.filter(
+    (u: any) => u.type !== "BUILDER"
+  );
+
+  const final = [
+    ...nonBuilderUpgrades,
+    ...newUpgrades.map((u) => ({
+      ...u,
+      type: "BUILDER",
+    })),
+  ];
+
+  storage.set(STORAGE_KEYS.BUILDER_UPGRADES, JSON.stringify(final));
+}

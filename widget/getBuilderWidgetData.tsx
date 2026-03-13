@@ -4,13 +4,14 @@ import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { isWorkForHireActive } from "@/utils/goblin";
 
 export function getBuilderWidgetData() {
   const activeUpgrades = getActiveBuilderUpgrades();
 
   const playerProfile = getPlayerProfile();
   const builderCount = playerProfile.normalBuilderCount;
-  const goblinBuilder = playerProfile.goblinBuilder.unlocked;
+  const goblinBuilder = isWorkForHireActive();
 
   const status = getBuilderStatus({
     normalBuilderCount: builderCount,
@@ -46,7 +47,7 @@ export function getBuilderWidgetData() {
   // const showProgress = remainingMs >= 60 * 60 * 1000;
 
   return {
-    title: formatBuildingName(nextUpgrade.name),
+    title: formatBuildingName(nextUpgrade.entity),
     subtitle: formatCountdown(remainingMs),
     progress,
     showProgress: !status.allFree,

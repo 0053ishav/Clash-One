@@ -2,10 +2,13 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { clearAllBuilderUpgrades } from "@/storage/builderUpgrades";
+import { getLastJsonSync, resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
   setNotificationsEnabled,
 } from "@/storage/notificationConfig";
+import { formatTimeAgo } from "@/utils/formatTimeAgo";
+import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import {
   NotificationType,
   cancelAllNotifications,
@@ -18,10 +21,12 @@ import {
   stopSmartWidgetScheduler,
 } from "@/utils/scheduleWidgetRefresh";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -37,9 +42,13 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [builderCount, setLocalBuilderCount] = useState<number>(1);
-  const [showClearModal, setShowClearModal] = useState(false);
   const [notificationsEnabled, setLocalNotificationsEnabled] = useState(false);
   const { profile, updateProfile } = usePlayerProfile();
+
+  const [showResetAccountModal, setShowResetAccountModal] = useState(false);
+  const [showClearUpgradesModal, setShowClearUpgradesModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const lastSync = getLastJsonSync();
 
   useEffect(() => {
     setLocalBuilderCount(profile.normalBuilderCount);
@@ -68,6 +77,132 @@ export default function SettingsScreen() {
         <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
           <Text style={styles.headerTitle}>Settings</Text>
           <Text style={styles.headerSubtitle}>Customize your experience</Text>
+        </View>
+
+        {/* SECTION: Account */}
+        <Text style={styles.sectionTitle}>Account</Text>
+
+        <View style={styles.card}>
+          {/* ===== Identity Summary ===== */}
+          {profile.playerTag ? (
+            <View style={styles.settingRow}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>{profile.playerName}</Text>
+                <Text style={styles.helperText}>
+                  {profile.playerTag}
+                  {profile.expLevel ? ` • Lv ${profile.expLevel}` : ""}
+                </Text>
+              </View>
+              {profile.leagueTierIconUrl && (
+                <Image
+                  source={{ uri: profile.leagueTierIconUrl }}
+                  style={styles.profileLeagueIcon}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+          ) : (
+            <View style={styles.settingRow}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>No Account Connected</Text>
+                <Text style={styles.helperText}>
+                  Import village JSON to sync your account
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* ===== Copy Player Tag ===== */}
+          {profile.playerTag && (
+            <Pressable
+              style={styles.settingRow}
+              onPress={async () => {
+                await Clipboard.setStringAsync(profile.playerTag!);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+            >
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Copy Player Tag</Text>
+                <Text style={styles.helperText}>Tap to copy</Text>
+              </View>
+
+              <Ionicons
+                name={copied ? "checkmark" : "copy-outline"}
+                size={18}
+                color={copied ? "#22c55e" : "#94a3b8"}
+              />
+            </Pressable>
+          )}
+
+          {/* ===== Town Hall & Builders ===== */}
+          {profile.playerTag && (
+            <>
+              <View style={styles.settingRow}>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Town Hall</Text>
+
+                  <Text style={styles.helperText}>
+                    TH {profile.townHallLevel}
+                  </Text>
+                </View>
+
+                <Image
+                  source={getIconByEntityType(
+                    profile.townHallLevel,
+                    "townhall",
+                  )}
+                  style={styles.thIcon}
+                  resizeMode="contain"
+                />
+              </View>
+
+              <View style={styles.settingRow}>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>Builders</Text>
+                  <Text style={styles.helperText}>
+                    {profile.normalBuilderCount} available
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* ===== Last Sync ===== */}
+          {profile.playerTag && (
+            <View style={styles.settingRow}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Last Synced</Text>
+                <Text style={styles.helperText}>
+                  {lastSync ? `${formatTimeAgo(lastSync)} ago` : "Never"}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* ===== Reset Account ===== */}
+          {profile.playerTag && (
+            <Pressable
+              style={[styles.dangerButton, { marginTop: 16 }]}
+              onPress={() => setShowResetAccountModal(true)}
+            >
+              <Ionicons name="refresh-outline" size={18} color="#ef4444" />
+              <Text style={styles.dangerText}>Reset Account</Text>
+            </Pressable>
+          )}
+
+          {/* ===== Add / Change Account ===== */}
+          {profile.playerTag && (
+            <Pressable
+              style={[styles.addAccountButton, { marginTop: 12 }]}
+              onPress={() => router.push("/upload-json")}
+            >
+              <Ionicons name="add-circle-outline" size={18} color="#fbbf24" />
+              <Text style={styles.addAccountText}>
+                {profile.playerTag ? "Change Account" : "Add Account"}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {/* SECTION: Builder Config */}
@@ -236,7 +371,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <Pressable
             style={styles.dangerButton}
-            onPress={() => setShowClearModal(true)}
+            onPress={() => setShowClearUpgradesModal(true)}
           >
             <Ionicons name="trash" size={18} color="#ef4444" />
             <Text style={styles.dangerText}>Clear All Tracked Upgrades</Text>
@@ -274,23 +409,53 @@ export default function SettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Confirmation Modal */}
+      {/* Reset Account Modal */}
       <ConfirmModal
-        visible={showClearModal}
-        title="Clear all data?"
-        message="This will permanently remove all tracked upgrades."
-        confirmText="Clear"
+        visible={showResetAccountModal}
+        title="Reset Account?"
+        message="This will remove your saved player tag and all tracked upgrades."
+        confirmText="Reset"
         destructive
-        onCancel={() => setShowClearModal(false)}
+        onCancel={() => setShowResetAccountModal(false)}
         onConfirm={async () => {
           await clearAllBuilderUpgrades();
           await cancelAllNotifications();
 
-          setShowClearModal(false);
+          updateProfile({
+            playerTag: undefined,
+          });
+
+          resetLastJsonSync();
+
+          setShowResetAccountModal(false);
+
           await requestWidgetUpdate({
             widgetName: "BuilderStatusWidget",
             renderWidget: renderBuilderWidget,
           });
+
+          startSmartWidgetScheduler();
+        }}
+      />
+      {/* Clear Upgrades Only Modal */}
+      <ConfirmModal
+        visible={showClearUpgradesModal}
+        title="Clear All Upgrades?"
+        message="This will remove all tracked upgrades but keep your account."
+        confirmText="Clear"
+        destructive
+        onCancel={() => setShowClearUpgradesModal(false)}
+        onConfirm={async () => {
+          await clearAllBuilderUpgrades();
+          await cancelAllNotifications();
+
+          setShowClearUpgradesModal(false);
+
+          await requestWidgetUpdate({
+            widgetName: "BuilderStatusWidget",
+            renderWidget: renderBuilderWidget,
+          });
+
           startSmartWidgetScheduler();
         }}
       />
@@ -363,6 +528,29 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 
+  addAccountButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "rgba(251, 191, 36, 0.1)",
+    borderWidth: 1.5,
+    borderColor: "#fbbf24",
+  },
+
+  addAccountText: {
+    color: "#fbbf24",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  profileLeagueIcon: {
+    width: 28,
+    height: 28,
+  },
+
   helperText: {
     fontSize: 12,
     color: "#94a3b8",
@@ -425,6 +613,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#f1f5f9",
+  },
+
+  thIcon: {
+    width: 28,
+    height: 28,
   },
 
   testButton: {

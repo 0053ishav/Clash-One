@@ -1,8 +1,11 @@
 import { BuilderUpgrade } from "@/types/upgrade";
 import * as Crypto from "expo-crypto";
+import { getEntity } from "./getEntity";
 
 export async function createBuilderUpgrade(params: {
-  name: string;
+  dataId?: number;
+  entity: string;
+  type?: string;
   days: number;
   hours: number;
   minutes: number;
@@ -20,9 +23,12 @@ export async function createBuilderUpgrade(params: {
 
   const id = Crypto.randomUUID();
 
+  const entityData = params.dataId ? getEntity(params.dataId) : null;
   return {
     id,
-    name: params.name,
+    dataId: params.dataId,
+    entity: entityData?.name ?? params.entity ?? "Custom",
+    type: params.type,
     startTime,
     durationMinutes,
     endTime,

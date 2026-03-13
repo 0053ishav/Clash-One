@@ -62,7 +62,7 @@ export default function GoblinEventBanner({ eventEndsAt, onDismiss }: Props) {
       <View style={styles.leftSection}>
         <View style={styles.iconWrapper}>
           <Image
-            source={require("@/assets/images/gem.png")}
+            source={require("@/assets/images/clash/resources/gem.png")}
             style={{ width: 18, height: 18 }}
             resizeMode="contain"
           />
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#16a34a",
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 30,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,

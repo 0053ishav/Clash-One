@@ -1,4 +1,5 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { cancelBuilderNotification } from "@/services/notifications/builderNotificationService";
@@ -11,16 +12,19 @@ import {
   setGoblinBannerDismissedUntil,
   shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
+import { getLastJsonSync } from "@/storage/jsonSyncStorage";
 import { BuilderUpgrade } from "@/types/upgrade";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import {
   canUseGoblinBuilder,
   getCurrentWorkForHireEventEnd,
   isWorkForHireActive,
 } from "@/utils/goblin";
+import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
@@ -56,6 +60,8 @@ export default function HomeScreen() {
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState<number | null>(null);
+  const [profileSheetVisible, setProfileSheetVisible] = useState(false);
 
   const refreshUpgrades = useCallback(() => {
     setActiveUpgrades(getActiveBuilderUpgrades());
@@ -120,12 +126,20 @@ export default function HomeScreen() {
     }, [refreshUpgrades]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      setLastSync(getLastJsonSync());
+    }, []),
+  );
+
   useEffect(() => {
     const interval = setInterval(refreshUpgrades, 60 * 1000);
     return () => clearInterval(interval);
   }, [refreshUpgrades]);
 
   const { profile } = usePlayerProfile();
+  // console.log("profile: ", profile);
+
   const builderCount = profile.normalBuilderCount;
 
   const { config } = useRemoteConfig();
@@ -135,6 +149,8 @@ export default function HomeScreen() {
   const eventEndsAt = getCurrentWorkForHireEventEnd();
 
   const showBanner = !!eventEndsAt && shouldShowGoblinBanner(eventEndsAt);
+
+  const isStale = lastSync && Date.now() - lastSync > 1000 * 60 * 60 * 12;
 
   const status = getBuilderStatus({
     normalBuilderCount: builderCount,
@@ -214,14 +230,77 @@ export default function HomeScreen() {
           <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
             <View>
               <Text style={styles.headerTitle}>Builder Status</Text>
-              <Text style={styles.headerSubtitle}>Track your upgrades</Text>
-            </View>
-            <View>
-              <Pressable onPress={() => router.push("/upload-json")}>
-                <Ionicons name="sync-sharp" size={22} color="#fff" />
+
+              <Pressable
+                style={styles.profileDropdown}
+                onPress={() => setProfileSheetVisible(true)}
+              >
+                <View style={{ flex: 1 }}>
+                  <View style={styles.profileTopRow}>
+                    <Text style={styles.profileName}>
+                      {profile.playerTag
+                        ? profile.playerName
+                        : "No Profile Synced"}
+                    </Text>
+
+                    {/* Current League Icon */}
+                    {profile.leagueTierIconUrl && (
+                      <Image
+                        source={{ uri: profile.leagueTierIconUrl }}
+                        style={styles.leagueIcon}
+                      />
+                    )}
+                  </View>
+
+                  {/* Secondary Line */}
+                  {profile.playerTag && (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <View style={styles.leagueIcon}>
+                        <Image
+                          source={getIconByEntityType(
+                            profile.townHallLevel,
+                            "townhall",
+                          )}
+                          style={styles.leagueIcon}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <Text style={styles.profileSub}>
+                        TH{profile.townHallLevel}
+                        {typeof profile.trophies === "number"
+                          ? ` • ${profile.trophies} 🏆`
+                          : ""}
+                      </Text>
+
+                      {/* EXP Level */}
+                      {typeof profile.expLevel === "number" && (
+                        <Text style={styles.profileSub}>
+                          Lv {profile.expLevel}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+
+                <Ionicons name="chevron-down" size={16} color="#94a3b8" />
               </Pressable>
             </View>
+            <View style={styles.sync}>
+              <Pressable onPress={() => router.push("/upload-json")}>
+                <Ionicons
+                  name="sync-sharp"
+                  size={22}
+                  color={isStale ? "#fbbf24" : "#fff"}
+                />
+              </Pressable>
+              {lastSync && (
+                <Text style={styles.syncText}>
+                  Synced {formatTimeAgo(lastSync)} ago
+                </Text>
+              )}
+            </View>
           </View>
+
           {/* Premium Status Card */}
           <View style={styles.statusCardContainer}>
             <View style={styles.statusCard}>
@@ -376,7 +455,7 @@ export default function HomeScreen() {
 
                           <View style={styles.upgradeNameSection}>
                             <Text style={styles.upgradeName}>
-                              {formatBuildingName(u.name)}
+                              {formatBuildingName(u.entity)}
                             </Text>
 
                             {/* Levels Badge */}
@@ -495,7 +574,7 @@ export default function HomeScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
 
-            <Text style={styles.modalTitle}>{selectedUpgrade?.name}</Text>
+            <Text style={styles.modalTitle}>{selectedUpgrade?.entity}</Text>
 
             <View style={styles.modalDivider} />
 
@@ -512,7 +591,14 @@ export default function HomeScreen() {
                 });
               }}
             >
-              <Ionicons name="pencil" size={18} color="#fbbf24" />
+              <View
+                style={[
+                  styles.actionIcon,
+                  { backgroundColor: "rgba(251, 191, 36, 0.15)" },
+                ]}
+              >
+                <Ionicons name="pencil" size={18} color="#fbbf24" />
+              </View>
               <Text style={styles.modalButtonText}>Edit Upgrade</Text>
             </Pressable>
 
@@ -536,7 +622,15 @@ export default function HomeScreen() {
                 setActionModalVisible(false);
               }}
             >
-              <Ionicons name="trash" size={18} color="#ef4444" />
+              <View
+                style={[
+                  styles.actionIcon,
+                  { backgroundColor: "rgba(248, 113, 113, 0.15)" },
+                ]}
+              >
+                <Ionicons name="trash" size={18} color="#ef4444" />
+              </View>
+
               <Text style={[styles.modalButtonText, styles.modalButtonDelete]}>
                 Delete Upgrade
               </Text>
@@ -554,6 +648,28 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      {/* Profile Dropdown Sheet */}
+      <ProfileDropdownSheet
+        visible={profileSheetVisible}
+        onClose={() => {
+          console.log("OPENING PROFILE SHEET");
+          setProfileSheetVisible(false);
+        }}
+        profile={profile}
+        onOpenProfile={() => {
+          setProfileSheetVisible(false);
+          router.push("/profile");
+        }}
+        onSync={() => {
+          setProfileSheetVisible(false);
+          router.push("/upload-json");
+        }}
+        onSetting={() => {
+          setProfileSheetVisible(false);
+          router.push("/(tabs)/settings");
+        }}
+      />
 
       {/* Floating Action Button */}
       <Pressable
@@ -678,6 +794,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#94a3b8",
     fontWeight: "500",
+  },
+
+  profileDropdown: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  profileText: {
+    fontSize: 13,
+    color: "#94a3b8",
+    fontWeight: "600",
+  },
+
+  profileTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  profileName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#fff",
+    marginRight: 6,
+  },
+
+  profileSub: {
+    fontSize: 13,
+    color: "#94a3b8",
+  },
+
+  leagueIcon: {
+    width: 18,
+    height: 18,
+  },
+
+  sync: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+  },
+
+  syncText: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "500",
+    marginTop: 4,
   },
 
   statusCardContainer: {
@@ -1061,7 +1223,7 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backgroundColor: "rgba(0, 0, 0, 0)",
     justifyContent: "flex-end",
   },
 
@@ -1116,6 +1278,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fbbf24",
     flex: 1,
+  },
+
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   modalButtonDelete: {

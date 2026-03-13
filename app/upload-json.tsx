@@ -1,5 +1,10 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { importVillageJson } from "@/services/jsonImport/jsonImportService";
+import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
+import { getNotificationsEnabled } from "@/storage/notificationConfig";
+import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -11,6 +16,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { requestWidgetUpdate } from "react-native-android-widget";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UploadJsonScreen() {
@@ -18,6 +24,15 @@ export default function UploadJsonScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [shouldReturnHome, setShouldReturnHome] = useState(false);
+
+  const refreshWidget = async () => {
+    await requestWidgetUpdate({
+      widgetName: "BuilderStatusWidget",
+      renderWidget: renderBuilderWidget,
+    });
+  };
 
   const openClashSettings = async () => {
     const url = "https://link.clashofclans.com/en/?action=OpenMoreSettings";
@@ -25,7 +40,7 @@ export default function UploadJsonScreen() {
     const supported = await Linking.canOpenURL(url);
 
     if (supported) {
-      router.push("https://link.clashofclans.com/en/?action=OpenMoreSettings");
+      await Linking.openURL(url);
     } else {
       setModalTitle("Unable to open Clash of Clans");
       setModalMessage(
@@ -35,9 +50,82 @@ export default function UploadJsonScreen() {
     }
   };
 
-  const handlePasteVillageData = () => {
-    // You will implement clipboard read + parse here
-    console.log("Paste Village Data pressed");
+  const handlePasteVillageData = async () => {
+    if (isImporting) return;
+
+    try {
+      setIsImporting(true);
+
+      const clipboardText = await Clipboard.getStringAsync();
+
+      if (!clipboardText?.trim()) {
+        setModalTitle("Clipboard Empty");
+        setModalMessage(
+          "No village data found. Please copy data from the game's settings first.",
+        );
+        setModalVisible(true);
+        return;
+      }
+
+      const result = await importVillageJson(clipboardText);
+
+      if (result.status === "NO_ACTIVE_BUILDERS") {
+        await refreshWidget();
+
+        setModalTitle("Village Synced");
+        setModalMessage(
+          "No active builders found. All builders are currently free.",
+        );
+        setShouldReturnHome(true);
+        setModalVisible(true);
+        return;
+      }
+
+      if (result.status === "SUCCESS") {
+        await refreshWidget();
+
+        if (getNotificationsEnabled()) {
+          await rescheduleAllBuilderNotifications();
+        }
+
+        setModalTitle(
+          result.skippedExpired > 0
+            ? "Village Synced (Partial)"
+            : "Village Synced",
+        );
+
+        setModalMessage(
+          result.skippedExpired > 0
+            ? `${result.activeCount} upgrades synced.\n${result.skippedExpired} expired upgrades were ignored.`
+            : `${result.activeCount} upgrades synced.`,
+        );
+        setShouldReturnHome(true);
+        setModalVisible(true);
+        return;
+      }
+    } catch (error: any) {
+      if (error.message === "INVALID_JSON") {
+        setModalTitle("Invalid Format");
+        setModalMessage(
+          "Clipboard content is not valid JSON. Make sure you copied the correct village export.",
+        );
+      } else if (error.message === "INVALID_STRUCTURE") {
+        setModalTitle("Invalid Village Data");
+        setModalMessage(
+          "This does not appear to be valid Clash of Clans export data.",
+        );
+      } else if (error.message === "TAG_MISMATCH") {
+        setModalTitle("Different Player Detected");
+        setModalMessage("This export belongs to a different player account.");
+      } else {
+        setModalTitle("Import Failed");
+        setModalMessage("Something went wrong while syncing your village.");
+      }
+      setShouldReturnHome(false);
+      setModalVisible(true);
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (
@@ -116,14 +204,18 @@ export default function UploadJsonScreen() {
           {/* Action Buttons */}
           <View style={styles.buttonGroup}>
             <Pressable
+              disabled={isImporting}
               style={({ pressed }) => [
                 styles.uploadButton,
                 pressed && styles.uploadButtonPressed,
+                { opacity: isImporting ? 0.6 : 1 },
               ]}
               onPress={handlePasteVillageData}
             >
               <Ionicons name="clipboard-outline" size={20} color="#0f172a" />
-              <Text style={styles.uploadButtonText}>Paste Village Data</Text>
+              <Text style={styles.uploadButtonText}>
+                {isImporting ? "Syncing..." : "Paste Village Data"}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -152,9 +244,15 @@ export default function UploadJsonScreen() {
         title={modalTitle}
         message={modalMessage}
         confirmText="OK"
-        cancelText=""
-        onCancel={() => setModalVisible(false)}
-        onConfirm={() => setModalVisible(false)}
+        cancelText={shouldReturnHome ? "Back to Home" : ""}
+        onCancel={() => {
+          setModalVisible(false);
+          if (shouldReturnHome) router.back();
+        }}
+        onConfirm={() => {
+          setModalVisible(false);
+          if (shouldReturnHome) router.back();
+        }}
       />
     </SafeAreaView>
   );

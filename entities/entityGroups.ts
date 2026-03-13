@@ -1,0 +1,59 @@
+export const SUPER_TROOPS = [
+  "Super Barbarian",
+  "Super Archer",
+  "Sneaky Goblin",
+  "Super Wall Breaker",
+  "Super Giant",
+  "Rocket Balloon",
+  "Super Wizard",
+  "Super Dragon",
+  "Inferno Dragon",
+  "Super Minion",
+  "Super Valkyrie",
+  "Super Witch",
+  "Ice Hound",
+  "Super Bowler",
+  "Super Miner",
+  "Super Yeti",
+  "Super Hog Rider",
+];
+
+export const PETS = [
+  "L.A.S.S.I",
+  "Electro Owl",
+  "Mighty Yak",
+  "Unicorn",
+  "Frosty",
+  "Diggy",
+  "Poison Lizard",
+  "Phoenix",
+  "Spirit Fox",
+  "Angry Jelly",
+  "Sneezy",
+  "Greedy Raven",
+];
+
+export const SIEGE_MACHINES = [
+  "Wall Wrecker",
+  "Battle Blimp",
+  "Stone Slammer",
+  "Siege Barracks",
+  "Log Launcher",
+  "Flame Flinger",
+  "Battle Drill",
+  "Troop Launcher",
+];
+
+export const BUILDER_BASE_TROOPS = [
+  "Raged Barbarian",
+  "Sneaky Archer",
+  "Boxer Giant",
+  "Beta Minion",
+  "Bomber",
+  "Cannon Cart",
+  "Night Witch",
+  "Drop Ship",
+  "Power P.E.K.K.A",
+  "Hog Glider",
+  "Electrofire Wizard",
+];

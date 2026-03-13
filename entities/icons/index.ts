@@ -1,0 +1,10 @@
+export { default as buildingIcons } from "./buildingIcons";
+export { default as guardianIcons } from "./guardianIcons";
+export { default as helperIcons } from "./helperIcons";
+export { default as heroIcons } from "./heroIcons";
+export { default as petIcons } from "./petIcons";
+export { default as siegeIcons } from "./siegeIcons";
+export { default as spellIcons } from "./spellIcons";
+export { default as townhallIcons } from "./townHallIcons";
+export { default as trapIcons } from "./trapIcons";
+export { default as troopIcons } from "./troopIcons";

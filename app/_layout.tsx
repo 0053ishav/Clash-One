@@ -1,3 +1,4 @@
+import { initDatabase } from "@/db/initDatabase";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
@@ -7,6 +8,7 @@ import { useEffect } from "react";
 
 export default function RootLayout() {
   useEffect(() => {
+    initDatabase();
     startSmartWidgetScheduler();
   }, []);
 

@@ -50,15 +50,16 @@
               "label": "Builder Tracker",
               "description": "Track your next free builder with live countdown and progress.",
               "minWidth": "110dp",
-              "minHeight": "110dp",
+              "minHeight": "40dp",
               "targetCellWidth": 2,
-              "targetCellHeight": 2,
+              "targetCellHeight": 1,
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000
             }
           ]
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,

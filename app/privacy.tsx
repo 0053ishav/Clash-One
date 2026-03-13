@@ -135,16 +135,6 @@ export default function PrivacyScreen() {
                   Don&apos;t sell or trade personal information
                 </Text>
               </View>
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.bulletText}>
-                  No analytics or tracking software
-                </Text>
-              </View>
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.bulletText}>No ads or ad networks</Text>
-              </View>
             </View>
           </View>
 

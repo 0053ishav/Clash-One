@@ -7,4 +7,5 @@ export const STORAGE_KEYS = {
   NOTIFICATION_KEY: "notifications_enabled",
   GOBLIN_BANNER_DISMISSED_UNTIL: "goblin_banner_dismissed_until",
   REMOTE_CONFIG: "remote_config",
+  LAST_JSON_SYNC: "last_json_sync",
 };

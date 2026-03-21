@@ -1,6 +1,6 @@
 import EntityCard from "@/components/EntityCard";
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { fetchFullPlayer } from "@/services/clashApi";
-import { getPlayerProfile } from "@/storage/playerProfile";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { getUpgradeStatus } from "@/utils/progression/getUpgradeStatus";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,7 +35,7 @@ type TroopCardProps = {
 export default function TroopsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const profile = getPlayerProfile();
+  const { profile } = usePlayerProfile();
 
   const [troops, setTroops] = useState<Troop[]>([]);
   const [loading, setLoading] = useState(true);

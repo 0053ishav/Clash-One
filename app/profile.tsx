@@ -3,7 +3,7 @@ import BattleStatsGrid from "@/components/Profile/BattleStatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";
-import { getPlayerProfile } from "@/storage/playerProfile";
+import { getActiveAccount } from "@/storage/activeAccount";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -21,24 +21,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const profile = getPlayerProfile();
-
   const [data, setData] = useState<PlayerFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const tag = await getActiveAccount();
+      setActiveTag(tag!);
+    })();
+  }, []);
+
   const loadProfile = async () => {
     try {
       setLoading(true);
       setError(null);
-      if (!profile.playerTag) {
+      if (!activeTag) {
         setError("No player tag found");
         return;
       }
 
-      const playerData = await fetchFullPlayer(profile.playerTag);
+      const playerData = await fetchFullPlayer(activeTag);
+
       console.log("full player data: ", playerData);
+
       setData(playerData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load profile");
@@ -50,7 +59,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     loadProfile();
-  }, [profile.playerTag]);
+  }, []);
 
   const onRefresh = async () => {
     setRefreshing(true);

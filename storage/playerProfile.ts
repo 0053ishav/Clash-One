@@ -176,7 +176,7 @@ export function syncProfileFromApi(api: ClashApiPlayer) {
         clanCapitalGold:
             api.clanCapitalContributions ?? profile.clanCapitalGold,
 
-        role: api.role ?? profile.role,
+        role: api.role ? (api.role !== "admin" ? api.role : "member") : profile.role,
 
         clanName: api.clan?.name ?? profile.clanName,
         clanTag: api.clan?.tag ?? profile.clanTag,

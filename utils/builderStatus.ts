@@ -1,4 +1,4 @@
-import { BuilderUpgrade } from "../types/upgrade";
+import { BuilderUpgrade } from "@/types/upgrade";
 
 export function getBuilderStatus(params: {
   normalBuilderCount: number;

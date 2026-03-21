@@ -21,7 +21,7 @@ export interface EntityDefinition {
 }
 
 
-export const ENTITY_MAP:  Record<number, EntityDefinition> = {
+export const ENTITY_MAP: Record<number, EntityDefinition> = {
     // ---- Home Village Buildings ---------------------
     1000000: { name: "Army Camp", type: "building", village: "home" },
     1000001: { name: "Town Hall", type: "building", village: "home" },
@@ -147,7 +147,7 @@ export const ENTITY_MAP:  Record<number, EntityDefinition> = {
     4000110: { name: "Root Rider", type: "troop", village: "home" },
     4000132: { name: "Thrower", type: "troop", village: "home" },
     4000177: { name: "Meteor Golem", type: "troop", village: "home" },
-    
+
     4000010: { name: "Minion", type: "troop", village: "home" },
     4000011: { name: "Hog Rider", type: "troop", village: "home" },
     4000012: { name: "Valkyrie", type: "troop", village: "home" },
@@ -195,7 +195,7 @@ export const ENTITY_MAP:  Record<number, EntityDefinition> = {
     26000053: { name: "Recall Spell", type: "spell", village: "home" },
     26000098: { name: "Revive Spell", type: "spell", village: "home" },
     26000120: { name: "Totem Spell", type: "spell", village: "home" },
-    
+
     26000009: { name: "Poison Spell", type: "spell", village: "home" },
     26000010: { name: "Earthquake Spell", type: "spell", village: "home" },
     26000011: { name: "Haste Spell", type: "spell", village: "home" },
@@ -271,4 +271,16 @@ for (const [id, entity] of Object.entries(ENTITY_MAP)) {
 export function getEntityId(name: string, village: Village = "home") {
     const normalized = name.trim();
     return ENTITY_LOOKUP[normalized]?.[village] ?? null;
+}
+
+export function getEntityTypeByDataId(dataId?: number): EntityType | undefined {
+    if (!dataId) return undefined;
+    const entity = ENTITY_MAP[dataId];
+
+    if (!entity) {
+        console.warn("Unknown entity dataId:", dataId);
+        return undefined;
+    }
+
+    return entity.type;
 }

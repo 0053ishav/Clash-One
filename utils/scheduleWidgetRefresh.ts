@@ -1,5 +1,6 @@
-import { getActiveBuilderUpgrades } from "@/storage/builderUpgrades";
-import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
+import { getActiveBuilderUpgrades } from "@/services/builderService";
+import { getPlayerProfile } from "@/storage/playerProfile";
+import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { requestWidgetUpdate } from "react-native-android-widget";
 
 let refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -7,6 +8,7 @@ let refreshInterval: ReturnType<typeof setInterval> | null = null;
 function getRefreshInterval(remainingMs: number): number {
   const oneMinute = 60 * 1000;
   const oneHour = 60 * oneMinute;
+
 
   if (remainingMs >= 6 * oneHour) return 30 * oneMinute;
   if (remainingMs >= 1 * oneHour) return 15 * oneMinute;
@@ -17,8 +19,11 @@ function getRefreshInterval(remainingMs: number): number {
 export function startSmartWidgetScheduler() {
   stopSmartWidgetScheduler();
 
-  refreshInterval = setInterval(() => {
-    const active = getActiveBuilderUpgrades();
+  refreshInterval = setInterval(async () => {
+    const profile = getPlayerProfile();
+    const tag = profile.playerTag!;
+
+    const active = await getActiveBuilderUpgrades(tag);
 
     if (!active.length) {
       stopSmartWidgetScheduler();

@@ -1,5 +1,6 @@
-import { getActiveBuilderUpgrades } from "@/storage/builderUpgrades";
+import { getActiveBuilderUpgrades } from "@/services/builderService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
+import { getPlayerProfile } from "@/storage/playerProfile";
 import {
   cancelTimedNotification,
   NotificationType,
@@ -35,12 +36,14 @@ export async function cancelBuilderNotification(id: string) {
 }
 
 export async function rescheduleAllBuilderNotifications() {
-  const active = getActiveBuilderUpgrades();
+   const profile  = getPlayerProfile();
+  const tag = profile.playerTag!; 
+  const active = await getActiveBuilderUpgrades(tag);
 
   for (const upgrade of active) {
     await scheduleBuilderNotification(
       upgrade.id,
-      upgrade.name,
+      upgrade.entity,
       upgrade.endTime
     );
   }

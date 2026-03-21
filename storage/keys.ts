@@ -1,11 +1,14 @@
 export const STORAGE_KEYS = {
   PLAYER_PROFILE: "player_profile",
-  BUILDER_UPGRADES: "builder_upgrades",
+  // BUILDER_UPGRADES: "builder_upgrades",
   BUILDER_COUNT: "builder_count",
-  LAB_UPGRADE: "lab_upgrade",
+  // LAB_UPGRADE: "lab_upgrade",
   ONBOARDING_KEY:"onboarding_complete",
   NOTIFICATION_KEY: "notifications_enabled",
   GOBLIN_BANNER_DISMISSED_UNTIL: "goblin_banner_dismissed_until",
   REMOTE_CONFIG: "remote_config",
   LAST_JSON_SYNC: "last_json_sync",
+  ACTIVE_KEY: "active_account",
+  WIDGET_PREFS: "widget_prefs",
+  WIDGET_CACHE: "widget_cache",
 };

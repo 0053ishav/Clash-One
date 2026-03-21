@@ -2,7 +2,8 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
-import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
+import { cancelAllNotifications } from "@/utils/notificationEngine";
+import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
@@ -16,7 +17,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { requestWidgetUpdate } from "react-native-android-widget";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function UploadJsonScreen() {
@@ -28,10 +28,7 @@ export default function UploadJsonScreen() {
   const [shouldReturnHome, setShouldReturnHome] = useState(false);
 
   const refreshWidget = async () => {
-    await requestWidgetUpdate({
-      widgetName: "BuilderStatusWidget",
-      renderWidget: renderBuilderWidget,
-    });
+    emitWidgetUpdate();
   };
 
   const openClashSettings = async () => {
@@ -66,7 +63,7 @@ export default function UploadJsonScreen() {
         setModalVisible(true);
         return;
       }
-
+      await cancelAllNotifications();
       const result = await importVillageJson(clipboardText);
 
       if (result.status === "NO_ACTIVE_BUILDERS") {
@@ -104,6 +101,8 @@ export default function UploadJsonScreen() {
         return;
       }
     } catch (error: any) {
+      console.error("IMPORT ERROR:", error);
+
       if (error.message === "INVALID_JSON") {
         setModalTitle("Invalid Format");
         setModalMessage(
@@ -114,9 +113,6 @@ export default function UploadJsonScreen() {
         setModalMessage(
           "This does not appear to be valid Clash of Clans export data.",
         );
-      } else if (error.message === "TAG_MISMATCH") {
-        setModalTitle("Different Player Detected");
-        setModalMessage("This export belongs to a different player account.");
       } else {
         setModalTitle("Import Failed");
         setModalMessage("Something went wrong while syncing your village.");

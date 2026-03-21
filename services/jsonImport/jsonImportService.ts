@@ -1,10 +1,10 @@
+import { addAccount, replaceBuilders } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
-import { replaceAllBuilderUpgrades } from "@/storage/builderUpgrades";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
-import { getPlayerProfile, savePlayerProfile, syncProfileFromApi } from "@/storage/playerProfile";
+import { getPlayerProfile, savePlayerProfile } from "@/storage/playerProfile";
+import { useAccountStore } from "@/stores/accountStore";
 import { BuilderUpgrade } from "@/types/upgrade";
 import { getEntity } from "@/utils/getEntity";
-import { cancelAllNotifications } from "@/utils/notificationEngine";
 import { randomUUID } from "expo-crypto";
 
 type RawExport = {
@@ -39,7 +39,11 @@ function validateJson(data: any) {
     throw new Error("INVALID_STRUCTURE");
   }
 
-  if (!Array.isArray(data.buildings)) {
+  if (
+    !Array.isArray(data.buildings) &&
+    !Array.isArray(data.traps) &&
+    !Array.isArray(data.heroes)
+  ) {
     throw new Error("INVALID_STRUCTURE");
   }
 }
@@ -58,6 +62,8 @@ export async function importVillageJson(
 ): Promise<ImportResult> {
   let parsed: RawExport;
 
+  const switchAccountStore = useAccountStore.getState().switchAccount;
+  const { importJsonData } = useAccountStore.getState();
   // 1️⃣ Parse JSON safely
   try {
     parsed = JSON.parse(rawText);
@@ -70,31 +76,28 @@ export async function importVillageJson(
   console.log("📥 Import JSON tag:", parsed.tag);
 
   const profile = getPlayerProfile();
-
-  // 2️⃣ Prevent cross-account contamination
-  if (profile.playerTag && profile.playerTag !== parsed.tag) {
-    throw new Error("TAG_MISMATCH");
-  }
-
-  // 3️⃣ First-time sync → store player tag and api call for user profile data sync
-  // let updatedProfile = profile;
-
-  if (!profile.playerTag) {
-    savePlayerProfile({
-      ...profile,
-      playerTag: parsed.tag,
-    });
-  }
+  const setLastSync = useAccountStore.getState().setLastSync;
 
   // API sync
   try {
     console.log("🚀 Calling Clash API...");
     const apiData = await fetchPlayerFromApi(parsed.tag);
-    console.log("🎯 API returned:", apiData);
+    // console.log("🎯 API returned:", apiData);
 
-    syncProfileFromApi(apiData);
+    await addAccount(
+      parsed.tag,
+      apiData?.name ?? "Chief",
+      "#fbbf24",
+      apiData?.townHallLevel ?? 1,
+      1
+    )
+
+    await switchAccountStore(parsed.tag);
+
   } catch {
   }
+
+
 
   const exportTimestampMs = parsed.timestamp * 1000;
   const now = Date.now();
@@ -107,8 +110,9 @@ export async function importVillageJson(
   ]
   if (!activeBuilderTasks.length) {
     // No active upgrades → clear storage
-    replaceAllBuilderUpgrades([]);
-    setLastJsonSync(Date.now());
+    await replaceBuilders(parsed.tag, []);
+    setLastSync(parsed.tag, now)
+    setLastJsonSync(parsed.tag, Date.now());
 
     return { status: "NO_ACTIVE_BUILDERS" };
   }
@@ -129,7 +133,7 @@ export async function importVillageJson(
   for (const building of activeBuilderTasks) {
     const remainingMsAtExport = (building.timer ?? 0) * 1000;
     const realEndTime = exportTimestampMs + remainingMsAtExport;
-    const remainingNow = realEndTime - now;
+    const remainingNow = Math.max(0, realEndTime - now);
 
     // If already completed by now → ignore
     if (remainingNow <= 0) {
@@ -145,12 +149,14 @@ export async function importVillageJson(
     });
   }
 
+
   if (!validUpgrades.length) {
-    replaceAllBuilderUpgrades([]);
-    setLastJsonSync(Date.now());
+    await replaceBuilders(parsed.tag, []);
+    setLastSync(parsed.tag, now);
+    setLastJsonSync(parsed.tag, now);
     return { status: "NO_ACTIVE_BUILDERS" };
   }
- 
+
   /**
    * 6️⃣ Determine Real Builder Capacity
    *
@@ -218,18 +224,21 @@ export async function importVillageJson(
     //   continue;
     // }
 
-     if (item.isGoblin) {
-    // 👈 JSON explicitly tells us this is the Goblin slot
-    builderSlot = "G";
-  } else if (normalUsed < updatedBuilderCount) {
-    builderSlot = normalUsed;
-    normalUsed++;
-  } else {
-    continue;
-  }
+    if (item.isGoblin) {
+      // 👈 JSON explicitly tells us this is the Goblin slot
+      builderSlot = "G";
+    } else if (normalUsed < updatedBuilderCount) {
+      builderSlot = normalUsed;
+      normalUsed++;
+    } else {
+      continue;
+    }
     const entity = getEntity(item.data);
 
-    if (!entity) continue;
+    if (!entity) {
+      console.warn("Unknown entity: ", item.data);
+      continue
+    };
 
     newUpgrades.push({
       id: randomUUID(),
@@ -256,9 +265,16 @@ export async function importVillageJson(
    * 8️⃣ Replace All Stored Upgrades
    * JSON is authoritative → overwrite manual entries
    */
-  await cancelAllNotifications();
-  replaceAllBuilderUpgrades(newUpgrades);
-  setLastJsonSync(Date.now());
+  console.log("Writing builders:", newUpgrades.length);
+
+  // await replaceBuilders(parsed.tag, newUpgrades);
+
+  // rescheduleAllBuilderNotifications();
+
+  // setLastSync(parsed.tag, now);
+
+  await importJsonData(parsed.tag, newUpgrades);
+  setLastJsonSync(parsed.tag, now);
 
   return {
     status: "SUCCESS",

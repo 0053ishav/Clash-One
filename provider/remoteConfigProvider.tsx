@@ -1,8 +1,7 @@
 import {
-    __enableGoblinForTesting,
-    getGoblinRemoteConfig,
-    initRemoteConfig,
-    refreshRemoteConfig,
+  getGoblinRemoteConfig,
+  initRemoteConfig,
+  refreshRemoteConfig
 } from "@/services/remoteConfig/remoteConfigService";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
@@ -35,9 +34,9 @@ export function RemoteConfigProvider({
     const boot = async () => {
       await initRemoteConfig();
 
-      if (__DEV__) {
-        __enableGoblinForTesting();
-      }
+      // if (__DEV__) {
+      //   __enableGoblinForTesting();
+      // }
 
       setConfig(getGoblinRemoteConfig());
     };

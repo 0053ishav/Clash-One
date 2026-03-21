@@ -1,16 +1,45 @@
-import { getActiveBuilderUpgrades } from "@/storage/builderUpgrades";
-import { getPlayerProfile } from "@/storage/playerProfile";
+import { getEntityTypeByDataId } from "@/data/entityMap";
+import { getActiveBuilderUpgrades } from "@/services/builderService";
+import { useAccountStore } from "@/stores/accountStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { isWorkForHireActive } from "@/utils/goblin";
 
-export function getBuilderWidgetData() {
-  const activeUpgrades = getActiveBuilderUpgrades();
+export async function getBuilderWidgetData(inputTag?: string) {
+  const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
+    useAccountStore.getState();
 
-  const playerProfile = getPlayerProfile();
-  const builderCount = playerProfile.normalBuilderCount;
+  const tag = inputTag ?? widgetPrefs.selectedAccountTag ?? activeTag;
+
+  if (!tag) {
+    return {
+      title: "Builders",
+      subtitle: "No account selected",
+      progress: 0,
+      showProgress: false,
+      builderCountText: "Tap to setup",
+    };
+  }
+
+  const updatedAt = lastJsonSyncMap[tag] ?? null;
+
+  const account = accounts.find((a) => a.tag === tag);
+
+  if (!account) {
+    return {
+      title: "Builders",
+      subtitle: "Open app to sync",
+      progress: 0,
+      showProgress: false,
+      builderCountText: "No account",
+    };
+  }
+
+  const activeUpgrades = await getActiveBuilderUpgrades(tag);
+
+  const builderCount = account.builderCount;
   const goblinBuilder = isWorkForHireActive();
 
   const status = getBuilderStatus({
@@ -26,35 +55,52 @@ export function getBuilderWidgetData() {
       subtitle: "All builders free",
       progress: 0,
       showProgress: false,
-      builderCountText: `${status.freeBuilders} / ${status.maxBuilders} builders free`,
+      builderCountText: `${status.freeBuilders} / ${status.maxBuilders} free`,
+      color: account.color,
+      accountInitials: account.name.slice(0, 2).toUpperCase(),
+      updatedAt,
     };
   }
 
-  // Find next finishing upgrade safely
-  const nextUpgrade = activeUpgrades.reduce((prev, curr) =>
-    prev.endTime < curr.endTime ? prev : curr,
-  );
+  const sorted = [...activeUpgrades].sort((a, b) => a.endTime - b.endTime);
 
-  const remainingMs = Math.max(nextUpgrade.endTime - Date.now(), 0);
-  const totalMs = nextUpgrade.endTime - nextUpgrade.startTime;
+  const currenUpgrade = sorted[0];
+  const nextUpgrade = sorted[1];
+
+  const type = getEntityTypeByDataId(currenUpgrade.dataId);
+
+  const remainingMs = Math.max(currenUpgrade.endTime - Date.now(), 0);
+  const totalMs = currenUpgrade.endTime - currenUpgrade.startTime;
 
   const progress =
     totalMs > 0
-      ? calculateProgress(nextUpgrade.startTime, nextUpgrade.endTime)
+      ? calculateProgress(currenUpgrade.startTime, currenUpgrade.endTime)
       : 0;
 
-  // Only show progress if upgrade is 1 hour or longer
-  // const showProgress = remainingMs >= 60 * 60 * 1000;
+  const builderLabel =
+    currenUpgrade.builderSlot === "G"
+      ? "Goblin"
+      : `B${currenUpgrade.builderSlot + 1}`;
 
   return {
-    title: formatBuildingName(nextUpgrade.entity),
+    title: `${builderLabel} - ${formatBuildingName(currenUpgrade.entity)}`,
     subtitle: formatCountdown(remainingMs),
     progress,
     showProgress: !status.allFree,
     levelText:
-      nextUpgrade.currentLevel !== undefined &&
-      nextUpgrade.nextLevel !== undefined
-        ? `Lv ${nextUpgrade.currentLevel} → ${nextUpgrade.nextLevel}`
+      currenUpgrade.currentLevel !== undefined &&
+      currenUpgrade.nextLevel !== undefined
+        ? `Lv ${currenUpgrade.currentLevel} → ${currenUpgrade.nextLevel}`
         : undefined,
+    builderCountText: `${status.freeBuilders} / ${status.maxBuilders} free`,
+    nextUpgradeText: nextUpgrade
+      ? `${formatBuildingName(nextUpgrade.entity)} • ${formatCountdown(nextUpgrade.endTime - Date.now())}`
+      : "No next upgrade",
+    dataId: currenUpgrade.dataId,
+    type,
+    color: account.color,
+    accountInitials: account.name.slice(0, 2).toUpperCase(),
+    remainingMs: remainingMs,
+    updatedAt,
   };
 }

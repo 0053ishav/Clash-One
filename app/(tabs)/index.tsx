@@ -1,19 +1,19 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
 import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
-import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { getEntityTypeByDataId } from "@/data/entityMap";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
-import { cancelBuilderNotification } from "@/services/notifications/builderNotificationService";
-import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   deleteBuilderUpgrade,
   getActiveBuilderUpgrades,
-} from "@/storage/builderUpgrades";
+} from "@/services/builderService";
+import { cancelBuilderNotification } from "@/services/notifications/builderNotificationService";
+import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   setGoblinBannerDismissedUntil,
   shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
-import { getLastJsonSync } from "@/storage/jsonSyncStorage";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { useAccountStore } from "@/stores/accountStore";
+import { BuilderUpgrade, BuilderWidgetData } from "@/types/upgrade";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
@@ -25,9 +25,8 @@ import {
   isWorkForHireActive,
 } from "@/utils/goblin";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
-import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
-import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
+import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -43,10 +42,6 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  requestWidgetUpdate,
-  WidgetPreview,
-} from "react-native-android-widget";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
@@ -60,16 +55,46 @@ export default function HomeScreen() {
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
-  const [lastSync, setLastSync] = useState<number | null>(null);
+
   const [profileSheetVisible, setProfileSheetVisible] = useState(false);
 
-  const refreshUpgrades = useCallback(() => {
-    setActiveUpgrades(getActiveBuilderUpgrades());
-  }, []);
+  const [data, setData] = useState<BuilderWidgetData>({
+    title: "Builders",
+    subtitle: "All builders free",
+    progress: 0,
+    showProgress: false,
+  });
+
+  const loadAccounts = useAccountStore((s) => s.loadAccounts);
+  const activeTag = useAccountStore((s) => s.activeTag);
+  const profile = useAccountStore((s) => s.profile);
+  const isLoadingProfile = useAccountStore((s) => s.isLoadingProfile);
+  const loadLastSync = useAccountStore((s) => s.loadLastSync);
+  const lastJsonSyncMap = useAccountStore((s) => s.lastJsonSyncMap);
+  const lastSync = activeTag ? lastJsonSyncMap[activeTag] : null;
+
+  const accounts = useAccountStore.getState().accounts;
+
+  const account = accounts.find((a) => a.tag === activeTag);
+
+  const color = account?.color ?? "#fbbf24";
+  const builderCount = account?.builderCount ?? 0;
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAccounts();
+      loadLastSync();
+    }, []),
+  );
+
+  const refreshUpgrades = useCallback(async () => {
+    if (!activeTag) return;
+    setActiveUpgrades(await getActiveBuilderUpgrades(activeTag));
+  }, [activeTag]);
 
   useEffect(() => {
-    refreshUpgrades();
-  }, [refreshUpgrades]);
+    if (activeTag) refreshUpgrades();
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -105,10 +130,7 @@ export default function HomeScreen() {
 
       deleteBuilderUpgrade(completedId);
 
-      await requestWidgetUpdate({
-        widgetName: "BuilderStatusWidget",
-        renderWidget: renderBuilderWidget,
-      });
+      emitWidgetUpdate();
 
       startSmartWidgetScheduler();
 
@@ -118,7 +140,21 @@ export default function HomeScreen() {
     return () => clearTimeout(timeout);
   }, [completedId]);
 
-  const data = getBuilderWidgetData();
+  useEffect(() => {
+    (async () => {
+      try {
+        const widgetData = await getBuilderWidgetData();
+        setData(widgetData);
+      } catch {
+        setData({
+          title: "Builders",
+          subtitle: "Preview unavailable",
+          progress: 0,
+          showProgress: false,
+        });
+      }
+    })();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -126,23 +162,57 @@ export default function HomeScreen() {
     }, [refreshUpgrades]),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      setLastSync(getLastJsonSync());
-    }, []),
-  );
-
   useEffect(() => {
     const interval = setInterval(refreshUpgrades, 60 * 1000);
     return () => clearInterval(interval);
   }, [refreshUpgrades]);
 
-  const { profile } = usePlayerProfile();
-  // console.log("profile: ", profile);
-
-  const builderCount = profile.normalBuilderCount;
-
   const { config } = useRemoteConfig();
+
+  if (isLoadingProfile) {
+    return (
+      <View style={[styles.container, styles.loadingOverlay]}>
+        <View style={styles.loadingContent}>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require("@/assets/images/builder/builder-idle.png")}
+              style={styles.builderImage}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.loadingTitle}>Switching Account</Text>
+          <Text style={styles.loadingMessage}>Loading your profile...</Text>
+          <View style={styles.dotsContainer}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={styles.dot} />
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
+  if (!profile) {
+    return (
+      <View style={[styles.container, styles.loadingOverlay]}>
+        <View style={styles.loadingContent}>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require("@/assets/images/builder/builder-idle.png")}
+              style={styles.builderImage}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.loadingTitle}>Loading Account</Text>
+          <Text style={styles.loadingMessage}>Loading your profile...</Text>
+          <View style={styles.dotsContainer}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={styles.dot} />
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   const isGoblinActive = config.goblinBuilderEnabled && isWorkForHireActive();
 
@@ -193,15 +263,22 @@ export default function HomeScreen() {
 
     refreshUpgrades();
 
-    await requestWidgetUpdate({
-      widgetName: "BuilderStatusWidget",
-      renderWidget: renderBuilderWidget,
-    });
+    emitWidgetUpdate();
 
     startSmartWidgetScheduler();
 
     setRefreshing(false);
   };
+
+  let statusIcon = require("@/assets/images/builder/builder-idle.png");
+
+  if (!status.allFree && nextUpgrade?.dataId) {
+    const type = getEntityTypeByDataId(nextUpgrade.dataId);
+
+    if (type) {
+      statusIcon = getIconByEntityType(nextUpgrade.dataId, type);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -307,11 +384,7 @@ export default function HomeScreen() {
               <View style={styles.statusCardContent}>
                 <View style={styles.statusIconContainer}>
                   <Image
-                    source={
-                      status.allFree
-                        ? require("@/assets/images/builder/builder-idle.png")
-                        : require("@/assets/images/builder/builder-working.png")
-                    }
+                    source={statusIcon}
                     style={styles.statusCardIcon}
                     resizeMode="contain"
                   />
@@ -331,25 +404,23 @@ export default function HomeScreen() {
                   </Text>
                   <View style={styles.builderIndicators}>
                     {/* Normal Builders */}
-                    {Array.from({ length: profile.normalBuilderCount }).map(
-                      (_, i) => {
-                        const isBusy = activeUpgrades.some(
-                          (u) => u.builderSlot === i,
-                        );
+                    {Array.from({ length: builderCount }).map((_, i) => {
+                      const isBusy = activeUpgrades.some(
+                        (u) => u.builderSlot === i,
+                      );
 
-                        return (
-                          <View
-                            key={`normal-${i}`}
-                            style={[
-                              styles.builderDot,
-                              isBusy
-                                ? styles.builderDotBusy
-                                : styles.builderDotFree,
-                            ]}
-                          />
-                        );
-                      },
-                    )}
+                      return (
+                        <View
+                          key={`normal-${i}`}
+                          style={[
+                            styles.builderDot,
+                            isBusy
+                              ? styles.builderDotBusy
+                              : styles.builderDotFree,
+                          ]}
+                        />
+                      );
+                    })}
 
                     {/* Goblin Slot */}
                     {isGoblinActive &&
@@ -412,7 +483,9 @@ export default function HomeScreen() {
                   ? "G"
                   : `B${(u.builderSlot as number) + 1}`;
                 const isCompleted = completedId === u.id;
-
+                const entityType = u.dataId
+                  ? getEntityTypeByDataId(u.dataId)
+                  : undefined;
                 return (
                   <Pressable
                     key={u.id}
@@ -447,7 +520,11 @@ export default function HomeScreen() {
                         <View style={styles.upgradeLeft}>
                           <View style={styles.iconContainer}>
                             <Image
-                              source={require("@/assets/images/builder/builder-working.png")}
+                              source={
+                                u.dataId && entityType
+                                  ? getIconByEntityType(u.dataId, entityType)
+                                  : require("@/assets/images/builder/builder-working.png")
+                              }
                               style={styles.upgradeIcon}
                               resizeMode="contain"
                             />
@@ -538,7 +615,7 @@ export default function HomeScreen() {
               <Text style={styles.devButtonText}>Test Completion</Text>
             </Pressable>
           )}
-          {__DEV__ && (
+          {/* {__DEV__ && data && (
             <WidgetPreview
               renderWidget={() => (
                 <BuilderStatusWidget
@@ -546,12 +623,19 @@ export default function HomeScreen() {
                   subtitle={data.subtitle}
                   progress={data.progress}
                   showProgress={data.showProgress}
+                  levelText={data.levelText}
+                  builderCountText={data.builderCountText}
+                  nextUpgradeText={data.nextUpgradeText}
+                  dataId={data.dataId}
+                  type={data.type}
+                  color={color}
+                  accountInitials={data.accountInitials}
                 />
               )}
-              width={320}
-              height={200}
+              width={260}
+              height={150}
             />
-          )}
+          )} */}
           {__DEV__ && (
             <Pressable
               style={styles.resetButton}
@@ -612,10 +696,7 @@ export default function HomeScreen() {
 
                 await cancelBuilderNotification(selectedUpgrade.id);
                 deleteBuilderUpgrade(selectedUpgrade.id);
-                await requestWidgetUpdate({
-                  widgetName: "BuilderStatusWidget",
-                  renderWidget: renderBuilderWidget,
-                });
+                emitWidgetUpdate();
 
                 startSmartWidgetScheduler();
                 refreshUpgrades();
@@ -656,7 +737,6 @@ export default function HomeScreen() {
           console.log("OPENING PROFILE SHEET");
           setProfileSheetVisible(false);
         }}
-        profile={profile}
         onOpenProfile={() => {
           setProfileSheetVisible(false);
           router.push("/profile");
@@ -695,11 +775,10 @@ const styles = StyleSheet.create({
   },
 
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.98)",
+    flex: 1,
+    backgroundColor: "#0f172a",
     justifyContent: "center",
     alignItems: "center",
-    zIndex: 999,
   },
 
   loadingContent: {

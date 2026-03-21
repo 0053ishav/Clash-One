@@ -1,8 +1,10 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
+import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
-import { configureNotifications } from "@/utils/notificationEngine";
-import { renderBuilderWidget } from "@/utils/renderBuilderWidget";
+import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
+import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
@@ -89,49 +91,25 @@ export default function OnboardingScreen() {
     }
   };
 
-  type PermissionResult = "granted" | "denied" | "blocked";
-
-  const ensureNotificationPermission = async (): Promise<PermissionResult> => {
-    const settings = await Notifications.getPermissionsAsync();
-
-    if (settings.granted) {
-      setNotificationsGranted(true);
-      return "granted";
-    }
-
-    if (settings.canAskAgain) {
-      const { status } = await Notifications.requestPermissionsAsync();
-
-      if (status === "granted") {
-        await configureNotifications();
-        setNotificationsGranted(true);
-        return "granted";
-      }
-
-      return "denied";
-    }
-
-    // Blocked
-    setShowPermissionModal(true);
-    return "blocked";
-  };
-
   const finishOnboarding = async () => {
-    if (index === SLIDES.length - 1) {
-      const result = await ensureNotificationPermission();
+    // if (index === SLIDES.length - 1) {
+    //   const result = await ensureNotificationPermission();
 
-      if (result === "blocked") {
-        return;
-      }
-    }
+    //   if (result === "granted") {
+    //     setNotificationsGranted(true);
+    //     return "granted";
+    //   }
+
+    //   if (result === "blocked") {
+    //     setShowPermissionModal(true);
+    //   }
+    // }
 
     setOnboardingComplete();
 
-    await requestWidgetUpdate({
-      widgetName: "BuilderStatusWidget",
-      renderWidget: renderBuilderWidget,
-    });
+    emitWidgetUpdate();
 
+    rescheduleAllBuilderNotifications();
     router.replace("/(tabs)");
   };
 
@@ -192,7 +170,11 @@ export default function OnboardingScreen() {
                     pressed && styles.enableButtonPressed,
                   ]}
                   onPress={async () => {
-                    await ensureNotificationPermission();
+                    const result = await ensureNotificationPermission();
+
+                    if (result === "granted") {
+                      setNotificationsGranted(true);
+                    }
                   }}
                 >
                   <Ionicons

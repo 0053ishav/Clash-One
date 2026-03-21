@@ -37,6 +37,11 @@ export function getIconByEntityType(
   if (!map) {
     return require("@/assets/images/builder/builder-complete.png");
   }
+  const icon = getEntityIcon(dataId, map, fallback);
 
-  return getEntityIcon(dataId, map, fallback);
+  if (!icon) {
+    return require("@/assets/images/builder/builder-working.png");
+  }
+
+  return icon;
 }

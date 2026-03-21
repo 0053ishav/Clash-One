@@ -1,10 +1,12 @@
+import { EntityType } from "./entity";
+
 export type UpgradeType = "BUILDER" | "LAB";
 
 export type BuilderUpgrade = {
   id: string;
   dataId?: number;
   entity: string;
-  type?: string;
+  type?: EntityType;
   
   startTime: number;       // epoch ms
   durationMinutes: number;
@@ -27,4 +29,18 @@ export type LabUpgrade = {
   durationMinutes: number;
   endTime: number;
   isCompleted: boolean;
+};
+
+export type BuilderWidgetData = {
+  title: string;
+  subtitle: string;
+  progress: number;
+  showProgress: boolean;
+  levelText?: string;
+  builderCountText?: string;
+  nextUpgradeText?: string;
+  dataId?: number;
+  type?: EntityType;
+  color?: string;
+  accountInitials?: string;
 };

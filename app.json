@@ -55,6 +55,17 @@
               "targetCellHeight": 1,
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "MultiAccountWidget",
+              "label": "All Accounts Tracker",
+              "description": "View all your accounts and see which upgrade finishes first.",
+              "minWidth": "250dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 1800000
             }
           ]
         }

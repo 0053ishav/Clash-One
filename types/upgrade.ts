@@ -5,7 +5,9 @@ export type UpgradeType = "BUILDER" | "LAB";
 export type BuilderUpgrade = {
   id: string;
   dataId?: number;
+  moduleId?: number;
   entity: string;
+  isCrafted?: boolean;
   type?: EntityType;
   
   startTime: number;       // epoch ms

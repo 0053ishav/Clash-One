@@ -1,12 +1,16 @@
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { subscribeWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { requestWidgetUpdate } from "react-native-android-widget";
+import { prefillAllWidgetCache } from "./prefillAllWidgetCache";
 import { renderMultiWidget } from "./renderMultiWidget";
 
 let timeout: ReturnType<typeof setTimeout> | null = null;
 
 async function updateWidget() {
   try {
+
+    await prefillAllWidgetCache();
+    
     await requestWidgetUpdate({
       widgetName: "BuilderStatusWidget",
       renderWidget: async () => {

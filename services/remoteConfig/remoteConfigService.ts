@@ -33,13 +33,15 @@ export async function initRemoteConfig(): Promise<void> {
   }
 
   try {
-    const response = await fetch(CONFIG_URL, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    // const response = await fetch(CONFIG_URL, {
+    //   method: "GET",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    // });
 
+    const response = await fetch(CONFIG_URL);
+    
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
     const parsed = await response.json();
@@ -51,13 +53,13 @@ export async function initRemoteConfig(): Promise<void> {
     lastFetchTime = Date.now();
     isInitialized = true;
   } catch (error) {
-      console.warn("⚠️ Remote config fetch failed, using fallback", {
+    console.warn("⚠️ Remote config fetch failed, using fallback", {
       message: error instanceof Error ? error.message : String(error),
       url: CONFIG_URL,
-      });
+    });
 
-      cachedConfig = DEFAULT_CONFIG;
-      isInitialized = true;
+    cachedConfig = DEFAULT_CONFIG;
+    isInitialized = true;
   }
 }
 
@@ -78,13 +80,17 @@ function validateAndSetConfig(parsed: unknown): void {
 
   let workForHireEvents: GoblinRemoteConfig["workForHireEvents"] = [];
 
+  if (!Array.isArray(config.workForHireEvents)) {
+    workForHireEvents = [];
+  }
+
   if (Array.isArray(config.workForHireEvents)) {
     workForHireEvents = config.workForHireEvents.filter(
       (event) =>
-          event &&
-          typeof event === "object" &&
-          typeof (event as Record<string, unknown>).startsAt === "number" &&
-          typeof (event as Record<string, unknown>).endsAt === "number"
+        event &&
+        typeof event === "object" &&
+        typeof (event as Record<string, unknown>).startsAt === "number" &&
+        typeof (event as Record<string, unknown>).endsAt === "number"
     ) as GoblinRemoteConfig["workForHireEvents"];
   }
 
@@ -142,7 +148,7 @@ export function __enableGoblinForTesting(): void {
   };
 
   resetGoblinBannerDismissal();
-  
+
   isInitialized = true;
   lastFetchTime = Date.now();
 

@@ -87,7 +87,6 @@ function ItemCard({ name, dataId, level, maxLevel, type }: any) {
   const status = getUpgradeStatus(level, maxLevel);
   const progressColor = getProgressColor(status);
   const progress = maxLevel > 0 ? Math.min((level / maxLevel) * 100, 100) : 0;
-  // console.log("ICON TEST", name, dataId, type);
   return (
     <View style={styles.card}>
       <Image

@@ -58,4 +58,15 @@ export type PlayerFull = {
   heroes?: any[];
   spells?: any[];
   achievements?: any[];
+
+  helpers?: {
+    id: number;
+    level: number;
+    cooldown?: number;
+  }[];
+
+  guardians?: {
+    id: number;
+    level: number;
+  }[];
 };

@@ -228,30 +228,30 @@ export const ENTITY_MAP: Record<number, EntityDefinition> = {
     107000001: { name: "Smasher", type: "guardian", village: "home" },
 };
 
-// ---- Crafted Defense Types ---------------------
-export const CRAFTED_DEFENSE_TYPE_MAP: Record<number, { name: string }> = {
-    103000001: { name: "Light Beam" },
-    103000002: { name: "Bomb Hive" },
-    103000007: { name: "Hero Bell" },
-};
+// // ---- Crafted Defense Types ---------------------
+// export const CRAFTED_DEFENSE_TYPE_MAP: Record<number, { name: string }> = {
+//     103000008: { name: "Roaster" },
+//     103000009: { name: "Air Bombs" },
+//     103000010: { name: "Lava Launcher" },
+// };
 
-// ---- Crafted Defense Modules ---------------------
-export const CRAFTED_DEFENSE_MODULE_MAP: Record<number, { name: string; stat: string }> = {
-    // Hero Bell modules
-    102000021: { name: "Hero Bell - Hitpoints", stat: "hitpoints" },
-    102000022: { name: "Hero Bell - Defense Hero DMG", stat: "defense_hero_dmg" },
-    102000023: { name: "Hero Bell - Defense Hero HP", stat: "defense_hero_hp" },
+// // ---- Crafted Defense Modules ---------------------
+// export const CRAFTED_DEFENSE_MODULE_MAP: Record<number, { name: string; stat: string }> = {
+//     // Roaster modules
+//     102000024: { name: "Roaster - Hitpoints", stat: "hitpoints" },
+//     102000025: { name: "Roaster - Defense Per Hit", stat: "damage_per_hit" },
+//     102000026: { name: "Roaster - Burst Fire Shots", stat: "burst_fire_shots" },
 
-    // Bomb Hive modules
-    102000006: { name: "Bomb Hive - Hitpoints", stat: "hitpoints" },
-    102000007: { name: "Bomb Hive - Damage Per Hit", stat: "damage_per_hit" },
-    102000008: { name: "Bomb Hive - Tiles", stat: "tiles" },
+//     // Air Bombs modules
+//     102000027: { name: "Air Bombs - Hitpoints", stat: "hitpoints" },
+//     102000028: { name: "Air Bombs - Damage Per Hit", stat: "damage_per_hit" },
+//     102000029: { name: "Air Bombs - Attack Cooldown", stat: "attack_cooldown" },
 
-    // Light Beam modules
-    102000015: { name: "Light Beam - Hitpoints", stat: "hitpoints" },
-    102000016: { name: "Light Beam - Damage Per Hit", stat: "damage_per_hit" },
-    102000017: { name: "Light Beam - Attack Cooldown", stat: "attack_cooldown" },
-};
+//     // Lava Launcher modules
+//     102000030: { name: "Lava Launcher - Hitpoints", stat: "hitpoints" },
+//     102000031: { name: "Lava Launcher - Damage Per Second", stat: "damage_per_second" },
+//     102000032: { name: "Lava Launcher - Tiles", stat: "tiles" },
+// };
 
 
 export const ENTITY_LOOKUP: Record<string, Partial<Record<Village, number>>> =
@@ -273,8 +273,11 @@ export function getEntityId(name: string, village: Village = "home") {
     return ENTITY_LOOKUP[normalized]?.[village] ?? null;
 }
 
-export function getEntityTypeByDataId(dataId?: number): EntityType | undefined {
+export function getEntityTypeByDataId(dataId?: number,  isCrafted?: boolean): EntityType | undefined {
     if (!dataId) return undefined;
+
+    if (isCrafted) return "building";
+    
     const entity = ENTITY_MAP[dataId];
 
     if (!entity) {

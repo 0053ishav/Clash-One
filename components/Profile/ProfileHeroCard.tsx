@@ -41,7 +41,7 @@ export default function ProfileHeroCard({ data }: { data: PlayerFull }) {
       </View>
 
       {/* Helpers & Guardians */}
-      {/* {(data.helpers?.length || data.guardians?.length) && (
+      {(data.helpers?.length || data.guardians?.length) && (
         <View style={styles.helperRow}>
           {data.helpers?.map((helper) => (
             <View key={`helper-${helper.id}`} style={styles.helperBadge}>
@@ -65,7 +65,7 @@ export default function ProfileHeroCard({ data }: { data: PlayerFull }) {
             </View>
           ))}
         </View>
-      )} */}
+      )}
       {/* 
         TODO:
           Helpers & Guardians are not provided by Clash API.

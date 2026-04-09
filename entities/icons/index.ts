@@ -1,4 +1,5 @@
 export { default as buildingIcons } from "./buildingIcons";
+export { default as craftedIcons } from "./craftedIcons";
 export { default as guardianIcons } from "./guardianIcons";
 export { default as helperIcons } from "./helperIcons";
 export { default as heroIcons } from "./heroIcons";

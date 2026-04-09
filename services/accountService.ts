@@ -124,10 +124,24 @@ export async function replaceBuilders(tag: string, upgrades: BuilderUpgrade[]) {
     for (const u of upgrades) {
       await db.runAsync(
         `INSERT INTO builders
-        (id, account_player_tag, data_id, entity, builder_slot, builder_type,
-        building_level, next_level, start_time, duration_minutes,
-        finish_timestamp, is_completed, source)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  (
+    id,
+    account_player_tag,
+    data_id,
+    entity,
+    builder_slot,
+    builder_type,
+    building_level,
+    next_level,
+    start_time,
+    duration_minutes,
+    finish_timestamp,
+    is_completed,
+    source,
+    is_crafted,
+    module_id
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -141,21 +155,24 @@ export async function replaceBuilders(tag: string, upgrades: BuilderUpgrade[]) {
           u.durationMinutes,
           u.endTime,
           u.isCompleted ? 1 : 0,
-          u.source ?? null
+          u.source ?? null,
+
+          u.isCrafted ? 1 : 0,
+          u.moduleId ?? null,
         ]
       );
     }
 
-    const builderCount = new Set(
-      upgrades.map((u) => u.builderSlot)
-    ).size;
+    //   const builderCount = new Set(
+    //     upgrades.map((u) => u.builderSlot)
+    //   ).size;
 
-    await db.runAsync(
-      `UPDATE accounts
-   SET builder_count = ?
-   WHERE player_tag = ?`,
-      [builderCount, tag]
-    );
+    //   await db.runAsync(
+    //     `UPDATE accounts
+    //  SET builder_count = ?
+    //  WHERE player_tag = ?`,
+    //     [builderCount, tag]
+    //   );
 
     await db.execAsync("COMMIT");
   } catch (e) {
@@ -164,6 +181,7 @@ export async function replaceBuilders(tag: string, upgrades: BuilderUpgrade[]) {
     throw e;
   }
 };
+
 /**
  * How JSON Import Should Use These
  */

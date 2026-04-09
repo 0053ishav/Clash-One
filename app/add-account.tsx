@@ -1,0 +1,270 @@
+"use no memo";
+
+import { ConfirmModal } from "@/components/ConfirmModal";
+import { importVillageJson } from "@/services/jsonImport/jsonImportService";
+import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getNotificationsEnabled } from "@/storage/notificationConfig";
+import { cancelAllNotifications } from "@/utils/notificationEngine";
+import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
+import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+export default function AddAccountScreen() {
+  const router = useRouter();
+  const [isImporting, setIsImporting] = useState(false);
+  const [error, setError] = useState("");
+  const [tag, setTag] = useState("");
+
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  const refreshWidget = async () => {
+    emitWidgetUpdate();
+  };
+
+  const handleImport = async () => {
+    if (isImporting) return;
+
+    try {
+      setIsImporting(true);
+
+      const clipboardText = await Clipboard.getStringAsync();
+
+      if (!clipboardText?.trim()) {
+        setModalTitle("Clipboard Empty");
+        setModalMessage(
+          "No village data found. Please copy data from the game's settings first.",
+        );
+        setModalVisible(true);
+        return;
+      }
+      await cancelAllNotifications();
+      const result = await importVillageJson(clipboardText);
+      console.log("result", result, getActiveAccount());
+
+      if (result.status === "NO_ACTIVE_BUILDERS") {
+        await refreshWidget();
+
+        setTag(result.tag);
+        setModalTitle("Village Synced");
+        setModalMessage(
+          "No active builders found. All builders are currently free.",
+        );
+        setModalVisible(true);
+        return;
+      }
+
+      if (result.status === "SUCCESS") {
+        await refreshWidget();
+
+        setTag(result.tag);
+        if (getNotificationsEnabled()) {
+          await rescheduleAllBuilderNotifications();
+        }
+
+        setModalTitle(
+          result.skippedExpired > 0
+            ? "Village Synced (Partial)"
+            : "Village Synced",
+        );
+
+        setModalMessage(
+          result.skippedExpired > 0
+            ? `${result.activeCount} upgrades synced.\n${result.skippedExpired} expired upgrades were ignored.`
+            : `${result.activeCount} upgrades synced.`,
+        );
+        setModalVisible(true);
+        return;
+      }
+    } catch (error: any) {
+      console.error("IMPORT ERROR:", error);
+
+      if (error.message === "INVALID_JSON") {
+        setModalTitle("Invalid Format");
+        setModalMessage(
+          "Clipboard content is not valid JSON. Make sure you copied the correct village export.",
+        );
+      } else if (error.message === "INVALID_STRUCTURE") {
+        setModalTitle("Invalid Village Data");
+        setModalMessage(
+          "This does not appear to be valid Clash of Clans export data.",
+        );
+      } else {
+        setModalTitle("Import Failed");
+        setModalMessage("Something went wrong while syncing your village.");
+      }
+      setModalVisible(true);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.root}>
+      <View style={styles.container}>
+        {/* 🔹 Icon */}
+        <View style={styles.iconWrapper}>
+          <Text style={styles.icon}>🔨</Text>
+        </View>
+
+        {/* 🔹 Title */}
+        <Text style={styles.title}>Add Your Account</Text>
+
+        {/* 🔹 Description */}
+        <Text style={styles.description}>
+          Track upgrades automatically{"\n"}
+          and never waste builder time
+        </Text>
+
+        {/* 🔹 CTA */}
+        <Pressable
+          onPress={handleImport}
+          style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+        >
+          {isImporting ? (
+            <ActivityIndicator color="#0f172a" />
+          ) : (
+            <Text style={styles.ctaText}>Upload JSON</Text>
+          )}
+        </Pressable>
+
+        {/* 🔹 Error */}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {/* 🔹 Trust */}
+        <View style={styles.trustBox}>
+          <Text style={styles.trustTitle}>How it works:</Text>
+          <Text style={styles.trustText}>
+            • Export from Clash of Clans{"\n"}• Upload here{"\n"}• Start
+            tracking instantly
+          </Text>
+        </View>
+
+        {/* 🔹 Micro trust */}
+        <Text style={styles.microTrust}>
+          No login required • Data stays on device
+        </Text>
+      </View>
+      <ConfirmModal
+        visible={modalVisible}
+        title={modalTitle}
+        message={modalMessage}
+        confirmText="OK"
+        cancelText={""}
+        onCancel={() => {
+          setModalVisible(false);
+          // if (shouldReturnHome) router.back();
+        }}
+        onConfirm={() => {
+          setModalVisible(false);
+          router.replace({
+            pathname: "/value",
+            params: { tag },
+          });
+        }}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+  },
+
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+
+  iconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: "rgba(251,191,36,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginBottom: 24,
+  },
+
+  icon: {
+    fontSize: 36,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#fbbf24",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+
+  description: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 32,
+  },
+
+  cta: {
+    height: 52,
+    backgroundColor: "#fbbf24",
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  ctaText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+
+  error: {
+    color: "#f87171",
+    textAlign: "center",
+    marginTop: 12,
+    fontSize: 13,
+  },
+
+  trustBox: {
+    marginTop: 28,
+    alignItems: "center",
+  },
+
+  trustTitle: {
+    fontSize: 13,
+    color: "#cbd5e1",
+    marginBottom: 6,
+  },
+
+  trustText: {
+    fontSize: 12,
+    color: "#94a3b8",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+
+  microTrust: {
+    marginTop: 20,
+    fontSize: 11,
+    color: "#64748b",
+    textAlign: "center",
+  },
+});

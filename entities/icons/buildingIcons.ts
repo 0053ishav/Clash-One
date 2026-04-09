@@ -43,7 +43,7 @@ const buildingIcons: Record<number, number> = {
   1000086: require("@/assets/images/clash/buildings/revenge-tower.png"),
   1000089: require("@/assets/images/clash/buildings/firespitter.png"),
   1000093: require("@/assets/images/clash/buildings/helper-hut.png"),
-  1000097: require("@/assets/images/clash/buildings/crafted-defense.png"),
+  // 1000097: require("@/assets/images/clash/buildings/crafted-defense.png"),
   1000102: require("@/assets/images/clash/buildings/super-wizard-tower.png"),
 };
 

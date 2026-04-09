@@ -9,4 +9,5 @@ export type EntityType =
     | "siege"
     | "helper"
     | "guardian"
-    | "townhall";
+    | "townhall"
+    | "Custom";

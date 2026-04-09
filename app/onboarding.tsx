@@ -3,7 +3,6 @@ import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
-import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
@@ -21,7 +20,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { requestWidgetUpdate } from "react-native-android-widget";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
@@ -110,7 +108,7 @@ export default function OnboardingScreen() {
     emitWidgetUpdate();
 
     rescheduleAllBuilderNotifications();
-    router.replace("/(tabs)");
+    router.replace("/add-account");
   };
 
   const handleScroll = (e: any) => {
@@ -282,11 +280,8 @@ export default function OnboardingScreen() {
         onCancel={() => {
           setShowPermissionModal(false);
           setOnboardingComplete();
-          requestWidgetUpdate({
-            widgetName: "BuilderStatusWidget",
-            renderWidget: renderBuilderWidget,
-          });
-          router.replace("/(tabs)");
+          emitWidgetUpdate();
+          router.replace("/add-account");
         }}
       />
     </SafeAreaView>

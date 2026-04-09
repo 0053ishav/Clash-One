@@ -13,9 +13,11 @@ import {
   shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
 import { useAccountStore } from "@/stores/accountStore";
+import { useCraftedStore } from "@/stores/craftedEventStore";
 import { BuilderUpgrade, BuilderWidgetData } from "@/types/upgrade";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
+import { useCraftedResolver } from "@/utils/craftedResolver";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
@@ -29,10 +31,10 @@ import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  Image,
   LayoutAnimation,
   Modal,
   Pressable,
@@ -57,6 +59,10 @@ export default function HomeScreen() {
   const [completedId, setCompletedId] = useState<string | null>(null);
 
   const [profileSheetVisible, setProfileSheetVisible] = useState(false);
+
+  const { getCraftedName, getModuleName } = useCraftedResolver();
+
+  useCraftedStore((s) => s.defenses);
 
   const [data, setData] = useState<BuilderWidgetData>({
     title: "Builders",
@@ -177,7 +183,8 @@ export default function HomeScreen() {
             <Image
               source={require("@/assets/images/builder/builder-idle.png")}
               style={styles.builderImage}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
             />
           </View>
           <Text style={styles.loadingTitle}>Switching Account</Text>
@@ -199,7 +206,8 @@ export default function HomeScreen() {
             <Image
               source={require("@/assets/images/builder/builder-idle.png")}
               style={styles.builderImage}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
             />
           </View>
           <Text style={styles.loadingTitle}>Loading Account</Text>
@@ -273,10 +281,18 @@ export default function HomeScreen() {
   let statusIcon = require("@/assets/images/builder/builder-idle.png");
 
   if (!status.allFree && nextUpgrade?.dataId) {
-    const type = getEntityTypeByDataId(nextUpgrade.dataId);
+    const type = getEntityTypeByDataId(
+      nextUpgrade.dataId,
+      nextUpgrade.isCrafted,
+    );
 
     if (type) {
-      statusIcon = getIconByEntityType(nextUpgrade.dataId, type);
+      statusIcon = getIconByEntityType(
+        nextUpgrade.dataId,
+        type,
+        undefined,
+        nextUpgrade.isCrafted,
+      );
     }
   }
 
@@ -325,6 +341,8 @@ export default function HomeScreen() {
                       <Image
                         source={{ uri: profile.leagueTierIconUrl }}
                         style={styles.leagueIcon}
+                        contentFit="contain"
+                        cachePolicy="memory-disk"
                       />
                     )}
                   </View>
@@ -339,7 +357,8 @@ export default function HomeScreen() {
                             "townhall",
                           )}
                           style={styles.leagueIcon}
-                          resizeMode="contain"
+                          contentFit="contain"
+                          cachePolicy="memory-disk"
                         />
                       </View>
                       <Text style={styles.profileSub}>
@@ -386,15 +405,16 @@ export default function HomeScreen() {
                   <Image
                     source={statusIcon}
                     style={styles.statusCardIcon}
-                    resizeMode="contain"
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
                   />
                 </View>
 
                 <View style={styles.statusInfo}>
                   <Text style={styles.statusCardLabel}>
                     {status.allFree
-                      ? "All Builders Free"
-                      : `Next Builder Ready: ${nextBuilderLabel}`}
+                      ? "🚨 Builder Idle"
+                      : `⏳ Next Upgrade: ${nextBuilderLabel}`}
                   </Text>
 
                   <Text style={styles.statusCardTime}>
@@ -484,7 +504,7 @@ export default function HomeScreen() {
                   : `B${(u.builderSlot as number) + 1}`;
                 const isCompleted = completedId === u.id;
                 const entityType = u.dataId
-                  ? getEntityTypeByDataId(u.dataId)
+                  ? getEntityTypeByDataId(u.dataId, u.isCrafted)
                   : undefined;
                 return (
                   <Pressable
@@ -522,17 +542,29 @@ export default function HomeScreen() {
                             <Image
                               source={
                                 u.dataId && entityType
-                                  ? getIconByEntityType(u.dataId, entityType)
+                                  ? getIconByEntityType(
+                                      u.dataId,
+                                      entityType,
+                                      undefined,
+                                      u.isCrafted,
+                                    )
                                   : require("@/assets/images/builder/builder-working.png")
                               }
                               style={styles.upgradeIcon}
-                              resizeMode="contain"
+                              contentFit="contain"
+                              cachePolicy="memory-disk"
                             />
                           </View>
 
                           <View style={styles.upgradeNameSection}>
                             <Text style={styles.upgradeName}>
-                              {formatBuildingName(u.entity)}
+                              {u.isCrafted
+                                ? `${getCraftedName(u.dataId) ?? "Crafted"}${
+                                    getModuleName(u.dataId, u.moduleId)
+                                      ? ` (${getModuleName(u.dataId, u.moduleId)})`
+                                      : ""
+                                  }`
+                                : formatBuildingName(u.entity)}
                             </Text>
 
                             {/* Levels Badge */}
@@ -587,7 +619,8 @@ export default function HomeScreen() {
                 <Image
                   source={require("@/assets/images/builder/builder-idle.png")}
                   style={styles.emptyIcon}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
                 />
               </View>
               <Text style={styles.emptyTitle}>No Active Upgrades</Text>

@@ -142,7 +142,12 @@ export default function ProfileSheet({
                 )}
               </View>
             )}
-            {profile?.playerTag && <ProfileStatsGrid profile={profile} />}
+            {profile?.playerTag && (
+              <ProfileStatsGrid
+                profile={profile}
+                builderCount={activeAccount?.builderCount ?? 1}
+              />
+            )}
 
             <ProfileActions
               onSync={onSync}

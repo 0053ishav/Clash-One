@@ -2,8 +2,11 @@ import { getDB } from "./database";
 
 export async function initDatabase() {
   const db = await getDB();
-// temporary debug
-// await db.execAsync(`DROP TABLE IF EXISTS accounts`);
+  // temporary debug
+  // await db.execAsync(`DROP TABLE IF EXISTS accounts`);
+
+  // await db.execAsync(`DROP TABLE IF EXISTS builders`);
+
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS accounts (
       player_tag TEXT PRIMARY KEY,
@@ -37,6 +40,9 @@ export async function initDatabase() {
 
       is_completed INTEGER DEFAULT 0,
       source TEXT,
+
+      is_crafted INTEGER DEFAULT 0,
+      module_id INTEGER,
 
       FOREIGN KEY(account_player_tag)
       REFERENCES accounts(player_tag)

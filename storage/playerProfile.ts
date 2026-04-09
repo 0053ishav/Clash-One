@@ -202,7 +202,7 @@ export function syncProfileFromApi(api: ClashApiPlayer) {
     }
 }
 
-export function updateBuilderCount(count: number) {
+export function updateLocalBuilderCount(count: number) {
     const profile = getPlayerProfile();
 
     const safeCount = Math.max(1, Math.min(count, 6));

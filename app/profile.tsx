@@ -3,7 +3,7 @@ import BattleStatsGrid from "@/components/Profile/BattleStatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";
-import { getActiveAccount } from "@/storage/activeAccount";
+import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -26,14 +26,14 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const activeTag = useAccountStore((s) => s.activeTag);
 
-  useEffect(() => {
-    (async () => {
-      const tag = await getActiveAccount();
-      setActiveTag(tag!);
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const tag = await getActiveAccount();
+  //     setActiveTag(tag!);
+  //   })();
+  // }, []);
 
   const loadProfile = async () => {
     try {

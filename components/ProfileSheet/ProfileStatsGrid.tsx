@@ -9,8 +9,10 @@ function formatCapital(value: number): string {
 
 export default function ProfileStatsGrid({
   profile,
+  builderCount,
 }: {
   profile: PlayerProfile;
+  builderCount: number;
 }) {
   const stats = [
     {
@@ -49,7 +51,7 @@ export default function ProfileStatsGrid({
     {
       emoji: "🔨",
       label: "Builders",
-      value: profile.normalBuilderCount,
+      value: builderCount,
     },
   ];
 

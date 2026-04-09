@@ -15,18 +15,23 @@ import { assignBuilderSlot } from "@/utils/assignBuilderSlot";
 import { createBuilderUpgrade } from "@/utils/createBuilderUpgrade";
 
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
+import { useCraftedStore } from "@/stores/craftedEventStore";
+import { EntityType } from "@/types/entity";
 import { BuilderUpgrade } from "@/types/upgrade";
+import { useCraftedResolver } from "@/utils/craftedResolver";
 import { calculateGoblinCost, canUseGoblinBuilder } from "@/utils/goblin";
+import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Keyboard,
   Modal,
   Platform,
@@ -70,7 +75,7 @@ export default function AddUpgradeScreen() {
   const [selectedEntity, setSelectedEntity] = useState<{
     name: string;
     dataId?: number;
-    type?: string;
+    type?: EntityType;
   }>({
     name: "Archer Tower",
     dataId: 1000009,
@@ -83,6 +88,8 @@ export default function AddUpgradeScreen() {
   const [search, setSearch] = useState("");
   const [filteredEntities, setFilteredEntities] = useState(GAME_ENTITIES);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const { getCraftedName, getModuleName } = useCraftedResolver();
 
   const { profile } = usePlayerProfile();
   const tag = profile.playerTag!;
@@ -122,6 +129,7 @@ export default function AddUpgradeScreen() {
 
     (async () => {
       try {
+        await ensureCraftedLoaded();
         const upgrades = await getBuilderUpgrades(tag);
         const existing = upgrades.find((u) => u.id === editId);
         if (!existing) {
@@ -131,9 +139,18 @@ export default function AddUpgradeScreen() {
           return;
         }
 
-        const matchedEntity = GAME_ENTITIES.find(
-          (e) => e.dataId === existing.dataId,
-        );
+        const crafted = useCraftedStore.getState();
+
+        const matchedEntity =
+          GAME_ENTITIES.find((e) => e.dataId === existing.dataId) ||
+          (existing.isCrafted
+            ? {
+                name:
+                  crafted.defenses[existing.dataId!]?.name || existing.entity,
+                dataId: existing.dataId,
+                type: "building" as EntityType,
+              }
+            : null);
 
         if (matchedEntity) {
           setSelectedEntity(matchedEntity);
@@ -141,7 +158,7 @@ export default function AddUpgradeScreen() {
           setSelectedEntity({
             name: existing.entity,
             dataId: undefined,
-            type: "custom",
+            type: "Custom",
           });
         }
 
@@ -152,22 +169,6 @@ export default function AddUpgradeScreen() {
         if (existing.nextLevel !== undefined) {
           setNextLevel(String(existing.nextLevel));
         }
-
-        // if (existing.endTime && existing.startTime) {
-        //   const totalMinutes = Math.floor(
-        //     (existing.endTime - existing.startTime) / 60000,
-        //   );
-
-        //   const d = Math.floor(totalMinutes / 1440);
-        //   const h = Math.floor((totalMinutes % 1440) / 60);
-        //   const m = totalMinutes % 60;
-
-        //   if (mounted) {
-        //     setDays(String(d));
-        //     setHours(String(h));
-        //     setMinutes(String(m));
-        //   }
-        // }
 
         if (existing.endTime) {
           const remainingMs = Math.max(existing.endTime - Date.now(), 0);
@@ -366,16 +367,23 @@ export default function AddUpgradeScreen() {
           ...baseUpgrade,
           id: editId as string,
           builderSlot: existing.builderSlot,
+          isCrafted: existing.isCrafted,
+          moduleId: existing.moduleId,
+
+          entity: existing.entity,
+          type: existing.type,
         };
         await cancelBuilderNotification(editId as string);
 
         await deleteBuilderUpgrade(editId as string);
+        await ensureCraftedLoaded();
         await addBuilderUpgrade(tag, finalUpgrade);
       } else {
         finalUpgrade = {
           ...baseUpgrade,
           builderSlot: slot!,
         };
+        await ensureCraftedLoaded();
         await addBuilderUpgrade(tag, finalUpgrade);
       }
 
@@ -415,7 +423,7 @@ export default function AddUpgradeScreen() {
   const handleEntitySelect = (entity: {
     name: string;
     dataId?: number;
-    type?: string;
+    type?: EntityType;
   }) => {
     setSelectedEntity(entity);
 
@@ -686,7 +694,7 @@ export default function AddUpgradeScreen() {
                   handleEntitySelect({
                     name: "",
                     dataId: undefined,
-                    type: "custom",
+                    type: "Custom",
                   })
                 }
               >
@@ -707,16 +715,20 @@ export default function AddUpgradeScreen() {
                       pressed && styles.dropdownItemPressed,
                     ]}
                     onPress={() => {
-                      console.log(
-                        "dataId: ",
-                        item.dataId,
-                        item.name,
-                        item.type,
-                      );
                       handleEntitySelect(item);
                     }}
                   >
-                    <Ionicons name="hammer" size={18} color="#fbbf24" />
+                    <Image
+                      source={getIconByEntityType(
+                        item.dataId,
+                        item.type,
+                        undefined,
+                        false,
+                      )}
+                      style={{ width: 24, height: 24 }}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
                     <Text style={styles.dropdownItemText}>{item.name}</Text>
                   </Pressable>
                 )}

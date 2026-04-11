@@ -14,6 +14,7 @@ export type PlayerFull = {
   donationsReceived: number;
 
   role?: string;
+  warPreference?: string;
 
   league?: {
     name: string;

@@ -1,6 +1,8 @@
 "use no memo";
 
-import { getActiveBuilderUpgrades } from "@/services/builderService";
+import {
+  getActiveUpgrades
+} from "@/services/upgradeService";
 import { useAccountStore } from "@/stores/accountStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -45,7 +47,7 @@ export default function ValueScreen() {
     if (!effectiveTag) return;
 
     (async () => {
-      const upgrades = await getActiveBuilderUpgrades(effectiveTag);
+      const upgrades = await getActiveUpgrades(effectiveTag);
       setActiveUpgrades(upgrades);
     })();
   }, [effectiveTag]);

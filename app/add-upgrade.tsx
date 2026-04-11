@@ -1,26 +1,26 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { GAME_ENTITIES } from "@/data/gameEntities";
 import {
-  addBuilderUpgrade,
-  cleanupCompletedUpgrades,
-  deleteBuilderUpgrade,
-  getActiveBuilderUpgrades,
-  getBuilderUpgrades,
-} from "@/services/builderService";
-import {
   cancelBuilderNotification,
   scheduleBuilderNotification,
 } from "@/services/notifications/builderNotificationService";
+import {
+  addUpgrade,
+  cleanupCompletedUpgrades,
+  deleteUpgrade,
+  getActiveUpgrades,
+  getUpgrades,
+} from "@/services/upgradeService";
 import { assignBuilderSlot } from "@/utils/assignBuilderSlot";
 import { createBuilderUpgrade } from "@/utils/createBuilderUpgrade";
 
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
+import { useAccountStore } from "@/stores/accountStore";
 import { useCraftedStore } from "@/stores/craftedEventStore";
 import { EntityType } from "@/types/entity";
-import { BuilderUpgrade } from "@/types/upgrade";
-import { useCraftedResolver } from "@/utils/craftedResolver";
+import { Upgrade } from "@/types/upgrade";
 import { calculateGoblinCost, canUseGoblinBuilder } from "@/utils/goblin";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
@@ -50,7 +50,7 @@ import {
 export default function AddUpgradeScreen() {
   const router = useRouter();
 
-  const [activeUpgrades, setActiveUpgrades] = useState<BuilderUpgrade[]>([]);
+  const [activeUpgrades, setActiveUpgrades] = useState<Upgrade[]>([]);
 
   const [days, setDays] = useState("");
   const [hours, setHours] = useState("");
@@ -89,10 +89,16 @@ export default function AddUpgradeScreen() {
   const [filteredEntities, setFilteredEntities] = useState(GAME_ENTITIES);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  const { getCraftedName, getModuleName } = useCraftedResolver();
-
   const { profile } = usePlayerProfile();
   const tag = profile.playerTag!;
+
+  const activeTag = useAccountStore((s) => s.activeTag);
+
+  const accounts = useAccountStore.getState().accounts;
+
+  const account = accounts.find((a) => a.tag === activeTag);
+
+  const builderCount = account?.builderCount ?? 0;
 
   useEffect(() => {
     const showEvent =
@@ -130,7 +136,7 @@ export default function AddUpgradeScreen() {
     (async () => {
       try {
         await ensureCraftedLoaded();
-        const upgrades = await getBuilderUpgrades(tag);
+        const upgrades = await getUpgrades(tag);
         const existing = upgrades.find((u) => u.id === editId);
         if (!existing) {
           setModalTitle("Error");
@@ -228,7 +234,7 @@ export default function AddUpgradeScreen() {
 
   useEffect(() => {
     (async () => {
-      const upgrades = await getActiveBuilderUpgrades(tag);
+      const upgrades = await getActiveUpgrades(tag);
       setActiveUpgrades(upgrades);
     })();
   }, [tag]);
@@ -245,10 +251,16 @@ export default function AddUpgradeScreen() {
   const goblinGemCost =
     totalMinutes > 0 ? calculateGoblinCost(totalMinutes) : 0;
 
-  const normalBusy = activeUpgrades.filter((u) => u.builderSlot !== "G").length;
+  const normalBusy = activeUpgrades.filter(
+    (u) => u.upgradeType === "BUILDER" && typeof u.builderSlot === "number",
+  ).length;
+
   const allowGoblin = canUseGoblinBuilder(profile, activeUpgrades);
 
-  const normalFree = profile.normalBuilderCount - normalBusy;
+  const normalFree = builderCount - normalBusy;
+
+  console.log("builderCount:", builderCount);
+  console.log("normalBusy:", normalBusy);
 
   let willUseGoblin =
     !isEditMode && normalFree <= 0 && allowGoblin && totalMinutes > 0;
@@ -292,24 +304,40 @@ export default function AddUpgradeScreen() {
 
       let slot: number | "G" | undefined;
 
-      const freshActiveUpgrades = await getActiveBuilderUpgrades(tag);
+      const freshActiveUpgrades = await getActiveUpgrades(tag);
 
       const normalBusy = freshActiveUpgrades.filter(
-        (u) => u.builderSlot !== "G",
+        (u) => u.upgradeType === "BUILDER" && typeof u.builderSlot === "number",
       ).length;
 
-      const normalFree = profile.normalBuilderCount - normalBusy;
+      const normalFree = builderCount - normalBusy;
 
       const allowGoblinNow = canUseGoblinBuilder(profile, freshActiveUpgrades);
+      console.log("activeUpgrades:", activeUpgrades);
+      console.log("normalBusy:", normalBusy);
+      console.log("builderCount:", builderCount);
 
+      const builderUpgrades = freshActiveUpgrades.filter(
+        (u) => u.upgradeType === "BUILDER",
+      );
+
+      if (builderUpgrades.length >= builderCount && !allowGoblinNow) {
+        showError("All builders busy", "All builders are currently working.");
+        return;
+      }
       if (!isEditMode) {
         if (normalFree > 0) {
           // Use normal builder
-          slot = assignBuilderSlot(
-            freshActiveUpgrades,
-            profile.normalBuilderCount,
-            false,
+
+          const collision = freshActiveUpgrades.some(
+            (u) => u.builderSlot === slot && u.upgradeType === "BUILDER",
           );
+
+          if (collision) {
+            showError("Slot conflict", "Please try again.");
+            return;
+          }
+          slot = assignBuilderSlot(freshActiveUpgrades, builderCount, false);
         } else if (allowGoblinNow) {
           // Only check goblin collision here
           const goblinAlreadyActive = freshActiveUpgrades.some(
@@ -351,13 +379,14 @@ export default function AddUpgradeScreen() {
         builderType,
         currentLevel: parsedCurrent,
         nextLevel: parsedNext,
+        accountTag: tag,
       });
 
-      let finalUpgrade: BuilderUpgrade;
+      let finalUpgrade: Upgrade;
 
       if (isEditMode) {
-        const upgrades = await getBuilderUpgrades(tag);
-        const existing = upgrades.find((u) => u.id === editId);
+        const upgrades = await getUpgrades(tag);
+        const existing = upgrades.find((u: any) => u.id === editId);
 
         if (!existing) {
           showError("Error", "Original upgrade not found.");
@@ -375,16 +404,16 @@ export default function AddUpgradeScreen() {
         };
         await cancelBuilderNotification(editId as string);
 
-        await deleteBuilderUpgrade(editId as string);
+        await deleteUpgrade(editId as string);
         await ensureCraftedLoaded();
-        await addBuilderUpgrade(tag, finalUpgrade);
+        await addUpgrade(tag, finalUpgrade);
       } else {
         finalUpgrade = {
           ...baseUpgrade,
           builderSlot: slot!,
         };
         await ensureCraftedLoaded();
-        await addBuilderUpgrade(tag, finalUpgrade);
+        await addUpgrade(tag, finalUpgrade);
       }
 
       try {

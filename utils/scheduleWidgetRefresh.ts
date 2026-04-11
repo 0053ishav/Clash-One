@@ -1,4 +1,4 @@
-import { getActiveBuilderUpgrades } from "@/services/builderService";
+import { getAccountState } from "@/services/accountStateService";
 import { getPlayerProfile } from "@/storage/playerProfile";
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { requestWidgetUpdate } from "react-native-android-widget";
@@ -23,7 +23,8 @@ export function startSmartWidgetScheduler() {
     const profile = getPlayerProfile();
     const tag = profile.playerTag!;
 
-    const active = await getActiveBuilderUpgrades(tag);
+    const state = await getAccountState(tag);
+    const active = state.activeUpgrades;
 
     if (!active.length) {
       stopSmartWidgetScheduler();

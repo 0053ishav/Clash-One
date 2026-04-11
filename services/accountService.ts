@@ -1,5 +1,5 @@
 import { getDB } from "@/db/database";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { EntityRecord, Upgrade } from "@/types/upgrade";
 
 export type Account = {
   tag: string;
@@ -110,28 +110,30 @@ export const updateBuilderCount = async (tag: string, count: number) => {
   );
 };
 
-export async function replaceBuilders(tag: string, upgrades: BuilderUpgrade[]) {
+export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
   const db = await getDB();
   if (!tag) return;
   try {
     await db.execAsync("BEGIN TRANSACTION");
 
     await db.runAsync(
-      `DELETE FROM builders WHERE account_player_tag=?`,
+      `DELETE FROM upgrades WHERE account_player_tag=?`,
       [tag]
     );
 
     for (const u of upgrades) {
       await db.runAsync(
-        `INSERT INTO builders
+        `INSERT INTO upgrades
   (
     id,
     account_player_tag,
     data_id,
     entity,
+    type,
+    upgrade_type,
     builder_slot,
     builder_type,
-    building_level,
+    current_level,
     next_level,
     start_time,
     duration_minutes,
@@ -141,19 +143,26 @@ export async function replaceBuilders(tag: string, upgrades: BuilderUpgrade[]) {
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
           u.dataId ?? null,
           u.entity,
-          String(u.builderSlot),
-          u.builderType,
+
+          u.type,
+          u.upgradeType,
+
+          u.builderSlot != null ? String(u.builderSlot) : null,
+          u.builderType ?? null,
+
           u.currentLevel ?? null,
           u.nextLevel ?? null,
+          
           u.startTime,
           u.durationMinutes,
           u.endTime,
+          
           u.isCompleted ? 1 : 0,
           u.source ?? null,
 
@@ -163,39 +172,49 @@ export async function replaceBuilders(tag: string, upgrades: BuilderUpgrade[]) {
       );
     }
 
-    //   const builderCount = new Set(
-    //     upgrades.map((u) => u.builderSlot)
-    //   ).size;
-
-    //   await db.runAsync(
-    //     `UPDATE accounts
-    //  SET builder_count = ?
-    //  WHERE player_tag = ?`,
-    //     [builderCount, tag]
-    //   );
-
     await db.execAsync("COMMIT");
   } catch (e) {
-    console.error("replaceBuilders failed:", e);
+    console.error("replaceUpgrades failed:", e);
     await db.execAsync("ROLLBACK");
     throw e;
   }
 };
 
-/**
- * How JSON Import Should Use These
- */
+export async function replaceEntities(
+  tag: string,
+  entities: Omit<EntityRecord, "accountTag">[]
+) {
+  const db = await getDB();
+  if (!tag) return;
 
-// Paste JSON
-//    ↓
-// parse JSON
-//    ↓
-// fetch profile API
-//    ↓
-// addAccount()
-//    ↓
-// replaceBuilders()
-//    ↓
-// scheduleNotifications()
-//    ↓
-// updateWidget()
+  try {
+    await db.execAsync("BEGIN TRANSACTION");
+
+    await db.runAsync(
+      `DELETE FROM entities WHERE account_player_tag=?`,
+      [tag]
+    );
+
+    for (const e of entities) {
+      await db.runAsync(
+        `INSERT INTO entities
+        (id, account_player_tag, data_id, type, level, cooldown)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          e.id,
+          tag,
+          e.dataId,
+          e.type,
+          e.level,
+          e.cooldown ?? null,
+        ]
+      );
+    }
+
+    await db.execAsync("COMMIT");
+  } catch (e) {
+    console.error("replaceEntities failed:", e);
+    await db.execAsync("ROLLBACK");
+    throw e;
+  }
+}

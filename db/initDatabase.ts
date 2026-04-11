@@ -19,19 +19,56 @@ export async function initDatabase() {
     );
   `);
 
+  // await db.execAsync(`
+  //   CREATE TABLE IF NOT EXISTS builders (
+  //     id TEXT PRIMARY KEY,
+
+  //     account_player_tag TEXT NOT NULL,
+
+  //     data_id INTEGER,
+  //     entity TEXT,
+
+  //     builder_slot TEXT,
+  //     builder_type TEXT,
+
+  //     building_level INTEGER,
+  //     next_level INTEGER,
+
+  //     start_time INTEGER,
+  //     duration_minutes INTEGER,
+  //     finish_timestamp INTEGER,
+
+  //     is_completed INTEGER DEFAULT 0,
+  //     source TEXT,
+
+  //     is_crafted INTEGER DEFAULT 0,
+  //     module_id INTEGER,
+
+  //     FOREIGN KEY(account_player_tag)
+  //     REFERENCES accounts(player_tag)
+  //     ON DELETE CASCADE,
+
+  //     UNIQUE(account_player_tag, builder_slot)
+  //   );
+  // `);
+
+
   await db.execAsync(`
-    CREATE TABLE IF NOT EXISTS builders (
+    CREATE TABLE IF NOT EXISTS upgrades (
       id TEXT PRIMARY KEY,
 
       account_player_tag TEXT NOT NULL,
 
       data_id INTEGER,
       entity TEXT,
+      type TEXT,
 
-      builder_slot TEXT,
+      upgrade_type TEXT,
+
       builder_type TEXT,
+      builder_slot TEXT,
 
-      building_level INTEGER,
+      current_level INTEGER,
       next_level INTEGER,
 
       start_time INTEGER,
@@ -48,17 +85,37 @@ export async function initDatabase() {
       REFERENCES accounts(player_tag)
       ON DELETE CASCADE,
 
-      UNIQUE(account_player_tag, builder_slot)
+      UNIQUE(account_player_tag, builder_slot, is_completed)
     );
   `);
 
   await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_builders_account_finish
-      ON builders(account_player_tag, finish_timestamp);
+    CREATE TABLE IF NOT EXISTS entities (
+  id TEXT PRIMARY KEY,
+
+  account_player_tag TEXT NOT NULL,
+
+  data_id INTEGER,
+  type TEXT,
+
+  level INTEGER,
+  cooldown INTEGER,
+
+  is_active INTEGER DEFAULT 1,
+
+  FOREIGN KEY(account_player_tag)
+  REFERENCES accounts(player_tag)
+  ON DELETE CASCADE
+);  
+  `)
+
+  await db.execAsync(`
+      CREATE INDEX IF NOT EXISTS idx_upgrades_account_finish
+      ON upgrades(account_player_tag, finish_timestamp);
   `);
 
   await db.execAsync(`
-      CREATE INDEX IF NOT EXISTS idx_builders_finish
-      ON builders(finish_timestamp);
+      CREATE INDEX IF NOT EXISTS idx_upgrades_finish
+      ON upgrades(finish_timestamp);
   `);
 }

@@ -10,7 +10,6 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Animated,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -36,6 +35,8 @@ export default function UploadJsonScreen() {
 
     const supported = await Linking.canOpenURL(url);
 
+    console.log("url: ", url);
+    console.log("supported: ", supported);
     if (supported) {
       await Linking.openURL(url);
     } else {

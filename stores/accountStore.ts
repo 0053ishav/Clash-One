@@ -1,4 +1,4 @@
-import { Account, deleteAccount, getAccounts, replaceBuilders } from "@/services/accountService";
+import { Account, deleteAccount, getAccounts, replaceEntities, replaceUpgrades } from "@/services/accountService";
 import { switchAccountService } from "@/services/accountSwitchService";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { getActiveAccount } from "@/storage/activeAccount";
@@ -6,7 +6,7 @@ import { getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { getPlayerProfile } from "@/storage/playerProfile";
 import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
 import { PlayerProfile } from "@/types/player";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { EntityRecord, Upgrade } from "@/types/upgrade";
 import { create } from "zustand";
 
 type AccountState = {
@@ -30,7 +30,11 @@ type AccountState = {
   switchAccount: (tag: string) => Promise<void>;
   removeAccount: (tag: string) => Promise<void>;
   setProfile: (profile: PlayerProfile) => void;
-  importJsonData: (tag: string, upgrades: BuilderUpgrade[]) => Promise<void>;
+  importJsonData: (
+    tag: string, 
+    upgrades: Upgrade[],
+    entities: EntityRecord[]
+  ) => Promise<void>;
 };
 
 export const useAccountStore = create<AccountState>((set) => ({
@@ -223,7 +227,7 @@ export const useAccountStore = create<AccountState>((set) => ({
     set({ profile });
   },
 
-  importJsonData: async (tag, upgrades) => {
+  importJsonData: async (tag, upgrades, entities) => {
     set({ isSyncing: true });
 
     if (!tag) {
@@ -231,7 +235,8 @@ export const useAccountStore = create<AccountState>((set) => ({
     }
 
     try {
-      await replaceBuilders(tag, upgrades);
+      await replaceUpgrades(tag, upgrades);
+      await replaceEntities(tag, entities);
 
       const { switchAccount, loadAccounts, setLastSync } = useAccountStore.getState();
       await loadAccounts();

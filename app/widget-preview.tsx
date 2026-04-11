@@ -2,7 +2,7 @@
 
 import { ConfirmModal } from "@/components/ConfirmModal";
 import WidgetPreviewCard from "@/components/WidgetPreviewCard";
-import { getActiveBuilderUpgrades } from "@/services/builderService";
+import { getActiveUpgrades } from "@/services/upgradeService";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
@@ -20,7 +20,6 @@ export default function WidgetPreviewScreen() {
 
   const accounts = useAccountStore((s) => s.accounts);
   const activeTag = useAccountStore((s) => s.activeTag);
-  const profile = useAccountStore((s) => s.profile);
 
   const account = accounts.find((a) => a.tag === activeTag);
   const isPro = usePremiumStore((s) => s.isPro);
@@ -37,7 +36,7 @@ export default function WidgetPreviewScreen() {
     if (!activeTag) return;
 
     (async () => {
-      const upgrades = await getActiveBuilderUpgrades(activeTag);
+      const upgrades = await getActiveUpgrades(activeTag);
       setActiveUpgrades(upgrades);
     })();
   }, [activeTag]);
@@ -74,11 +73,6 @@ export default function WidgetPreviewScreen() {
   }, [account, activeUpgrades]);
 
   if (!account) return null;
-
-  const subtitle = status.allFree
-    ? "🚨 Builder Idle"
-    : `⏱ ${formatCountdown(remainingMs)}`;
-
   return (
     <SafeAreaView style={styles.root}>
       <ScrollView contentContainerStyle={styles.container}>

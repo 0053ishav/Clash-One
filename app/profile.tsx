@@ -3,8 +3,10 @@ import BattleStatsGrid from "@/components/Profile/BattleStatsGrid";
 import ProfileHeroCard from "@/components/Profile/ProfileHeroCard";
 import ProgressSection from "@/components/Profile/ProgressSection";
 import { fetchFullPlayer } from "@/services/clashApi";
+import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
+import { EntityRecord } from "@/types/upgrade";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -27,13 +29,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const activeTag = useAccountStore((s) => s.activeTag);
-
-  // useEffect(() => {
-  //   (async () => {
-  //     const tag = await getActiveAccount();
-  //     setActiveTag(tag!);
-  //   })();
-  // }, []);
+  const [entities, setEntities] = useState<EntityRecord[]>([]);
 
   const loadProfile = async () => {
     try {
@@ -45,10 +41,10 @@ export default function ProfileScreen() {
       }
 
       const playerData = await fetchFullPlayer(activeTag);
-
-      console.log("full player data: ", playerData);
+      const entityData = await getEntities(activeTag);
 
       setData(playerData);
+      setEntities(entityData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load profile");
       console.error("Profile load error:", err);
@@ -94,6 +90,13 @@ export default function ProfileScreen() {
     );
   }
 
+  const helpers = entities.filter((e) => e.type?.toLowerCase() === "helper");
+  const guardians = entities.filter(
+    (e) => e.type?.toLowerCase() === "guardian",
+  );
+  console.log("ENTITIES:", entities);
+  console.log("helpers:", helpers);
+  console.log("guardians:", guardians);
   return (
     <View style={styles.container}>
       <ScrollView
@@ -124,8 +127,7 @@ export default function ProfileScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ProfileHeroCard data={data} />
-
+        <ProfileHeroCard data={data} helpers={helpers} guardians={guardians} />
         <BattleStatsGrid data={data} />
 
         <ArmySection data={data} />

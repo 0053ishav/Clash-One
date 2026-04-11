@@ -1,24 +1,28 @@
 import { getDB } from "@/db/database";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
+import { deriveCompletionState } from "@/utils/deriveCompletionState";
 
-import { autoCompleteBuilderUpgrades } from "@/utils/autoCompleteUpgrades";
 
 /**
  * Get all builder upgrades for an account
  */
 
-export async function getBuilderUpgrades(tag: string): Promise<BuilderUpgrade[]> {
+export async function getUpgrades(tag: string): Promise<Upgrade[]> {
   const db = await getDB();
 
   const rows = await db.getAllAsync(
-    `SELECT * FROM builders WHERE account_player_tag=?`,
+    `SELECT * FROM upgrades WHERE account_player_tag=?`,
     [tag]
   );
 
-  const normalized: BuilderUpgrade[] = rows.map((r: any) => ({
+  const normalized: Upgrade[] = rows.map((r: any) => ({
     id: r.id,
+    accountTag: r.account_player_tag,
     dataId: r.data_id,
     entity: r.entity,
+
+    type: r.type,
+    upgradeType: r.upgrade_type,
 
     builderSlot:
       r.builder_slot === "G"
@@ -31,7 +35,7 @@ export async function getBuilderUpgrades(tag: string): Promise<BuilderUpgrade[]>
     durationMinutes: Number(r.duration_minutes),
     endTime: Number(r.finish_timestamp),
 
-    currentLevel: r.building_level ?? undefined,
+    currentLevel: r.current_level ?? undefined,
     nextLevel: r.next_level ?? undefined,
 
     isCompleted: !!r.is_completed,
@@ -40,17 +44,17 @@ export async function getBuilderUpgrades(tag: string): Promise<BuilderUpgrade[]>
     isCrafted: r.is_crafted === 1,
     moduleId: r.module_id
   }));
-  return autoCompleteBuilderUpgrades(normalized);
+  return deriveCompletionState(normalized);
 }
 
 
-export async function getActiveBuilderUpgrades(tag: string): Promise<BuilderUpgrade[]> {
+export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
   const db = await getDB();
   const now = Date.now();
 
   const rows = await db.getAllAsync(
     `SELECT *
-     FROM builders
+     FROM upgrades
      WHERE account_player_tag=?
      AND is_completed=0
      AND finish_timestamp>?`,
@@ -59,8 +63,13 @@ export async function getActiveBuilderUpgrades(tag: string): Promise<BuilderUpgr
 
   return rows.map((r: any) => ({
     id: r.id,
+    accountTag: r.account_player_tag,
+
     dataId: r.data_id,
     entity: r.entity,
+
+    type: r.type,
+    upgradeType: r.upgrade_type,
 
     builderSlot: r.builder_slot === "G" ? "G" : Number(r.builder_slot),
     builderType: r.builder_type,
@@ -69,7 +78,7 @@ export async function getActiveBuilderUpgrades(tag: string): Promise<BuilderUpgr
     durationMinutes: r.duration_minutes,
     endTime: r.finish_timestamp,
 
-    currentLevel: r.building_level ?? undefined,
+    currentLevel: r.current_level ?? undefined,
     nextLevel: r.next_level ?? undefined,
 
     isCrafted: r.is_crafted === 1,
@@ -85,40 +94,51 @@ export async function getActiveBuilderUpgrades(tag: string): Promise<BuilderUpgr
  * Insert a single upgrade
  */
 
-export async function addBuilderUpgrade(tag: string, upgrade: BuilderUpgrade) {
+export async function addUpgrade(tag: string, upgrade: Upgrade) {
   const db = await getDB();
 
-  const existing = await db.getFirstAsync(
-  `SELECT id FROM builders
-   WHERE account_player_tag=? AND builder_slot=?`,
-  [tag, upgrade.builderSlot]
-);
+  if (upgrade.upgradeType === "BUILDER") {
+    const existing = await db.getFirstAsync(
+      `SELECT id FROM upgrades
+   WHERE account_player_tag=? 
+   AND builder_slot=?
+   AND is_completed=0`,
+      [tag, String(upgrade.builderSlot)]
+    );
 
-if (existing) {
-  throw new Error("BUILDER_SLOT_OCCUPIED");
-}
+    if (existing) {
+      throw new Error("BUILDER_SLOT_OCCUPIED");
+    }
+  }
 
   await db.runAsync(
-    `INSERT INTO builders
-    (id, account_player_tag, data_id, entity, builder_slot, builder_type,
-    building_level, next_level, start_time, duration_minutes,
+    `INSERT INTO upgrades
+    (id, account_player_tag, data_id, entity, type, upgrade_type, builder_slot, builder_type,
+    current_level, next_level, start_time, duration_minutes,
     finish_timestamp, is_completed, source, is_crafted, module_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
       upgrade.dataId ?? null,
       upgrade.entity,
-      // typeof upgrade.builderSlot === "number" ? upgrade.builderSlot : null,
-      String(upgrade.builderSlot),
-      upgrade.builderType,
+
+      upgrade.type,
+      upgrade.upgradeType,
+
+      upgrade.builderSlot != null ? String(upgrade.builderSlot) : null,
+      upgrade.builderType ?? null,
+
       upgrade.currentLevel ?? null,
       upgrade.nextLevel ?? null,
+
       upgrade.startTime,
       upgrade.durationMinutes,
       upgrade.endTime,
+
       upgrade.isCompleted ? 1 : 0,
       upgrade.source ?? null,
+
       upgrade.isCrafted ? 1 : 0,
       upgrade.moduleId ?? null
     ]
@@ -128,11 +148,11 @@ if (existing) {
 /**
  * Delete one upgrade
  */
-export async function deleteBuilderUpgrade(id: string) {
+export async function deleteUpgrade(id: string) {
   const db = await getDB();
 
   await db.runAsync(
-    `DELETE FROM builders WHERE id=?`,
+    `DELETE FROM upgrades WHERE id=?`,
     [id]
   );
 }
@@ -142,8 +162,22 @@ export async function cleanupCompletedUpgrades(tag: string) {
   const now = Date.now();
 
   await db.runAsync(
-    `DELETE FROM builders
+    `DELETE FROM upgrades
      WHERE account_player_tag=?
+     AND finish_timestamp <= ?`,
+    [tag, now]
+  );
+}
+
+export async function completeFinishedUpgrades(tag: string) {
+  const db = await getDB();
+  const now = Date.now();
+
+  await db.runAsync(
+    `UPDATE upgrades
+     SET is_completed = 1
+     WHERE account_player_tag = ?
+     AND is_completed = 0
      AND finish_timestamp <= ?`,
     [tag, now]
   );

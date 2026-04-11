@@ -1,9 +1,9 @@
-import { BuilderUpgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
 
 export function getBuilderStatus(params: {
   normalBuilderCount: number;
   goblinBuilderUnlocked: boolean;
-  activeUpgrades: BuilderUpgrade[];
+  activeUpgrades: Upgrade[];
 }) {
   const normalBusy = params.activeUpgrades.filter(
     (u) => u.builderSlot !== "G"

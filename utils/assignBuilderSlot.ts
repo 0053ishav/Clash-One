@@ -1,11 +1,14 @@
-import { BuilderUpgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
 
 export function assignBuilderSlot(
-    activeUpgrades: BuilderUpgrade[],
+    activeUpgrades: Upgrade[],
     maxBuilders: number,
     allowGoblin: boolean
 ): number | "G" {
-    const usedSlots = activeUpgrades.map(u => u.builderSlot);
+    const usedSlots = activeUpgrades
+        .filter(u => u.upgradeType === "BUILDER")
+        .map((u) => u.builderSlot)
+        .filter((s): s is number | "G" => s !== undefined);
 
     for (let i = 0; i < maxBuilders; i++) {
         if (!usedSlots.includes(i)) {

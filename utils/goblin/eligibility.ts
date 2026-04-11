@@ -1,10 +1,10 @@
 import { PlayerProfile } from "@/types/player";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
 import { isWorkForHireActive } from "@/utils/goblin/globalEvents";
 
 export function canUseGoblinBuilder(
   profile: PlayerProfile,
-  activeUpgrades: BuilderUpgrade[]
+  activeUpgrades: Upgrade[]
 ): boolean {
   if (!isWorkForHireActive()) return false;
 

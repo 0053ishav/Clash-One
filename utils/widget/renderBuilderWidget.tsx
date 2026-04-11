@@ -3,9 +3,12 @@ import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
 import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
 
-export async function renderBuilderWidget(inputTag?: string) {
+export async function renderBuilderWidget() {
   try {
     const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+
+    const selectedTag = widgetPrefs.selectedAccountTag;
+    const fallbackTag = accounts[0]?.tag;
 
     if (!accounts || accounts.length === 0) {
       return (
@@ -19,16 +22,11 @@ export async function renderBuilderWidget(inputTag?: string) {
       );
     }
 
-    const selectedTag = widgetPrefs.selectedAccountTag;
-    const fallbackTag = accounts[0]?.tag;
-
-    const tag =
-      inputTag ??
-      (accounts.some((a) => a.tag === selectedTag)
-        ? selectedTag
-        : accounts.some((a) => a.tag === activeTag)
-          ? activeTag
-          : fallbackTag);
+    const tag = accounts.some((a) => a.tag === selectedTag)
+      ? selectedTag
+      : accounts.some((a) => a.tag === activeTag)
+        ? activeTag
+        : fallbackTag;
 
     if (!tag) {
       return (
@@ -45,7 +43,7 @@ export async function renderBuilderWidget(inputTag?: string) {
     const accountExists = accounts.some((a) => a.tag === tag);
 
     if (!accountExists) {
-      return renderBuilderWidget(accounts[0].tag);
+      return renderBuilderWidget();
     }
 
     const data = await getBuilderWidgetData(tag);

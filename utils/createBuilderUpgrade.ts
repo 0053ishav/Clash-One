@@ -1,6 +1,7 @@
+import { normalizeEntityType, resolveUpgradeType } from "@/services/jsonImport/jsonImportService";
 import { useCraftedStore } from "@/stores/craftedEventStore";
 import { EntityType } from "@/types/entity";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
 import * as Crypto from "expo-crypto";
 import { getEntity } from "./getEntity";
 
@@ -12,9 +13,10 @@ export async function createBuilderUpgrade(params: {
   hours: number;
   minutes: number;
   builderType?: "NORMAL" | "GOBLIN";
-  currentLevel?: number
-  nextLevel?: number
-}): Promise<Omit<BuilderUpgrade, "builderSlot">> {
+  currentLevel?: number;
+  nextLevel?: number;
+  accountTag: string;
+}): Promise<Omit<Upgrade, "builderSlot">> {
   const durationMinutes =
     params.days * 24 * 60 +
     params.hours * 60 +
@@ -26,13 +28,19 @@ export async function createBuilderUpgrade(params: {
   const id = Crypto.randomUUID();
   const crafted = useCraftedStore.getState();
 
+  const entityData = params.dataId ? getEntity(params.dataId) : null;
+
+  const rawType = params.type ?? entityData?.type;
+
+  const normalizedType = normalizeEntityType(rawType);
+  const upgradeType = resolveUpgradeType(rawType);
+
+  let name = entityData?.name ?? params.entity ?? "Custom";
+
+
   const isCrafted = params.dataId
     ? !!crafted.defenses[params.dataId]
     : false;
-
-  const entityData = params.dataId ? getEntity(params.dataId) : null;
-
-  let name = entityData?.name ?? params.entity ?? "Custom";
 
   if (isCrafted && params.dataId) {
     name = crafted.defenses[params.dataId]?.name ?? name;
@@ -40,9 +48,13 @@ export async function createBuilderUpgrade(params: {
 
   return {
     id,
+    accountTag: params.accountTag,
+
     dataId: params.dataId,
     entity: name,
-    type: params.type ?? entityData?.type,
+    
+    type: normalizedType,
+    upgradeType,
 
     startTime,
     durationMinutes,
@@ -50,10 +62,11 @@ export async function createBuilderUpgrade(params: {
 
     builderType: params.builderType ?? "NORMAL",
     isCompleted: false,
-    
+
     currentLevel: params.currentLevel,
     nextLevel: params.nextLevel,
 
     isCrafted,
+    source: "MANUAL",
   };
 }

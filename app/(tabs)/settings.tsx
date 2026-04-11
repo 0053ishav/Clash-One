@@ -3,8 +3,10 @@ import {
   updateAccountColor,
   updateBuilderCount,
 } from "@/services/accountService";
-import { getActiveBuilderUpgrades } from "@/services/builderService";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
+import {
+  getActiveUpgrades
+} from "@/services/upgradeService";
 import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
@@ -109,7 +111,7 @@ export default function SettingsScreen() {
 
     const current = activeAccount.builderCount;
 
-    const busyBuilders = (await getActiveBuilderUpgrades(activeTag)).length; // you implement this
+    const busyBuilders = (await getActiveUpgrades(activeTag)).length;
 
     if (count < busyBuilders) {
       setRequiredBuilders(busyBuilders);

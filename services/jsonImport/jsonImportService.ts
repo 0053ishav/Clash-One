@@ -1,306 +1,14 @@
-import { addAccount, getAccountByTag, replaceBuilders, updateAccount, updateBuilderCount } from "@/services/accountService";
+import { addAccount, getAccountByTag, replaceUpgrades, updateAccount, updateBuilderCount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { useAccountStore } from "@/stores/accountStore";
-import { BuilderUpgrade } from "@/types/upgrade";
+import { EntityType } from "@/types/entity";
+import { Upgrade } from "@/types/upgrade";
 import { getEntity } from "@/utils/getEntity";
 import { randomUUID } from "expo-crypto";
-
-// type RawExport = {
-//   tag: string;
-//   timestamp: number; // seconds
-//   buildings?: { data: number; lvl: number; timer?: number; extra?: boolean; }[];
-//   traps?: { data: number; lvl: number; timer?: number; extra?: boolean; }[];
-//   heroes?: { data: number; lvl: number; timer?: number; extra?: boolean; }[];
-// };
-
-// type ImportResult =
-//   | { status: "NO_ACTIVE_BUILDERS"; tag: string }
-//   | {
-//     status: "SUCCESS";
-//     activeCount: number;
-//     skippedExpired: number;
-//     tag: string;
-//   };
-
-// /**
-//  * Basic structural validation of export JSON
-//  */
-// function validateJson(data: any) {
-//   if (!data || typeof data !== "object") {
-//     throw new Error("INVALID_STRUCTURE");
-//   }
-
-//   if (typeof data.tag !== "string") {
-//     throw new Error("INVALID_STRUCTURE");
-//   }
-
-//   if (typeof data.timestamp !== "number") {
-//     throw new Error("INVALID_STRUCTURE");
-//   }
-
-//   if (
-//     !Array.isArray(data.buildings) &&
-//     !Array.isArray(data.traps) &&
-//     !Array.isArray(data.heroes)
-//   ) {
-//     throw new Error("INVALID_STRUCTURE");
-//   }
-// }
-
-// /**
-//  * Main Import Logic
-//  *
-//  * Design Principles:
-//  * - JSON is source of truth
-//  * - Profile builder count auto-adjusts if JSON proves it wrong
-//  * - Timing is internally consistent (start = now, end = now + remaining)
-//  * - Goblin assignment respects business rules
-//  */
-// export async function importVillageJson(
-//   rawText: string
-// ): Promise<ImportResult> {
-//   let parsed: RawExport;
-
-//   const switchAccountStore = useAccountStore.getState().switchAccount;
-//   const  importJsonData  = useAccountStore.getState().importJsonData;
-//   // 1️⃣ Parse JSON safely
-//   try {
-//     parsed = JSON.parse(rawText);
-//   } catch {
-//     throw new Error("INVALID_JSON");
-//   }
-
-//   validateJson(parsed);
-
-//   console.log("📥 Import JSON tag:", parsed.tag);
-
-//   const setLastSync = useAccountStore.getState().setLastSync;
-
-//   const account = await getAccountByTag(parsed.tag);
-//   const totalBuilders = account?.builderCount ?? 1;
-
-//   const exportTimestampMs = parsed.timestamp * 1000;
-//   const now = Date.now();
-
-//   // 4️⃣ Extract buildings that have timers (active upgrades at export moment)
-//   const activeBuilderTasks = [
-//     ...(parsed.buildings?.filter((b) => typeof b.timer === "number") ?? []),
-//     ...(parsed.traps?.filter((t) => typeof t.timer === "number") ?? []),
-//     ...(parsed.heroes?.filter((h) => typeof h.timer === "number") ?? []),
-//   ]
-
-//   /**
-//    * 5️⃣ First Pass
-//    * Determine which upgrades are still valid (not expired)
-//    */
-//   const validUpgrades: {
-//     data: number;
-//     remainingNow: number;
-//     lvl: number;
-//     isGoblin: boolean;
-//   }[] = [];
-
-//   let skippedExpired = 0;
-
-//   for (const building of activeBuilderTasks) {
-//     const remainingMsAtExport = (building.timer ?? 0) * 1000;
-//     const realEndTime = exportTimestampMs + remainingMsAtExport;
-//     const remainingNow = Math.max(0, realEndTime - now);
-
-//     // If already completed by now → ignore
-//     if (remainingNow <= 0) {
-//       skippedExpired++;
-//       continue;
-//     }
-
-//     validUpgrades.push({
-//       data: building.data,
-//       remainingNow,
-//       lvl: building.lvl,
-//       isGoblin: building.extra === true
-//     });
-//   }
-
-//   // API sync
-//   try {
-//     console.log("🚀 Calling Clash API...");
-//     const apiData = await fetchPlayerFromApi(parsed.tag);
-//     // console.log("🎯 API returned:", apiData);
-
-//     const existing = await getAccountByTag(parsed.tag);
-
-//     const busyBuildersFromJson = validUpgrades.length;
-//     const safeBuilderCount = Math.max(1, Math.min(busyBuildersFromJson, 6));
-
-//     if (!existing) {
-//       // First time → create
-//       await addAccount(
-//         parsed.tag,
-//         apiData?.name ?? "Chief",
-//         "#fbbf24",
-//         apiData?.townHallLevel ?? 1,
-//         safeBuilderCount
-//       );
-      
-//     } else {
-//       // Update basic info only
-//       await updateAccount(
-//         parsed.tag,
-//         apiData?.name ?? existing.name,
-//         existing.color
-//       );
-
-//       // 🔥 ONLY INCREASE builder count
-//       if (busyBuildersFromJson > existing.builderCount) {
-//         await updateBuilderCount(parsed.tag, busyBuildersFromJson);
-//       }
-//     }
-//     await switchAccountStore(parsed.tag);
-
-//     await new Promise((resolve) => setTimeout(resolve, 50));
-    
-//   } catch {
-//   }
-
-
-//     if (!validUpgrades.length || !activeBuilderTasks.length) {
-//     await replaceBuilders(parsed.tag, []);
-//     setLastSync(parsed.tag, now);
-//     setLastJsonSync(parsed.tag, now);
-//     return { status: "NO_ACTIVE_BUILDERS", tag: parsed.tag, };
-//   }
-
-
-//   /**
-//    * 6️⃣ Determine Real Builder Capacity
-//    *
-//    * JSON is source of truth.
-//    * If JSON shows more concurrent upgrades than profile allows,
-//    * profile must be updated.
-//    *
-//    * Clash max normal builders = 6
-//    * Goblin adds +1 (handled separately)
-//    */
-
-//   validUpgrades.sort((a, b) => a.remainingNow - b.remainingNow);
-
-//   // const MAX_NORMAL_BUILDERS = 6;
-
-//   // let updatedBuilderCount = profile.normalBuilderCount;
-
-//   // if (validUpgrades.length > profile.normalBuilderCount) {
-//   //   updatedBuilderCount = Math.min(validUpgrades.length, MAX_NORMAL_BUILDERS);
-
-//   //   // Update profile if JSON proves user has more builders
-//   //   if (updatedBuilderCount !== profile.normalBuilderCount) {
-//   //     savePlayerProfile({
-//   //       ...profile,
-//   //       normalBuilderCount: updatedBuilderCount,
-//   //     });
-//   //   }
-//   // }
-
-
-//   /**
-//    * 7️⃣ Slot Assignment
-//    *
-//    * - Fill normal builders first
-//    * - Then evaluate Goblin eligibility
-//    */
-
-//   const newUpgrades: BuilderUpgrade[] = [];
-
-//   let normalUsed = 0;
-
-//   for (const item of validUpgrades) {
-//     const startTime = now; // internally consistent timing
-//     const durationMinutes = Math.ceil(item.remainingNow / 60000);
-//     const endTime = now + item.remainingNow;
-
-//     let builderSlot: number | "G";
-
-//     // Fill normal builders first
-//     // if (normalUsed < updatedBuilderCount) {
-//     //   builderSlot = normalUsed;
-//     //   normalUsed++;
-//     // }
-//     // // Then evaluate Goblin
-//     // else if (
-//     //   !goblinUsed &&
-//     //   canUseGoblinBuilder(
-//     //     { ...profile, normalBuilderCount: updatedBuilderCount },
-//     //     newUpgrades
-//     //   )
-//     // ) {
-//     //   builderSlot = "G";
-//     //   goblinUsed = true;
-//     // } else {
-//     //   // If no slot available → ignore safely
-//     //   continue;
-//     // }
-
-//     if (item.isGoblin) {
-//       // 👈 JSON explicitly tells us this is the Goblin slot
-//       builderSlot = "G";
-//     } else if (normalUsed < totalBuilders) {
-//       builderSlot = normalUsed;
-//       normalUsed++;
-//     } else {
-//       continue;
-//     }
-//     const entity = getEntity(item.data);
-
-//     if (!entity) {
-//       console.warn("Unknown entity: ", item.data);
-//       continue
-//     };
-
-//     newUpgrades.push({
-//       id: randomUUID(),
-//       dataId: item.data,
-//       entity: entity.name,
-//       type: entity.type,
-
-//       startTime,
-//       durationMinutes,
-//       endTime,
-
-//       builderType: builderSlot === "G" ? "GOBLIN" : "NORMAL",
-//       builderSlot,
-
-//       currentLevel: item.lvl,
-//       nextLevel: item.lvl + 1,
-
-//       isCompleted: false,
-//       source: "JSON",
-//     });
-//   }
-
-//   /**
-//    * 8️⃣ Replace All Stored Upgrades
-//    * JSON is authoritative → overwrite manual entries
-//    */
-//   console.log("Writing builders:", newUpgrades.length);
-
-//   // await replaceBuilders(parsed.tag, newUpgrades);
-
-//   // rescheduleAllBuilderNotifications();
-
-//   // setLastSync(parsed.tag, now);
-
-//   await importJsonData(parsed.tag, newUpgrades);
-//   setLastJsonSync(parsed.tag, now);
-
-//   return {
-//     status: "SUCCESS",
-//     activeCount: newUpgrades.length,
-//     skippedExpired,
-//     tag: parsed.tag,
-//   };
-// }
-
+import { getEntities } from "../entityService";
+import { getUpgrades } from "../upgradeService";
 
 type RawExport = {
   tag: string;
@@ -325,6 +33,9 @@ type RawExport = {
 
   traps?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
   heroes?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
+  pets?: { data: number; lvl: number; timer?: number }[];
+  guardians?: { data: number; lvl: number; timer?: number }[];
+  helpers?: { data: number; lvl: number; helper_cooldown?: number }[];
 };
 
 type ActiveTask = {
@@ -349,7 +60,7 @@ type ImportResult =
   };
 
 
-  function validateJson(data: any) {
+function validateJson(data: any) {
   if (!data || typeof data !== "object") {
     throw new Error("INVALID_STRUCTURE");
   }
@@ -371,6 +82,29 @@ type ImportResult =
   }
 }
 
+export function resolveUpgradeType(entityType?: EntityType): Upgrade["upgradeType"] {
+  if (entityType === "pet") return "PET";
+  if (entityType === "lab") return "LAB";
+  return "BUILDER";
+}
+
+export function normalizeEntityType(entityType?: EntityType): Upgrade["type"] {
+  switch (entityType) {
+    case "building":
+      return "BUILDING";
+    case "hero":
+      return "HERO";
+    case "pet":
+      return "PET";
+    case "guardian":
+      return "GUARDIAN";
+    case "lab":
+      return "LAB";
+    default:
+      return "BUILDING"; // fallback (safe)
+  }
+}
+
 export async function importVillageJson(
   rawText: string
 ): Promise<ImportResult> {
@@ -386,7 +120,7 @@ export async function importVillageJson(
   }
 
   validateJson(parsed);
-  
+
   await ensureCraftedLoaded();
 
   console.log("📥 Import JSON tag:", parsed.tag);
@@ -394,7 +128,6 @@ export async function importVillageJson(
   const setLastSync = useAccountStore.getState().setLastSync;
 
   const account = await getAccountByTag(parsed.tag);
-  const totalBuilders = account?.builderCount ?? 1;
 
   const exportTimestampMs = parsed.timestamp * 1000;
   const now = Date.now();
@@ -402,6 +135,42 @@ export async function importVillageJson(
   // =========================================================
   // 🔥 STEP 1: BUILD ACTIVE TASK LIST (NORMAL + CRAFTED)
   // =========================================================
+
+  const entities: {
+    id: string;
+    dataId: number;
+    type: "helper" | "guardian" | "pet";
+    level: number;
+    cooldown?: number;
+  }[] = [];
+
+  for (const h of parsed.helpers ?? []) {
+    entities.push({
+      id: randomUUID(),
+      dataId: h.data,
+      type: "helper",
+      level: h.lvl,
+      cooldown: h.helper_cooldown,
+    });
+  }
+
+  for (const p of parsed.pets ?? []) {
+    entities.push({
+      id: randomUUID(),
+      dataId: p.data,
+      type: "pet",
+      level: p.lvl,
+    });
+  }
+
+  for (const g of parsed.guardians ?? []) {
+    entities.push({
+      id: randomUUID(),
+      dataId: g.data,
+      type: "guardian",
+      level: g.lvl,
+    });
+  }
 
   const activeBuilderTasks: ActiveTask[] = [];
 
@@ -432,7 +201,23 @@ export async function importVillageJson(
         lvl: h.lvl,
         timer: h.timer!,
         extra: h.extra,
-      })) ?? [])
+      })) ?? []),
+
+    ...(parsed.pets
+      ?.filter((p) => typeof p.timer === "number")
+      .map((p) => ({
+        data: p.data,
+        lvl: p.lvl,
+        timer: p.timer!,
+      })) ?? []),
+
+    ...(parsed.guardians
+      ?.filter((g) => typeof g.timer === "number")
+      .map((g) => ({
+        data: g.data,
+        lvl: g.lvl,
+        timer: g.timer!,
+      })) ?? []),
   );
 
   // ✅ 🔥 Crafted defenses (modules)
@@ -496,12 +281,24 @@ export async function importVillageJson(
   // 🔥 API SYNC (UNCHANGED)
   // =========================================================
 
+  const busyBuildersFromJson = validUpgrades.filter((u) => {
+      const entity = getEntity(u.data);
+
+      if (!entity) return false;
+
+      const type = resolveUpgradeType(entity.type);
+
+      return type === "BUILDER";
+    }).length;
+
+    const totalBuilders = Math.max(1, Math.min(busyBuildersFromJson, 6));
+
+  
   try {
     const apiData = await fetchPlayerFromApi(parsed.tag);
     const existing = await getAccountByTag(parsed.tag);
 
-    const busyBuildersFromJson = validUpgrades.length;
-    const safeBuilderCount = Math.max(1, Math.min(busyBuildersFromJson, 6));
+    await updateBuilderCount(parsed.tag, totalBuilders);
 
     if (!existing) {
       await addAccount(
@@ -509,7 +306,7 @@ export async function importVillageJson(
         apiData?.name ?? "Chief",
         "#fbbf24",
         apiData?.townHallLevel ?? 1,
-        safeBuilderCount
+        totalBuilders
       );
     } else {
       await updateAccount(
@@ -517,18 +314,14 @@ export async function importVillageJson(
         apiData?.name ?? existing.name,
         existing.color
       );
-
-      if (busyBuildersFromJson > existing.builderCount) {
-        await updateBuilderCount(parsed.tag, busyBuildersFromJson);
-      }
     }
 
     await switchAccountStore(parsed.tag);
     await new Promise((resolve) => setTimeout(resolve, 50));
-  } catch {}
+  } catch { }
 
   if (!validUpgrades.length || !activeBuilderTasks.length) {
-    await replaceBuilders(parsed.tag, []);
+    await replaceUpgrades(parsed.tag, []);
     setLastSync(parsed.tag, now);
     setLastJsonSync(parsed.tag, now);
     return { status: "NO_ACTIVE_BUILDERS", tag: parsed.tag };
@@ -540,7 +333,7 @@ export async function importVillageJson(
 
   validUpgrades.sort((a, b) => a.remainingNow - b.remainingNow);
 
-  const newUpgrades: BuilderUpgrade[] = [];
+  const newUpgrades: Upgrade[] = [];
   let normalUsed = 0;
 
   for (const item of validUpgrades) {
@@ -548,24 +341,14 @@ export async function importVillageJson(
     const durationMinutes = Math.ceil(item.remainingNow / 60000);
     const endTime = now + item.remainingNow;
 
-    let builderSlot: number | "G";
-
-    if (item.isGoblin) {
-      builderSlot = "G";
-    } else if (normalUsed < totalBuilders) {
-      builderSlot = normalUsed;
-      normalUsed++;
-    } else {
-      continue;
-    }
 
     let entity = getEntity(item.data);
 
     // 🔥 force override for crafted
-    if ( item.isCrafted) {
+    if (item.isCrafted) {
       entity = {
         name: "Crafted Defense",
-        type: "building",
+        type: "BUILDING" as EntityType,
       };
     }
 
@@ -574,19 +357,48 @@ export async function importVillageJson(
       continue;
     }
 
+    const upgradeType = resolveUpgradeType(entity.type);
+    const normalizedType = normalizeEntityType(entity.type);
+
+
+    let builderSlot: number | "G" | undefined;
+
+    if (upgradeType === "BUILDER") {
+      if (item.isGoblin) {
+        builderSlot = "G";
+      } else if (normalUsed < totalBuilders) {
+        builderSlot = normalUsed;
+        normalUsed++;
+      } else {
+        continue;
+      }
+    }
+
     newUpgrades.push({
       id: randomUUID(),
-      dataId: item.data,
+      accountTag: parsed.tag,
 
+      dataId: item.data,
       entity: entity.name,
-      type: entity.type,
+
+      type: normalizedType,
+      upgradeType,
 
       startTime,
       durationMinutes,
       endTime,
 
-      builderType: builderSlot === "G" ? "GOBLIN" : "NORMAL",
-      builderSlot,
+      builderType:
+        upgradeType === "BUILDER"
+          ? builderSlot === "G"
+            ? "GOBLIN"
+            : "NORMAL"
+          : undefined,
+
+      builderSlot:
+        upgradeType === "BUILDER"
+          ? builderSlot
+          : undefined,
 
       currentLevel: item.lvl,
       nextLevel: item.lvl + 1,
@@ -594,20 +406,30 @@ export async function importVillageJson(
       isCompleted: false,
       source: "JSON",
 
-      // 👇 IMPORTANT FOR UI NEXT STEP
       moduleId: item.moduleId,
       isCrafted: item.isCrafted,
     });
   }
 
-  console.log("Writing builders:", newUpgrades.length);
+  console.log("Writing upgrades:", newUpgrades.length);
 
-  await importJsonData(parsed.tag, newUpgrades);
+  await importJsonData(parsed.tag, newUpgrades, entities);
+
   setLastJsonSync(parsed.tag, now);
+
+  const upgrades = await getUpgrades(parsed.tag);
+  const entitie = await getEntities(parsed.tag);
+
+  // console.log("UPGRADES:", upgrades);
+  // console.log("ENTITIES:", entitie);
+
+  const builderCountOnly = newUpgrades.filter(
+  (u) => u.upgradeType === "BUILDER"
+).length;
 
   return {
     status: "SUCCESS",
-    activeCount: newUpgrades.length,
+    activeCount: builderCountOnly,
     skippedExpired,
     tag: parsed.tag,
   };

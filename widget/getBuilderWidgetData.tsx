@@ -1,5 +1,7 @@
 import { getEntityTypeByDataId } from "@/data/entityMap";
-import { getActiveBuilderUpgrades } from "@/services/builderService";
+import {
+  getActiveUpgrades
+} from "@/services/upgradeService";
 import { useAccountStore } from "@/stores/accountStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -37,7 +39,7 @@ export async function getBuilderWidgetData(inputTag?: string) {
     };
   }
 
-  const activeUpgrades = await getActiveBuilderUpgrades(tag);
+  const activeUpgrades = await getActiveUpgrades(tag);
 
   const builderCount = account.builderCount;
   const goblinBuilder = isWorkForHireActive();
@@ -80,7 +82,9 @@ export async function getBuilderWidgetData(inputTag?: string) {
   const builderLabel =
     currenUpgrade.builderSlot === "G"
       ? "Goblin"
-      : `B${currenUpgrade.builderSlot + 1}`;
+      : typeof currenUpgrade.builderSlot === "number"
+        ? `B${currenUpgrade.builderSlot + 1}`
+        : "?";
 
   return {
     title: `${builderLabel} - ${formatBuildingName(currenUpgrade.entity)}`,

@@ -1,12 +1,12 @@
 import GoblinEventBanner from "@/components/GoblinEventBanner";
+import { LabSection } from "@/components/home/LabSection";
+import { PetSection } from "@/components/home/PetSection";
 import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { getEntityTypeByDataId } from "@/data/entityMap";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
-import {
-  deleteBuilderUpgrade,
-  getActiveBuilderUpgrades,
-} from "@/services/builderService";
+import { getAccountState } from "@/services/accountStateService";
 import { cancelBuilderNotification } from "@/services/notifications/builderNotificationService";
+import { deleteUpgrade } from "@/services/upgradeService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   setGoblinBannerDismissedUntil,
@@ -14,13 +14,14 @@ import {
 } from "@/storage/goblinStorage";
 import { useAccountStore } from "@/stores/accountStore";
 import { useCraftedStore } from "@/stores/craftedEventStore";
-import { BuilderUpgrade, BuilderWidgetData } from "@/types/upgrade";
+import { BuilderWidgetData, Upgrade } from "@/types/upgrade";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { useCraftedResolver } from "@/utils/craftedResolver";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
+import { getVillageStatus } from "@/utils/getVillageStatus";
 import {
   canUseGoblinBuilder,
   getCurrentWorkForHireEventEnd,
@@ -33,7 +34,7 @@ import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   LayoutAnimation,
   Modal,
@@ -50,10 +51,9 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const [activeUpgrades, setActiveUpgrades] = useState<BuilderUpgrade[]>([]);
-  const [selectedUpgrade, setSelectedUpgrade] = useState<BuilderUpgrade | null>(
-    null,
-  );
+  type AccountState = Awaited<ReturnType<typeof getAccountState>>;
+  const [accountState, setAccountState] = useState<AccountState | null>(null);
+  const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
@@ -83,9 +83,26 @@ export default function HomeScreen() {
 
   const account = accounts.find((a) => a.tag === activeTag);
 
-  const color = account?.color ?? "#fbbf24";
   const builderCount = account?.builderCount ?? 0;
 
+  const builders = useMemo(() => accountState?.builders ?? [], [accountState]);
+
+  console.log("builders upgrades: ", builders);
+  const pets = useMemo(() => accountState?.pets ?? [], [accountState]);
+  console.log("pet upgrades: ", pets);
+  const lab = accountState?.lab;
+
+  const busySlots = useMemo(() => {
+    const map = new Set<number>();
+
+    for (const u of builders) {
+      if (typeof u.builderSlot === "number") {
+        map.add(u.builderSlot);
+      }
+    }
+
+    return map;
+  }, [builders]);
   useFocusEffect(
     useCallback(() => {
       loadAccounts();
@@ -93,32 +110,30 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const refreshUpgrades = useCallback(async () => {
+  const refreshState = useCallback(async () => {
     if (!activeTag) return;
-    setActiveUpgrades(await getActiveBuilderUpgrades(activeTag));
+    const state = await getAccountState(activeTag);
+    // console.log("Account State: ", state);
+    setAccountState(state);
   }, [activeTag]);
 
   useEffect(() => {
-    if (activeTag) refreshUpgrades();
-  }, []);
+    if (activeTag) refreshState();
+  }, [activeTag]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
 
-      setActiveUpgrades((prev) => {
-        const finished = prev.find((u) => u.endTime <= now);
+      const finished = builders.find((u) => u.endTime <= now);
 
-        if (finished) {
-          setCompletedId((current) => current ?? finished.id);
-        }
-
-        return prev;
-      });
+      if (finished) {
+        setCompletedId((current) => current ?? finished.id);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [builders]);
 
   useEffect(() => {
     if (!completedId) return;
@@ -132,14 +147,10 @@ export default function HomeScreen() {
         ),
       );
 
-      setActiveUpgrades((prev) => prev.filter((u) => u.id !== completedId));
-
-      deleteBuilderUpgrade(completedId);
-
+      deleteUpgrade(completedId);
+      await refreshState();
       emitWidgetUpdate();
-
       startSmartWidgetScheduler();
-
       setCompletedId(null);
     }, 800);
 
@@ -164,14 +175,14 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      refreshUpgrades();
-    }, [refreshUpgrades]),
+      refreshState();
+    }, [refreshState]),
   );
 
   useEffect(() => {
-    const interval = setInterval(refreshUpgrades, 60 * 1000);
+    const interval = setInterval(refreshState, 60 * 1000);
     return () => clearInterval(interval);
-  }, [refreshUpgrades]);
+  }, [refreshState]);
 
   const { config } = useRemoteConfig();
 
@@ -233,12 +244,24 @@ export default function HomeScreen() {
   const status = getBuilderStatus({
     normalBuilderCount: builderCount,
     goblinBuilderUnlocked: isGoblinActive,
-    activeUpgrades,
+    activeUpgrades: builders,
   });
 
-  const sortedUpgrades = [...activeUpgrades].sort((a, b) => {
-    const slotA = a.builderSlot === "G" ? 999 : a.builderSlot;
-    const slotB = b.builderSlot === "G" ? 999 : b.builderSlot;
+  const sortedUpgrades = [...builders].sort((a, b) => {
+    const slotA =
+      a.builderSlot === "G"
+        ? 999
+        : typeof a.builderSlot === "number"
+          ? a.builderSlot
+          : 999;
+
+    const slotB =
+      b.builderSlot === "G"
+        ? 999
+        : typeof b.builderSlot === "number"
+          ? b.builderSlot
+          : 999;
+
     return slotA - slotB;
   });
 
@@ -256,12 +279,15 @@ export default function HomeScreen() {
   let nextBuilderLabel: string | undefined;
 
   if (nextUpgrade) {
-    nextBuilderLabel =
-      nextUpgrade?.builderSlot === "G"
-        ? "Goblin"
-        : `B${nextUpgrade.builderSlot + 1}`;
+    if (nextUpgrade.builderSlot === "G") {
+      nextBuilderLabel = "Goblin";
+    } else if (typeof nextUpgrade.builderSlot === "number") {
+      nextBuilderLabel = `B${nextUpgrade.builderSlot + 1}`;
+    } else {
+      nextBuilderLabel = "Builder";
+    }
   }
-  const handleRowLongPress = (upgrade: BuilderUpgrade) => {
+  const handleRowLongPress = (upgrade: Upgrade) => {
     setSelectedUpgrade(upgrade);
     setActionModalVisible(true);
   };
@@ -269,7 +295,7 @@ export default function HomeScreen() {
   const handleRefresh = async () => {
     setRefreshing(true);
 
-    refreshUpgrades();
+    await refreshState();
 
     emitWidgetUpdate();
 
@@ -285,6 +311,7 @@ export default function HomeScreen() {
       nextUpgrade.dataId,
       nextUpgrade.isCrafted,
     );
+    console.log("entity type: ", type);
 
     if (type) {
       statusIcon = getIconByEntityType(
@@ -295,6 +322,27 @@ export default function HomeScreen() {
       );
     }
   }
+
+  const villageStatus = getVillageStatus({
+    builders,
+    builderCount,
+    pet: pets.find((p) => !p.isCompleted),
+    lab,
+  });
+
+  let insight = "";
+
+  if (villageStatus.freeBuilders > 0) {
+    insight = `🚨 ${villageStatus.freeBuilders} builder idle`;
+  } else if (villageStatus.labIdle) {
+    insight = "🧪 Lab idle";
+  } else if (villageStatus.petIdle) {
+    insight = "🐾 Pet idle";
+  } else {
+    insight = "All systems running";
+  }
+
+  const isUrgent = villageStatus.freeBuilders > 0;
 
   return (
     <View style={styles.container}>
@@ -416,7 +464,14 @@ export default function HomeScreen() {
                       ? "🚨 Builder Idle"
                       : `⏳ Next Upgrade: ${nextBuilderLabel}`}
                   </Text>
-
+                  <Text
+                    style={[
+                      styles.statusInsight,
+                      isUrgent && { color: "#ef4444", fontWeight: "600" },
+                    ]}
+                  >
+                    {insight}
+                  </Text>
                   <Text style={styles.statusCardTime}>
                     {status.allFree
                       ? "Ready to build"
@@ -425,9 +480,7 @@ export default function HomeScreen() {
                   <View style={styles.builderIndicators}>
                     {/* Normal Builders */}
                     {Array.from({ length: builderCount }).map((_, i) => {
-                      const isBusy = activeUpgrades.some(
-                        (u) => u.builderSlot === i,
-                      );
+                      const isBusy = busySlots.has(i);
 
                       return (
                         <View
@@ -445,13 +498,13 @@ export default function HomeScreen() {
                     {/* Goblin Slot */}
                     {isGoblinActive &&
                       (() => {
-                        const goblinBusy = activeUpgrades.some(
+                        const goblinBusy = builders.some(
                           (u) => u.builderSlot === "G",
                         );
 
                         const goblinCanBeUsed = canUseGoblinBuilder(
                           profile,
-                          activeUpgrades,
+                          builders,
                         );
                         return (
                           <View
@@ -499,9 +552,12 @@ export default function HomeScreen() {
                 const totalMs = u.endTime - u.startTime;
                 const progress = calculateProgress(u.startTime, u.endTime);
                 const isGoblin = u.builderSlot === "G";
-                const builderLabel = isGoblin
-                  ? "G"
-                  : `B${(u.builderSlot as number) + 1}`;
+                const builderLabel =
+                  u.builderSlot === "G"
+                    ? "G"
+                    : typeof u.builderSlot === "number"
+                      ? `B${u.builderSlot + 1}`
+                      : "?";
                 const isCompleted = completedId === u.id;
                 const entityType = u.dataId
                   ? getEntityTypeByDataId(u.dataId, u.isCrafted)
@@ -605,13 +661,9 @@ export default function HomeScreen() {
                   </Pressable>
                 );
               })}
-
-              <View style={styles.refreshHint}>
-                <Ionicons name="arrow-down" size={16} color="#64748b" />
-                <Text style={styles.refreshHintText}>Pull down to refresh</Text>
-              </View>
             </View>
           )}
+
           {/* Empty State */}
           {sortedUpgrades.length === 0 && (
             <View style={styles.emptyStateContainer}>
@@ -636,6 +688,26 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           )}
+
+          <LabSection
+            lab={lab}
+            // onAddPress={() => router.push("/add-upgrade?type=lab")}
+            onAddPress={() => router.push("/upload-json")}
+            onLongPress={handleRowLongPress}
+          />
+
+          <PetSection
+            pets={pets}
+            // onAddPress={() => router.push("/add-upgrade?type=pet")}
+            onAddPress={() => router.push("/upload-json")}
+            onLongPress={handleRowLongPress}
+          />
+
+          <View style={styles.refreshHint}>
+            <Ionicons name="arrow-down" size={16} color="#64748b" />
+            <Text style={styles.refreshHintText}>Pull down to refresh</Text>
+          </View>
+
           {__DEV__ && sortedUpgrades.length > 0 && (
             <Pressable
               style={styles.devButton}
@@ -728,11 +800,11 @@ export default function HomeScreen() {
                 if (!selectedUpgrade) return;
 
                 await cancelBuilderNotification(selectedUpgrade.id);
-                deleteBuilderUpgrade(selectedUpgrade.id);
+                await deleteUpgrade(selectedUpgrade.id);
                 emitWidgetUpdate();
 
                 startSmartWidgetScheduler();
-                refreshUpgrades();
+                await refreshState();
                 setActionModalVisible(false);
               }}
             >
@@ -1004,6 +1076,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+
+  statusInsight: {
+    fontSize: 13,
+    color: "94a3b8",
+    fontWeight: "400",
+    marginTop: 2,
   },
 
   statusCardTime: {

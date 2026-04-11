@@ -17,32 +17,6 @@ export default function RootLayout() {
     "loading",
   );
 
-  // useEffect(() => {
-  //   const init = async () => {
-  //     await initDatabase();
-  //     startSmartWidgetScheduler();
-  //   };
-  //   init();
-  // }, []);
-
-  // useEffect(() => {
-  //   loadActiveAccount();
-  //   initWidgetManager();
-  //   // usePremiumStore.getState().setPro(true);
-  //   emitWidgetUpdate();
-  // }, []);
-
-  // useEffect(() => {
-  //   Notifications.setNotificationHandler({
-  //     handleNotification: async () => ({
-  //       shouldShowBanner: true,
-  //       shouldPlaySound: true,
-  //       shouldSetBadge: true,
-  //       shouldShowList: false,
-  //     }),
-  //   });
-  // }, []);
-
   const runBootstrap = async () => {
     try {
       await initDatabase();

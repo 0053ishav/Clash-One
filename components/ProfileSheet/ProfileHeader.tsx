@@ -81,13 +81,24 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
             />
           )}
           <View style={styles.clanContent}>
-            <Text style={styles.clanName}>{profile.clanName}</Text>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <Text style={styles.clanName}>{profile.clanName}</Text>
+
+              {/* Clan Tag (secondary info) */}
+              <Text style={styles.clanTag}>{profile.clanTag}</Text>
+            </View>
+
             <View style={styles.clanMeta}>
               {profile.clanLevel && (
                 <Text style={styles.clanMetaText}>Lv {profile.clanLevel}</Text>
               )}
               {profile.role && (
-                <Text style={styles.clanMetaText}>• {profile.role}</Text>
+                <Text style={styles.clanMetaText}>
+                  •{" "}
+                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                </Text>
               )}
             </View>
           </View>
@@ -251,6 +262,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: "#22c55e",
+  },
+
+  clanTag: {
+    fontSize: 10,
+    color: "#94a3b8",
+    fontWeight: "600",
+    backgroundColor: "rgba(148,163,184,0.1)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: "flex-start",
   },
 
   clanMeta: {

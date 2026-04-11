@@ -10,4 +10,5 @@ export type EntityType =
     | "helper"
     | "guardian"
     | "townhall"
+    | "lab"
     | "Custom";

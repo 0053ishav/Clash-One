@@ -1,6 +1,7 @@
 "use no memo";
 
 import { MultiWidgetItem } from "@/types/widgetTypes";
+import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
@@ -380,6 +381,8 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
 
   return (
     <FlexWidget
+      clickAction="OPEN_URI"
+      clickActionData={{ uri: "clashwidget://pro?source=widget&upsell=true" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -445,6 +448,87 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
   );
 }
 
+function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
+  return (
+    <FlexWidget
+      clickAction="OPEN_URI"
+      clickActionData={{ uri: "clashwidget://add-account?source=widget" }}
+      style={{
+        width: "match_parent",
+        height: "match_parent",
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "rgba(251,191,36,0.2)" as ColorProp,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 4,
+      }}
+    >
+      {/* <FlexWidget
+      style={{
+        width: "match_parent",
+        height: "match_parent",
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "rgba(251,191,36,0.2)" as ColorProp,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 4,
+      }}
+    > */}
+      <TextWidget
+        text="+"
+        style={{
+          color: "#fbbf24",
+          fontSize: 16,
+          fontWeight: "700",
+        }}
+      />
+
+      <TextWidget
+        text="Add 2nd Account"
+        style={{
+          color: "#fbbf24",
+          fontSize: 10,
+          fontWeight: "700",
+          marginTop: 2,
+        }}
+        maxLines={1}
+      />
+
+      <TextWidget
+        text="Track multiple accounts"
+        style={{
+          color: "#94a3b8",
+          fontSize: 8,
+          marginTop: 1,
+        }}
+        maxLines={1}
+      />
+
+      <FlexWidget
+        style={{
+          marginTop: 4,
+          backgroundColor: "rgba(251,191,36,0.15)" as ColorProp,
+          borderRadius: 4,
+          paddingHorizontal: 6,
+          paddingVertical: 2,
+        }}
+      >
+        <TextWidget
+          text="open"
+          style={{
+            color: "#fbbf24",
+            fontSize: 7,
+            fontWeight: "600",
+          }}
+        />
+      </FlexWidget>
+      {/* </FlexWidget> */}
+    </FlexWidget>
+  );
+}
+
 // ---------- CARD ----------
 function renderCard(
   item: MultiWidgetItem,
@@ -463,9 +547,13 @@ function renderCard(
   const BAR_MAX_WIDTH = 100;
   const progressWidth = Math.floor(BAR_MAX_WIDTH * 0.8 * clamped);
 
+  const { getCraftedIcon } = getCraftedResolver();
+
   const icon =
     data.dataId && data.type
-      ? getIconByEntityType(data.dataId, data.type)
+      ? data.isCrafted && getCraftedIcon(data.dataId)
+        ? getCraftedIcon(data.dataId)
+        : getIconByEntityType(data.dataId, data.type, undefined, data.isCrafted)
       : urgency === "free"
         ? require("@/assets/images/builder/builder-idle.png")
         : require("@/assets/images/builder/builder-working.png");
@@ -807,8 +895,14 @@ export function MultiAccountWidget({
       ))}
 
       {!isPro && (totalAccounts ?? 0) > 2 && (
-        <FlexWidget style={{ flex: 1 }}>
+        <FlexWidget style={{ flex: 1, height: "match_parent" }}>
           {renderUpsellCard(totalAccounts)}
+        </FlexWidget>
+      )}
+
+      {(totalAccounts ?? 0) === 1 && (
+        <FlexWidget style={{ flex: 1, height: "match_parent" }}>
+          {renderAddAccountCard(totalAccounts)}
         </FlexWidget>
       )}
     </FlexWidget>

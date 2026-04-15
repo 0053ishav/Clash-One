@@ -66,6 +66,28 @@
               "targetCellHeight": 1,
               "previewImage": "./assets/images/icon.png",
               "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "LabWidget",
+              "label": "Laboratory Tracker",
+              "description": "Track your current research and remaining time.",
+              "minWidth": "110dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "PetWidget",
+              "label": "Pet Tracker",
+              "description": "Track your pet upgrades and remaining time.",
+              "minWidth": "110dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 1,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 1800000
             }
           ]
         }

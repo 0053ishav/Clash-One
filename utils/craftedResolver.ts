@@ -21,3 +21,24 @@ export function useCraftedResolver() {
 
   return { getCraftedName, getModuleName, getCraftedIcon };
 }
+
+export function getCraftedResolver() {
+  const { defenses, isActive } = useCraftedStore.getState();
+
+  function getCraftedName(dataId?: number) {
+    if (!dataId || !isActive()) return null;
+    return defenses[dataId]?.name ?? null;
+  }
+
+  function getModuleName(dataId?: number, moduleId?: number) {
+    if (!dataId || !moduleId || !isActive()) return null;
+    return defenses[dataId]?.modules?.[moduleId]?.name ?? null;
+  }
+
+  function getCraftedIcon(dataId?: number) {
+    if (!dataId || !isActive()) return null;
+    return defenses[dataId]?.icon ?? null;
+  }
+
+  return { getCraftedName, getModuleName, getCraftedIcon };
+}

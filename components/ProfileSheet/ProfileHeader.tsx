@@ -1,9 +1,20 @@
 import { PlayerProfile } from "@/types/player";
+import { EntityRecord } from "@/types/upgrade";
+import { formatCountdown } from "@/utils/formatCountdown";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { StyleSheet, Text, View } from "react-native";
 
-export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
+export default function ProfileHeader({
+  profile,
+  helpers,
+  guardians,
+}: {
+  profile: PlayerProfile;
+  helpers: EntityRecord[];
+  guardians: EntityRecord[];
+}) {
   if (!profile.playerTag) {
     return (
       <View style={styles.emptyContainer}>
@@ -15,6 +26,9 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
       </View>
     );
   }
+
+  const hasHelpers = helpers.length > 0;
+  const hasGuardians = guardians.length > 0;
 
   return (
     <View style={styles.container}>
@@ -32,7 +46,8 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
           <Image
             source={{ uri: profile.leagueTierIconUrl }}
             style={styles.tierIcon}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
           />
         )}
       </View>
@@ -43,7 +58,8 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
           <Image
             source={getIconByEntityType(profile.townHallLevel, "townhall")}
             style={styles.thBadgeIcon}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
           />
         </View>
 
@@ -63,7 +79,8 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
               <Image
                 source={{ uri: profile.leagueIconUrl }}
                 style={styles.tierIcon}
-                resizeMode="contain"
+                contentFit="contain"
+                cachePolicy="memory-disk"
               />
             </View>
           )}
@@ -77,7 +94,8 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
             <Image
               source={{ uri: profile.clanBadgeUrl }}
               style={styles.clanBadge}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
             />
           )}
           <View style={styles.clanContent}>
@@ -113,9 +131,92 @@ export default function ProfileHeader({ profile }: { profile: PlayerProfile }) {
               key={index}
               source={{ uri: label.iconUrl }}
               style={styles.labelIcon}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
             />
           ))}
+        </View>
+      )}
+
+      {(hasHelpers || hasGuardians) && (
+        <View style={styles.entityContainer}>
+          {hasHelpers && (
+            <View style={styles.entityColumn}>
+              <View style={styles.entityHeader}>
+                <Ionicons name="hammer" size={14} color="#f97316" />
+                <Text style={styles.entityTitle}>
+                  Helpers ({helpers.length})
+                </Text>
+              </View>
+              <View style={styles.entityList}>
+                {helpers.map((helper) => (
+                  <View
+                    key={`helper-${helper.id}`}
+                    style={styles.helperContainer}
+                  >
+                    <View style={styles.helperBadge}>
+                      <Image
+                        source={getIconByEntityType(helper.dataId, "helper")}
+                        style={styles.helperIcon}
+                        contentFit="contain"
+                        cachePolicy="memory-disk"
+                      />
+                      <Text style={styles.helperLevel}>L{helper.level}</Text>
+                    </View>
+                    {/* Cooldown or Ready State Below */}
+                    {helper.cooldown && helper.cooldown > 0 ? (
+                      <View style={styles.cooldownBadge}>
+                        <Ionicons
+                          name="time-outline"
+                          size={10}
+                          color="#ef4444"
+                        />
+                        <Text style={styles.cooldownText}>
+                          {formatCountdown(helper.cooldown)}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.readyBadge}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={10}
+                          color="#22c55e"
+                        />
+                        <Text style={styles.readyText}>Ready</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {hasGuardians && (
+            <View style={styles.entityColumn}>
+              <View style={styles.entityHeader}>
+                <Ionicons name="shield" size={14} color="#06b6d4" />
+                <Text style={styles.entityTitle}>
+                  Guardians ({guardians.length})
+                </Text>
+              </View>
+              <View style={styles.entityList}>
+                {guardians.map((guardian) => (
+                  <View
+                    key={`guardian-${guardian.id}`}
+                    style={styles.guardianBadge}
+                  >
+                    <Image
+                      source={getIconByEntityType(guardian.dataId, "guardian")}
+                      style={styles.helperIcon}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
+                    <Text style={styles.guardianLevel}>L{guardian.level}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -294,5 +395,111 @@ const styles = StyleSheet.create({
   labelIcon: {
     width: 24,
     height: 24,
+  },
+
+  entityContainer: {
+    gap: 14,
+    flexDirection: "row",
+  },
+
+  entityColumn: {
+    gap: 6,
+  },
+
+  entityHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  entityTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#cbd5e1",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  entityList: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  guardianBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(6, 182, 212, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "rgba(6, 182, 212, 0.2)",
+  },
+
+  helperIcon: {
+    width: 20,
+    height: 20,
+  },
+
+  helperLevel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#f97316",
+  },
+  // Add to existing styles:
+
+  helperContainer: {
+    alignItems: "center",
+    gap: 6,
+  },
+
+  helperBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "rgba(249, 115, 22, 0.2)",
+  },
+
+  cooldownBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+
+  cooldownText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#ef4444",
+  },
+
+  readyBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+
+  readyText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#22c55e",
+  },
+  guardianLevel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#06b6d4",
   },
 });

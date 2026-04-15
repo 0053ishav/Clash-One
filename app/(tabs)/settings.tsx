@@ -3,16 +3,16 @@ import {
   updateAccountColor,
   updateBuilderCount,
 } from "@/services/accountService";
+import { getAccountState } from "@/services/accountStateService";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
-import {
-  getActiveUpgrades
-} from "@/services/upgradeService";
 import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
 import {
   getNotificationsEnabled,
   setNotificationsEnabled,
 } from "@/storage/notificationConfig";
+import { updateLocalBuilderCount } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
+import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import {
@@ -94,6 +94,10 @@ export default function SettingsScreen() {
   const widgetTag = widgetPrefs.selectedAccountTag ?? activeTag;
 
   useEffect(() => {
+    track("screen_view", { screen: "settings" });
+  }, []);
+
+  useEffect(() => {
     loadAccounts();
     loadLastSync();
   }, [loadAccounts, loadLastSync]);
@@ -111,7 +115,7 @@ export default function SettingsScreen() {
 
     const current = activeAccount.builderCount;
 
-    const busyBuilders = (await getActiveUpgrades(activeTag)).length;
+    const busyBuilders = (await getAccountState(activeTag)).builders.length;
 
     if (count < busyBuilders) {
       setRequiredBuilders(busyBuilders);
@@ -124,7 +128,11 @@ export default function SettingsScreen() {
     // Only update if changed
     if (count !== current) {
       await updateBuilderCount(activeTag, count);
-      // updateLocalBuilderCount(count);
+      updateLocalBuilderCount(count);
+      track("builder_count_changed", {
+        value: count,
+        previous: current,
+      });
       await loadAccounts();
       emitWidgetUpdate();
     }
@@ -237,7 +245,14 @@ export default function SettingsScreen() {
 
                 <Pressable
                   style={styles.actionChip}
-                  onPress={() => router.push("/upload-json")}
+                  onPress={() => {
+                    track("navigation", {
+                      from: "setting",
+                      to: "upload-json",
+                      trigger: "sync",
+                    });
+                    router.push("/upload-json");
+                  }}
                 >
                   <Ionicons name="sync-outline" size={14} color="#94a3b8" />
                   <Text style={styles.actionChipText}>Sync JSON</Text>
@@ -294,7 +309,16 @@ export default function SettingsScreen() {
                     pressed && !isActive && { opacity: 0.7 },
                   ]}
                   onPress={() => {
-                    if (!isActive) switchAccount(acc.tag);
+                    if (!isActive) {
+                      track("account_switched", {
+                        from_index: accounts.findIndex(
+                          (a) => a.tag === activeTag,
+                        ),
+                        to_index: accounts.findIndex((a) => a.tag === acc.tag),
+                      });
+
+                      switchAccount(acc.tag);
+                    }
                   }}
                   onLongPress={() => setAccountToDelete(acc)}
                 >
@@ -359,6 +383,14 @@ export default function SettingsScreen() {
                         isWidgetAccount && styles.widgetPinButtonActive,
                       ]}
                       onPress={async () => {
+                        track("widget_account_selected", {
+                          total_accounts: accounts.length,
+                          is_switching: acc.tag !== widgetTag,
+                          account_position: accounts.findIndex(
+                            (a) => a.tag === acc.tag,
+                          ),
+                        });
+
                         setWidgetAccount(acc.tag);
                         emitWidgetUpdate();
                       }}
@@ -399,7 +431,14 @@ export default function SettingsScreen() {
               { marginTop: accounts.length > 0 ? 12 : 0 },
               pressed && { opacity: 0.75 },
             ]}
-            onPress={() => router.push("/add-account")}
+            onPress={() => {
+              track("navigation", {
+                from: "settings",
+                to: "add-account",
+                trigger: "add_account_button",
+              });
+              router.push("/add-account");
+            }}
           >
             <View style={styles.addAccountIcon}>
               <Ionicons name="add" size={18} color="#fbbf24" />
@@ -461,6 +500,11 @@ export default function SettingsScreen() {
             <Switch
               value={notificationsEnabled}
               onValueChange={async (value) => {
+                track("notifications_toggled", {
+                  enabled: value,
+                  source: "settings",
+                });
+
                 if (value) {
                   const { status } =
                     await Notifications.requestPermissionsAsync();
@@ -552,7 +596,14 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <Pressable
             style={styles.settingRow}
-            onPress={() => router.push("/upload-json")}
+            onPress={() => {
+              track("navigation", {
+                from: "settings_empty",
+                to: "upload-json",
+                trigger: "connect_button",
+              });
+              router.push("/upload-json");
+            }}
           >
             <View style={styles.settingContent}>
               <Text style={styles.settingLabel}>Import Player JSON</Text>
@@ -630,8 +681,9 @@ export default function SettingsScreen() {
                     editColorFor.color === color && styles.colorSwatchActive,
                   ]}
                   onPress={async () => {
-                    // update color in store + persist
-                    // wire to your accountService.updateAccountColor(tag, color)
+                    track("account_color_changed", {
+                      account: editColorFor.tag,
+                    });
                     await updateAccountColor(editColorFor.tag, color);
 
                     setEditColorFor(null);
@@ -693,6 +745,9 @@ export default function SettingsScreen() {
         onConfirm={async () => {
           if (!accountToDelete) return;
           await removeAccount(accountToDelete.tag);
+          track("account_removed", {
+            total_accounts_before: accounts.length - 1,
+          });
           setAccountToDelete(null);
           await loadAccounts();
           emitWidgetUpdate();

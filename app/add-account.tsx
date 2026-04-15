@@ -3,8 +3,8 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
-import { getActiveAccount } from "@/storage/activeAccount";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
+import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { cancelAllNotifications } from "@/utils/notificationEngine";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import * as Clipboard from "expo-clipboard";
@@ -40,6 +40,11 @@ export default function AddAccountScreen() {
     try {
       setIsImporting(true);
 
+      track("account_add_started", {
+        source: getSessionSource(),
+        trigger: "add-account",
+      });
+
       const clipboardText = await Clipboard.getStringAsync();
 
       if (!clipboardText?.trim()) {
@@ -52,8 +57,6 @@ export default function AddAccountScreen() {
       }
       await cancelAllNotifications();
       const result = await importVillageJson(clipboardText);
-      console.log("result", result, getActiveAccount());
-
       if (result.status === "NO_ACTIVE_BUILDERS") {
         await refreshWidget();
 
@@ -88,8 +91,17 @@ export default function AddAccountScreen() {
         setModalVisible(true);
         return;
       }
+      track("account_added", {
+        source: getSessionSource(),
+        trigger: "add-account",
+      });
     } catch (error: any) {
       console.error("IMPORT ERROR:", error);
+
+      track("account_add_failed", {
+        error: error,
+        trigger: "add-account",
+      });
 
       if (error.message === "INVALID_JSON") {
         setModalTitle("Invalid Format");

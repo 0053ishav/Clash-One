@@ -7,6 +7,7 @@ import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
+import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -31,21 +32,40 @@ export default function ProfileScreen() {
   const activeTag = useAccountStore((s) => s.activeTag);
   const [entities, setEntities] = useState<EntityRecord[]>([]);
 
+  useEffect(() => {
+    track("screen_view", { screen: "profile" });
+  }, []);
+
   const loadProfile = async () => {
     try {
       setLoading(true);
       setError(null);
+
       if (!activeTag) {
         setError("No player tag found");
         return;
       }
+      track("player_fetching", {
+        source: getSessionSource(),
+        trigger: "profile_screen",
+      });
 
       const playerData = await fetchFullPlayer(activeTag);
       const entityData = await getEntities(activeTag);
 
+      track("player_fetching_success", {
+        source: getSessionSource(),
+        trigger: "profile_screen",
+      });
+
       setData(playerData);
       setEntities(entityData);
     } catch (err) {
+      track("player_fetching_failed", {
+        source: getSessionSource(),
+        trigger: "profile_screen",
+        error: err,
+      });
       setError(err instanceof Error ? err.message : "Failed to load profile");
       console.error("Profile load error:", err);
     } finally {
@@ -58,6 +78,9 @@ export default function ProfileScreen() {
   }, []);
 
   const onRefresh = async () => {
+    track("profile_refresh", {
+      source: getSessionSource(),
+    });
     setRefreshing(true);
     await loadProfile();
     setRefreshing(false);
@@ -94,9 +117,6 @@ export default function ProfileScreen() {
   const guardians = entities.filter(
     (e) => e.type?.toLowerCase() === "guardian",
   );
-  console.log("ENTITIES:", entities);
-  console.log("helpers:", helpers);
-  console.log("guardians:", guardians);
   return (
     <View style={styles.container}>
       <ScrollView

@@ -3,6 +3,7 @@ import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
+import { track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
@@ -57,6 +58,10 @@ export default function OnboardingScreen() {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   useEffect(() => {
+    track("onboarding_started");
+  }, []);
+
+  useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 500,
@@ -105,6 +110,9 @@ export default function OnboardingScreen() {
 
     setOnboardingComplete();
 
+    track("onboarding_complete", {
+      next_step: "add-account",
+    });
     emitWidgetUpdate();
 
     rescheduleAllBuilderNotifications();

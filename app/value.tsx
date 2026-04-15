@@ -1,8 +1,5 @@
 "use no memo";
 
-import {
-  getActiveUpgrades
-} from "@/services/upgradeService";
 import { useAccountStore } from "@/stores/accountStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -18,6 +15,8 @@ import {
 } from "react-native";
 
 import { getEntityTypeByDataId } from "@/data/entityMap";
+import { getAccountState } from "@/services/accountStateService";
+import { track } from "@/utils/analytics/analytics";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,6 +38,12 @@ export default function ValueScreen() {
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
 
   useEffect(() => {
+    track("value_viewed", {
+      has_upgrades: activeUpgrades.length > 0,
+    });
+  }, []);
+
+  useEffect(() => {
     loadAccounts();
   }, [effectiveTag]);
 
@@ -47,7 +52,7 @@ export default function ValueScreen() {
     if (!effectiveTag) return;
 
     (async () => {
-      const upgrades = await getActiveUpgrades(effectiveTag);
+      const upgrades = (await getAccountState(effectiveTag)).builders;
       setActiveUpgrades(upgrades);
     })();
   }, [effectiveTag]);
@@ -98,7 +103,7 @@ export default function ValueScreen() {
   const idleCount = totalBuilders - busyCount;
 
   const nextType = nextUpgrade
-    ? getEntityTypeByDataId(nextUpgrade.dataId)
+    ? getEntityTypeByDataId(nextUpgrade.dataId, nextUpgrade.isCrafted)
     : null;
 
   return (
@@ -153,6 +158,8 @@ export default function ValueScreen() {
                     source={getIconByEntityType(
                       profile.townHallLevel,
                       "townhall",
+                      undefined,
+                      false,
                     )}
                     style={styles.statIcon}
                   />
@@ -180,14 +187,27 @@ export default function ValueScreen() {
         {/* 🔥 BUILDER STATUS CARD */}
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
-            <Text style={styles.statusLabel}>Builder Status</Text>
+            <View>
+              <Text style={styles.statusTitleMain}>Upgrades</Text>
+              <Text style={styles.statusSubText}>Based on active upgrades</Text>
+              <Text style={styles.statusSubText}>
+                Adjust builders in Settings if needed
+              </Text>
+              <View style={styles.infoBadge}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={14}
+                  color="#94a3b8"
+                />
+                <Text style={styles.infoText}>Auto</Text>
+              </View>
+            </View>
             <View style={styles.builderCount}>
               <Text style={styles.builderCountText}>
                 {busyCount}/{totalBuilders}
               </Text>
             </View>
           </View>
-
           {status.allFree ? (
             <View style={styles.statusContent}>
               <View style={styles.alertIcon}>
@@ -205,7 +225,12 @@ export default function ValueScreen() {
               <View style={styles.timerIcon}>
                 {nextUpgrade && nextType ? (
                   <Image
-                    source={getIconByEntityType(nextUpgrade.dataId, nextType)}
+                    source={getIconByEntityType(
+                      nextUpgrade.dataId,
+                      nextType,
+                      undefined,
+                      nextUpgrade.isCrafted,
+                    )}
                     style={{ width: 32, height: 32 }}
                   />
                 ) : (
@@ -250,7 +275,7 @@ export default function ValueScreen() {
             <Text style={styles.liveTitle}>Live Upgrades</Text>
 
             {activeUpgrades.map((u) => {
-              const type = getEntityTypeByDataId(u.dataId);
+              const type = getEntityTypeByDataId(u.dataId, u.isCrafted);
 
               if (!type) return null;
 
@@ -258,7 +283,12 @@ export default function ValueScreen() {
                 <View key={u.id} style={styles.liveRow}>
                   <View style={styles.liveIcon}>
                     <Image
-                      source={getIconByEntityType(u.dataId, type)}
+                      source={getIconByEntityType(
+                        u.dataId,
+                        type,
+                        undefined,
+                        u.isCrafted,
+                      )}
                       style={styles.liveImg}
                     />
                   </View>
@@ -357,6 +387,7 @@ const styles = StyleSheet.create({
 
   successHeader: {
     alignItems: "center",
+    marginTop: 32,
     marginBottom: 32,
   },
 
@@ -486,12 +517,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  statusLabel: {
-    fontSize: 14,
-    fontWeight: "600",
+  statusTitleMain: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#f1f5f9",
+  },
+
+  statusSubText: {
+    fontSize: 10,
+    color: "#64748b",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+
+  infoBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#334155",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    marginTop: 4,
+  },
+
+  infoText: {
+    fontSize: 11,
     color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontWeight: "600",
   },
 
   builderCount: {

@@ -1,6 +1,7 @@
 import EntityCard from "@/components/EntityCard";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { fetchFullPlayer } from "@/services/clashApi";
+import { track } from "@/utils/analytics/analytics";
 import { parseArmy } from "@/utils/profile/parseArmy";
 import { getUpgradeStatus } from "@/utils/progression/getUpgradeStatus";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,6 +39,10 @@ export default function TroopsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "maxed" | "upgradable">("all");
+
+  useEffect(() => {
+    track("screen_view", { screen: "troops" });
+  }, []);
 
   const load = async () => {
     try {

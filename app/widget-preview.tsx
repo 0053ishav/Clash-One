@@ -2,7 +2,7 @@
 
 import { ConfirmModal } from "@/components/ConfirmModal";
 import WidgetPreviewCard from "@/components/WidgetPreviewCard";
-import { getActiveUpgrades } from "@/services/upgradeService";
+import { getAccountState } from "@/services/accountStateService";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
@@ -36,7 +36,7 @@ export default function WidgetPreviewScreen() {
     if (!activeTag) return;
 
     (async () => {
-      const upgrades = await getActiveUpgrades(activeTag);
+      const upgrades = (await getAccountState(activeTag)).builders;
       setActiveUpgrades(upgrades);
     })();
   }, [activeTag]);
@@ -118,7 +118,7 @@ export default function WidgetPreviewScreen() {
         <WidgetPreviewCard
           title="Lab Widget"
           subtitle="Track research progress • Pro"
-          image={require("@/assets/images/builder/builder-idle.png")}
+          image={require("@/assets/images/widget/lab.jpg")}
           isLocked={true}
           selected={selected === "lab"}
           onPress={() => setSelected("lab")}
@@ -127,7 +127,7 @@ export default function WidgetPreviewScreen() {
         <WidgetPreviewCard
           title="Pet Widget"
           subtitle="Track hero pets upgrades • Pro"
-          image={require("@/assets/images/builder/builder-idle.png")}
+          image={require("@/assets/images/widget/pet.jpg")}
           isLocked={true}
           selected={selected === "pet"}
           onPress={() => setSelected("pet")}

@@ -45,6 +45,8 @@ export function getIconByEntityType(
     guardian: guardianIcons,
     building: buildingIcons,
     trap: trapIcons,
+    lab: troopIcons,
+    Custom: troopIcons,
   };
 
   const map = iconMaps[type];

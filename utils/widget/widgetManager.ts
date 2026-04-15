@@ -2,7 +2,9 @@ import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { subscribeWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { requestWidgetUpdate } from "react-native-android-widget";
 import { prefillAllWidgetCache } from "./prefillAllWidgetCache";
+import { renderLabWidget } from "./renderLabWidget";
 import { renderMultiWidget } from "./renderMultiWidget";
+import { renderPetWidget } from "./renderPetWidget";
 
 let timeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -10,7 +12,7 @@ async function updateWidget() {
   try {
 
     await prefillAllWidgetCache();
-    
+
     await requestWidgetUpdate({
       widgetName: "BuilderStatusWidget",
       renderWidget: async () => {
@@ -21,6 +23,18 @@ async function updateWidget() {
       widgetName: "MultiAccountWidget",
       renderWidget: async () => {
         return await renderMultiWidget()
+      },
+    });
+    await requestWidgetUpdate({
+      widgetName: "LabWidget",
+      renderWidget: async () => {
+        return await renderLabWidget();
+      },
+    });
+    await requestWidgetUpdate({
+      widgetName: "PetWidget",
+      renderWidget: async () => {
+        return await renderPetWidget();
       },
     });
   } catch (e) {

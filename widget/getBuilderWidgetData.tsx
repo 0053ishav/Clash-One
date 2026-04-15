@@ -1,10 +1,9 @@
 import { getEntityTypeByDataId } from "@/data/entityMap";
-import {
-  getActiveUpgrades
-} from "@/services/upgradeService";
+import { getAccountState } from "@/services/accountStateService";
 import { useAccountStore } from "@/stores/accountStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
+import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { isWorkForHireActive } from "@/utils/goblin";
@@ -12,6 +11,8 @@ import { isWorkForHireActive } from "@/utils/goblin";
 export async function getBuilderWidgetData(inputTag?: string) {
   const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
     useAccountStore.getState();
+
+  const { getCraftedName, getModuleName } = getCraftedResolver();
 
   const tag = inputTag ?? widgetPrefs.selectedAccountTag ?? activeTag;
 
@@ -39,7 +40,7 @@ export async function getBuilderWidgetData(inputTag?: string) {
     };
   }
 
-  const activeUpgrades = await getActiveUpgrades(tag);
+  const activeUpgrades = (await getAccountState(tag)).builders;
 
   const builderCount = account.builderCount;
   const goblinBuilder = isWorkForHireActive();
@@ -66,41 +67,63 @@ export async function getBuilderWidgetData(inputTag?: string) {
 
   const sorted = [...activeUpgrades].sort((a, b) => a.endTime - b.endTime);
 
-  const currenUpgrade = sorted[0];
+  const currentUpgrade = sorted[0];
   const nextUpgrade = sorted[1];
 
-  const type = getEntityTypeByDataId(currenUpgrade.dataId);
+  const title = currentUpgrade.isCrafted
+    ? `${getCraftedName(currentUpgrade.dataId) ?? "Crafted"}${
+        getModuleName(currentUpgrade.dataId, currentUpgrade.moduleId)
+          ? ` (${getModuleName(currentUpgrade.dataId, currentUpgrade.moduleId)})`
+          : ""
+      }`
+    : formatBuildingName(currentUpgrade.entity);
 
-  const remainingMs = Math.max(currenUpgrade.endTime - Date.now(), 0);
-  const totalMs = currenUpgrade.endTime - currenUpgrade.startTime;
+  const nextTitle = nextUpgrade
+    ? nextUpgrade?.isCrafted
+      ? `${getCraftedName(nextUpgrade.dataId) ?? "Crafted"}${
+          getModuleName(nextUpgrade.dataId, nextUpgrade.moduleId)
+            ? ` (${getModuleName(nextUpgrade.dataId, nextUpgrade.moduleId)})`
+            : ""
+        }`
+      : formatBuildingName(nextUpgrade.entity)
+    : null;
+
+  const type = getEntityTypeByDataId(
+    currentUpgrade.dataId,
+    currentUpgrade.isCrafted,
+  );
+
+  const remainingMs = Math.max(currentUpgrade.endTime - Date.now(), 0);
+  const totalMs = currentUpgrade.endTime - currentUpgrade.startTime;
 
   const progress =
     totalMs > 0
-      ? calculateProgress(currenUpgrade.startTime, currenUpgrade.endTime)
+      ? calculateProgress(currentUpgrade.startTime, currentUpgrade.endTime)
       : 0;
 
   const builderLabel =
-    currenUpgrade.builderSlot === "G"
+    currentUpgrade.builderSlot === "G"
       ? "Goblin"
-      : typeof currenUpgrade.builderSlot === "number"
-        ? `B${currenUpgrade.builderSlot + 1}`
+      : typeof currentUpgrade.builderSlot === "number"
+        ? `B${currentUpgrade.builderSlot + 1}`
         : "?";
 
   return {
-    title: `${builderLabel} - ${formatBuildingName(currenUpgrade.entity)}`,
+    title: `${builderLabel} - ${title}`,
     subtitle: formatCountdown(remainingMs),
+    isCrafted: currentUpgrade.isCrafted,
     progress,
     showProgress: !status.allFree,
     levelText:
-      currenUpgrade.currentLevel !== undefined &&
-      currenUpgrade.nextLevel !== undefined
-        ? `Lv ${currenUpgrade.currentLevel} → ${currenUpgrade.nextLevel}`
+      currentUpgrade.currentLevel !== undefined &&
+      currentUpgrade.nextLevel !== undefined
+        ? `Lv ${currentUpgrade.currentLevel} → ${currentUpgrade.nextLevel}`
         : undefined,
     builderCountText: `${status.freeBuilders} / ${status.maxBuilders} free`,
     nextUpgradeText: nextUpgrade
-      ? `${formatBuildingName(nextUpgrade.entity)} • ${formatCountdown(nextUpgrade.endTime - Date.now())}`
+      ? `${nextTitle} • ${formatCountdown(nextUpgrade.endTime - Date.now())}`
       : "No next upgrade",
-    dataId: currenUpgrade.dataId,
+    dataId: currentUpgrade.dataId,
     type,
     color: account.color,
     accountInitials: account.name.slice(0, 2).toUpperCase(),

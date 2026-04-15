@@ -15,6 +15,7 @@ import {
 import { useAccountStore } from "@/stores/accountStore";
 import { useCraftedStore } from "@/stores/craftedEventStore";
 import { BuilderWidgetData, Upgrade } from "@/types/upgrade";
+import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { useCraftedResolver } from "@/utils/craftedResolver";
@@ -84,13 +85,16 @@ export default function HomeScreen() {
   const account = accounts.find((a) => a.tag === activeTag);
 
   const builderCount = account?.builderCount ?? 0;
+  const townHall = account?.townhall ?? 1;
 
   const builders = useMemo(() => accountState?.builders ?? [], [accountState]);
 
-  console.log("builders upgrades: ", builders);
-  const pets = useMemo(() => accountState?.pets ?? [], [accountState]);
-  console.log("pet upgrades: ", pets);
+  const pet = useMemo(() => accountState?.pet ?? null, [accountState]);
   const lab = accountState?.lab;
+
+  useEffect(() => {
+    track("screen_view", { screen: "home" });
+  }, []);
 
   const busySlots = useMemo(() => {
     const map = new Set<number>();
@@ -103,6 +107,7 @@ export default function HomeScreen() {
 
     return map;
   }, [builders]);
+
   useFocusEffect(
     useCallback(() => {
       loadAccounts();
@@ -113,7 +118,6 @@ export default function HomeScreen() {
   const refreshState = useCallback(async () => {
     if (!activeTag) return;
     const state = await getAccountState(activeTag);
-    // console.log("Account State: ", state);
     setAccountState(state);
   }, [activeTag]);
 
@@ -311,7 +315,6 @@ export default function HomeScreen() {
       nextUpgrade.dataId,
       nextUpgrade.isCrafted,
     );
-    console.log("entity type: ", type);
 
     if (type) {
       statusIcon = getIconByEntityType(
@@ -322,26 +325,31 @@ export default function HomeScreen() {
       );
     }
   }
-
   const villageStatus = getVillageStatus({
+    townHall,
     builders,
     builderCount,
-    pet: pets.find((p) => !p.isCompleted),
-    lab,
+    pet: pet,
+    labNormal: lab?.normal,
+    labGoblin: lab?.goblin,
   });
 
-  let insight = "";
+  let insightParts: string[] = [];
 
   if (villageStatus.freeBuilders > 0) {
-    insight = `🚨 ${villageStatus.freeBuilders} builder idle`;
-  } else if (villageStatus.labIdle) {
-    insight = "🧪 Lab idle";
-  } else if (villageStatus.petIdle) {
-    insight = "🐾 Pet idle";
-  } else {
-    insight = "All systems running";
+    insightParts.push(`🚨 ${villageStatus.freeBuilders} builder idle`);
   }
 
+  if (villageStatus.labIdle) {
+    insightParts.push("🧪 Lab idle");
+  }
+
+  if (villageStatus.petIdle) {
+    insightParts.push("🐾 Pet idle");
+  }
+
+  const insight =
+    insightParts.length > 0 ? insightParts.join(" • ") : "All systems running";
   const isUrgent = villageStatus.freeBuilders > 0;
 
   return (
@@ -430,7 +438,17 @@ export default function HomeScreen() {
               </Pressable>
             </View>
             <View style={styles.sync}>
-              <Pressable onPress={() => router.push("/upload-json")}>
+              <Pressable
+                onPress={() => {
+                  setSessionSource("app");
+                  track("navigation", {
+                    from: "home",
+                    to: "upload-json",
+                    trigger: "sync",
+                  });
+                  router.push("/upload-json");
+                }}
+              >
                 <Ionicons
                   name="sync-sharp"
                   size={22}
@@ -530,7 +548,15 @@ export default function HomeScreen() {
               styles.addButton,
               pressed && styles.addButtonPressed,
             ]}
-            onPress={() => router.push("/add-upgrade")}
+            onPress={() => {
+              setSessionSource("app");
+              track("navigation", {
+                from: "home",
+                to: "add-upgrade",
+                trigger: "add_upgrade_button",
+              });
+              router.push("/add-upgrade");
+            }}
           >
             <Ionicons name="add-circle" size={24} color="#0f172a" />
             <Text style={styles.addButtonText}>Add Upgrade</Text>
@@ -587,6 +613,12 @@ export default function HomeScreen() {
                       >
                         <Text style={styles.builderBadgeText}>
                           {builderLabel}
+                          {isGoblin && (
+                            <Image
+                              source={require("@/assets/images/clash/goblin-builder.png")}
+                              style={{ width: 15, height: 15, marginLeft: 2 }}
+                            />
+                          )}
                         </Text>
                       </View>
 
@@ -682,7 +714,10 @@ export default function HomeScreen() {
 
               <Pressable
                 style={styles.emptyButton}
-                onPress={() => router.push("/add-upgrade")}
+                onPress={() => {
+                  setSessionSource("app");
+                  router.push("/upload-json");
+                }}
               >
                 <Text style={styles.emptyButtonText}>Get Started</Text>
               </Pressable>
@@ -690,16 +725,23 @@ export default function HomeScreen() {
           )}
 
           <LabSection
-            lab={lab}
+            labNormal={lab?.normal}
+            labGoblin={lab?.goblin}
             // onAddPress={() => router.push("/add-upgrade?type=lab")}
-            onAddPress={() => router.push("/upload-json")}
+            onAddPress={() => {
+              setSessionSource("app");
+              router.push("/upload-json");
+            }}
             onLongPress={handleRowLongPress}
           />
 
           <PetSection
-            pets={pets}
+            pet={pet}
             // onAddPress={() => router.push("/add-upgrade?type=pet")}
-            onAddPress={() => router.push("/upload-json")}
+            onAddPress={() => {
+              setSessionSource("app");
+              router.push("/upload-json");
+            }}
             onLongPress={handleRowLongPress}
           />
 
@@ -839,19 +881,30 @@ export default function HomeScreen() {
       <ProfileDropdownSheet
         visible={profileSheetVisible}
         onClose={() => {
-          console.log("OPENING PROFILE SHEET");
           setProfileSheetVisible(false);
         }}
         onOpenProfile={() => {
           setProfileSheetVisible(false);
+          track("navigation", {
+            from: "dropdown",
+            to: "profile",
+          });
           router.push("/profile");
         }}
         onSync={() => {
           setProfileSheetVisible(false);
+          track("navigation", {
+            from: "dropdown",
+            to: "upload-json",
+          });
           router.push("/upload-json");
         }}
         onSetting={() => {
           setProfileSheetVisible(false);
+          track("navigation", {
+            from: "dropdown",
+            to: "settings",
+          });
           router.push("/(tabs)/settings");
         }}
       />
@@ -859,7 +912,14 @@ export default function HomeScreen() {
       {/* Floating Action Button */}
       <Pressable
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        onPress={() => router.push("/add-upgrade")}
+        onPress={() => {
+          track("navigation", {
+            from: "home",
+            to: "add-upgrade",
+            trigger: "fab",
+          });
+          router.push("/add-upgrade");
+        }}
       >
         <View style={styles.fabContent}>
           <Ionicons name="add" size={32} color="#0f172a" />

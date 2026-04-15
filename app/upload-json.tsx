@@ -2,14 +2,16 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
+import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { cancelAllNotifications } from "@/utils/notificationEngine";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,6 +28,10 @@ export default function UploadJsonScreen() {
   const [isImporting, setIsImporting] = useState(false);
   const [shouldReturnHome, setShouldReturnHome] = useState(false);
 
+  useEffect(() => {
+    track("screen_view", { screen: "upload_json" });
+  }, []);
+
   const refreshWidget = async () => {
     emitWidgetUpdate();
   };
@@ -33,13 +39,9 @@ export default function UploadJsonScreen() {
   const openClashSettings = async () => {
     const url = "https://link.clashofclans.com/en/?action=OpenMoreSettings";
 
-    const supported = await Linking.canOpenURL(url);
-
-    console.log("url: ", url);
-    console.log("supported: ", supported);
-    if (supported) {
+    try {
       await Linking.openURL(url);
-    } else {
+    } catch {
       setModalTitle("Unable to open Clash of Clans");
       setModalMessage(
         "Please open the game manually and go to Settings → More Settings.",
@@ -53,7 +55,10 @@ export default function UploadJsonScreen() {
 
     try {
       setIsImporting(true);
-
+      track("json_importing", {
+        source: getSessionSource(),
+        trigger: "upload-json",
+      });
       const clipboardText = await Clipboard.getStringAsync();
 
       if (!clipboardText?.trim()) {
@@ -101,8 +106,17 @@ export default function UploadJsonScreen() {
         setModalVisible(true);
         return;
       }
+      track("json_imported", {
+        source: getSessionSource(),
+        trigger: "upload-json",
+      });
     } catch (error: any) {
       console.error("IMPORT ERROR:", error);
+
+      track("json_import_failed", {
+        source: getSessionSource(),
+        trigger: "upload-json",
+      });
 
       if (error.message === "INVALID_JSON") {
         setModalTitle("Invalid Format");
@@ -194,7 +208,9 @@ export default function UploadJsonScreen() {
               onPress={openClashSettings}
             >
               <Ionicons name="open-outline" size={20} color="#0f172a" />
-              <Text style={styles.uploadButtonText}>Open Clash Settings</Text>
+              <Text style={styles.uploadButtonText}>
+                Open Game → Export Data
+              </Text>
             </Pressable>
           </View>
 

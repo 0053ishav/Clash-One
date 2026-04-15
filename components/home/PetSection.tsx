@@ -8,15 +8,15 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function PetSection({
-  pets,
+  pet,
   onAddPress,
   onLongPress,
 }: {
-  pets: Upgrade[];
+  pet: Upgrade | null;
   onAddPress?: () => void;
   onLongPress?: (pet: Upgrade) => void;
 }) {
-  const activePet = pets.find((p) => !p.isCompleted);
+  const activePet = pet;
   const isBusy = !!activePet;
 
   const now = Date.now();

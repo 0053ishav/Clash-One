@@ -6,44 +6,42 @@ import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-
 export function LabSection({
-  lab,
+  labNormal,
+  labGoblin,
   onAddPress,
   onLongPress,
 }: {
-  lab?: Upgrade;
+  labNormal?: Upgrade;
+  labGoblin?: Upgrade;
   onAddPress?: () => void;
   onLongPress?: (lab: Upgrade) => void;
 }) {
-  const isBusy = !!lab && !lab.isCompleted;
+  const isNormalBusy = !!labNormal && !labNormal.isCompleted;
+  const isGoblinBusy = !!labGoblin && !labGoblin.isCompleted;
 
-  const now = Date.now();
-  const progress = lab ? calculateProgress(lab.startTime, lab.endTime) : 0;
-  const remainingMs = lab ? Math.max(lab.endTime - now, 0) : 0;
-  const totalMs = lab ? lab.endTime - lab.startTime : 0;
-
-  const entityType = lab?.dataId
-    ? getEntityTypeByDataId(lab.dataId, lab.isCrafted)
-    : undefined;
+  const isAnyBusy = isNormalBusy || isGoblinBusy;
 
   return (
     <View style={styles.container}>
-      {/* Section Header */}
+      {/* HEADER */}
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
             <Text style={styles.emoji}>🧪</Text>
             <Text style={styles.sectionTitle}>Research Lab</Text>
           </View>
+
           <View
             style={[
               styles.statusDot,
-              isBusy ? styles.labDotBusy : styles.dotFree,
+              isAnyBusy ? styles.labDotBusy : styles.dotFree,
             ]}
           />
         </View>
-        {onAddPress && !isBusy && (
+
+        {/* Add button only when at least 1 slot free */}
+        {onAddPress && (!isNormalBusy || !isGoblinBusy) && (
           <Pressable
             onPress={onAddPress}
             style={({ pressed }) => [
@@ -56,82 +54,30 @@ export function LabSection({
         )}
       </View>
 
-      {/* Active Research Card */}
-      {lab ? (
-        <Pressable
-          style={({ pressed }) => [
-            styles.card,
-            styles.labCard,
-            pressed && styles.cardPressed,
-          ]}
-          onLongPress={() => onLongPress?.(lab)}
-          delayLongPress={300}
-        >
-          <View style={styles.cardContent}>
-            {/* Lab Icon */}
-            <View style={[styles.iconContainer, styles.labIconContainer]}>
-              <Image
-                source={
-                  lab.dataId && entityType
-                    ? getIconByEntityType(
-                        lab.dataId,
-                        entityType,
-                        undefined,
-                        lab.isCrafted,
-                      )
-                    : require("@/assets/images/builder/builder-working.png")
-                }
-                style={styles.labIcon}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
-            </View>
+      {/* NORMAL LAB */}
+      {labNormal && (
+        <LabCard label="Lab" lab={labNormal} onLongPress={onLongPress} />
+      )}
 
-            {/* Info Section */}
-            <View style={styles.infoSection}>
-              <View style={styles.topRow}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {lab.entity}
-                </Text>
-                {lab.currentLevel !== undefined &&
-                  lab.nextLevel !== undefined && (
-                    <View style={[styles.levelBadge, styles.labLevelBadge]}>
-                      <Text style={styles.levelText}>
-                        Lv {lab.currentLevel} → {lab.nextLevel}
-                      </Text>
-                    </View>
-                  )}
-              </View>
+      {/* GOBLIN LAB */}
+      {labGoblin && (
+        <LabCard
+          label="Goblin"
+          lab={labGoblin}
+          onLongPress={onLongPress}
+          isGoblin
+        />
+      )}
 
-              {/* Time Display */}
-              <View style={styles.timeRow}>
-                <Text style={[styles.remainingTime, styles.labTime]}>
-                  {formatCountdown(remainingMs)}
-                </Text>
-                <Text style={styles.totalTime}>
-                  of {formatCountdown(totalMs)}
-                </Text>
-              </View>
-
-              {/* Progress Bar */}
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressBar,
-                    styles.labProgressBar,
-                    { width: `${progress * 100}%` },
-                  ]}
-                />
-              </View>
-            </View>
-          </View>
-        </Pressable>
-      ) : (
+      {/* EMPTY STATE */}
+      {!labNormal && !labGoblin && (
         <View style={styles.emptyCard}>
           <View style={styles.emptyIconWrapper}>
             <Ionicons name="flask" size={28} color="#475569" />
           </View>
+
           <Text style={styles.emptyText}>No research in progress</Text>
+
           {onAddPress && (
             <Pressable
               style={({ pressed }) => [
@@ -141,9 +87,7 @@ export function LabSection({
               ]}
               onPress={onAddPress}
             >
-              <Text style={[styles.emptyAddText, styles.labEmptyText]}>
-                Start Research
-              </Text>
+              <Text style={styles.labEmptyText}>Start Research</Text>
             </Pressable>
           )}
         </View>
@@ -152,6 +96,115 @@ export function LabSection({
   );
 }
 
+function LabCard({
+  lab,
+  label,
+  isGoblin,
+  onLongPress,
+}: {
+  lab: Upgrade;
+  label: string;
+  isGoblin?: boolean;
+  onLongPress?: (lab: Upgrade) => void;
+}) {
+  const now = Date.now();
+
+  const progress = calculateProgress(lab.startTime, lab.endTime);
+  const remainingMs = Math.max(lab.endTime - now, 0);
+  const totalMs = lab.endTime - lab.startTime;
+
+  const entityType = lab.dataId
+    ? getEntityTypeByDataId(lab.dataId, lab.isCrafted)
+    : undefined;
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        styles.labCard,
+        isGoblin && styles.goblinCard,
+        pressed && styles.cardPressed,
+      ]}
+      onLongPress={() => onLongPress?.(lab)}
+      delayLongPress={300}
+    >
+      <View style={styles.cardContent}>
+        {/* ICON */}
+        <View style={[styles.iconContainer, styles.labIconContainer]}>
+          <Image
+            source={
+              lab.dataId && entityType
+                ? getIconByEntityType(
+                    lab.dataId,
+                    entityType,
+                    undefined,
+                    lab.isCrafted,
+                  )
+                : require("@/assets/images/builder/builder-working.png")
+            }
+            style={styles.labIcon}
+          />
+        </View>
+
+        {/* INFO */}
+        <View style={styles.infoSection}>
+          <View style={styles.topRow}>
+            <Text style={styles.itemName} numberOfLines={1}>
+              {lab.entity}
+            </Text>
+
+            <Text
+              style={[
+                styles.slotLabel,
+                isGoblin ? styles.slotLabelGoblin : styles.slotLabelNormal,
+              ]}
+            >
+              {isGoblin ? "Goblin" : "Lab"}
+              {isGoblin && (
+                <Image
+                  source={require("@/assets/images/clash/goblin-builder.png")}
+                  style={{ width: 15, height: 15, marginLeft: 2 }}
+                />
+              )}
+            </Text>
+          </View>
+
+          {/* LEVEL */}
+          {lab.currentLevel !== undefined && lab.nextLevel !== undefined && (
+            <Text style={styles.levelText}>
+              Lv {lab.currentLevel} → {lab.nextLevel}
+            </Text>
+          )}
+
+          {/* TIME */}
+          <View style={styles.timeRow}>
+            <Text
+              style={[
+                styles.remainingTime,
+                styles.labTime,
+                isGoblin && styles.goblinLabTime,
+              ]}
+            >
+              {formatCountdown(remainingMs)}
+            </Text>
+            <Text style={styles.totalTime}>of {formatCountdown(totalMs)}</Text>
+          </View>
+
+          {/* PROGRESS */}
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressBar,
+                isGoblin && styles.goblinProgress,
+                { width: `${progress * 100}%` },
+              ]}
+            />
+          </View>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
 const styles = StyleSheet.create({
   container: {
     marginTop: 32,
@@ -218,12 +271,23 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 6,
+    marginBottom: 8,
   },
 
   labCard: {
     backgroundColor: "#1e293b",
     borderWidth: 1,
     borderColor: "#06b6d4",
+  },
+
+  goblinCard: {
+    borderColor: "#f97316",
+    borderWidth: 1,
+    shadowColor: "#f97316",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
 
   cardPressed: {
@@ -272,6 +336,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
+  slotLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+
+  slotLabelNormal: {
+    color: "#22d3ee",
+    backgroundColor: "rgba(34, 211, 238, 0.12)",
+  },
+
+  slotLabelGoblin: {
+    color: "#fb923c",
+    backgroundColor: "rgba(251, 146, 60, 0.15)",
+  },
+
   levelBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -303,6 +386,10 @@ const styles = StyleSheet.create({
     color: "#22d3ee",
   },
 
+  goblinLabTime: {
+    color: "#fb923c",
+  },
+
   totalTime: {
     fontSize: 11,
     color: "#94a3b8",
@@ -319,10 +406,15 @@ const styles = StyleSheet.create({
   progressBar: {
     height: "100%",
     borderRadius: 2,
+    backgroundColor: "#06b6d4",
   },
 
   labProgressBar: {
     backgroundColor: "#06b6d4",
+  },
+
+  goblinProgress: {
+    backgroundColor: "#fb923c",
   },
 
   emptyCard: {

@@ -2,6 +2,7 @@
 export type WidgetCacheData = {
   title: string;
   subtitle: string;
+  isCrafted?: boolean;
   progress: number;
   showProgress: boolean;
   levelText?: string;

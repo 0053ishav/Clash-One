@@ -133,6 +133,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     upgrade_type,
     builder_slot,
     builder_type,
+    lab_slot,
     current_level,
     next_level,
     start_time,
@@ -143,7 +144,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -155,6 +156,8 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
 
           u.builderSlot != null ? String(u.builderSlot) : null,
           u.builderType ?? null,
+
+          u.labSlot ?? null,
 
           u.currentLevel ?? null,
           u.nextLevel ?? null,

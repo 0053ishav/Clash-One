@@ -9,7 +9,7 @@ export async function prefillAllWidgetCache() {
     try {
       const data = await getBuilderWidgetData(acc.tag);
 
-      setWidgetCache(acc.tag, {
+      setWidgetCache(acc.tag, "builder", {
         ...data,
         renderedAt: Date.now(),
       });

@@ -7,7 +7,7 @@ export function getMultiWidgetDataFree(): MultiWidgetItem[] {
 
   const tags = accounts.map((a) => a.tag);
 
-  const cachedList = getAllWidgetCaches(tags) as MultiWidgetItem[];
+  const cachedList = getAllWidgetCaches(tags, "builder") as MultiWidgetItem[];
 
   const valid = cachedList.filter((x) => x.data);
 

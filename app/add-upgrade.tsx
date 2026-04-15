@@ -8,13 +8,13 @@ import {
   addUpgrade,
   cleanupCompletedUpgrades,
   deleteUpgrade,
-  getActiveUpgrades,
   getUpgrades,
 } from "@/services/upgradeService";
 import { assignBuilderSlot } from "@/utils/assignBuilderSlot";
 import { createBuilderUpgrade } from "@/utils/createBuilderUpgrade";
 
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { getAccountState } from "@/services/accountStateService";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
 import { useAccountStore } from "@/stores/accountStore";
@@ -234,8 +234,8 @@ export default function AddUpgradeScreen() {
 
   useEffect(() => {
     (async () => {
-      const upgrades = await getActiveUpgrades(tag);
-      setActiveUpgrades(upgrades);
+      const state = await getAccountState(tag);
+      setActiveUpgrades(state.builders);
     })();
   }, [tag]);
 
@@ -252,15 +252,12 @@ export default function AddUpgradeScreen() {
     totalMinutes > 0 ? calculateGoblinCost(totalMinutes) : 0;
 
   const normalBusy = activeUpgrades.filter(
-    (u) => u.upgradeType === "BUILDER" && typeof u.builderSlot === "number",
+    (u) => typeof u.builderSlot === "number",
   ).length;
 
   const allowGoblin = canUseGoblinBuilder(profile, activeUpgrades);
 
   const normalFree = builderCount - normalBusy;
-
-  console.log("builderCount:", builderCount);
-  console.log("normalBusy:", normalBusy);
 
   let willUseGoblin =
     !isEditMode && normalFree <= 0 && allowGoblin && totalMinutes > 0;
@@ -304,43 +301,26 @@ export default function AddUpgradeScreen() {
 
       let slot: number | "G" | undefined;
 
-      const freshActiveUpgrades = await getActiveUpgrades(tag);
+      const state = await getAccountState(tag);
+      const freshBuilders = state.builders;
 
-      const normalBusy = freshActiveUpgrades.filter(
-        (u) => u.upgradeType === "BUILDER" && typeof u.builderSlot === "number",
+      const normalBusy = freshBuilders.filter(
+        (u) => typeof u.builderSlot === "number",
       ).length;
 
       const normalFree = builderCount - normalBusy;
 
-      const allowGoblinNow = canUseGoblinBuilder(profile, freshActiveUpgrades);
-      console.log("activeUpgrades:", activeUpgrades);
-      console.log("normalBusy:", normalBusy);
-      console.log("builderCount:", builderCount);
+      const allowGoblinNow = canUseGoblinBuilder(profile, freshBuilders);
 
-      const builderUpgrades = freshActiveUpgrades.filter(
-        (u) => u.upgradeType === "BUILDER",
-      );
-
-      if (builderUpgrades.length >= builderCount && !allowGoblinNow) {
+      if (normalBusy >= builderCount && !allowGoblinNow) {
         showError("All builders busy", "All builders are currently working.");
         return;
       }
       if (!isEditMode) {
         if (normalFree > 0) {
-          // Use normal builder
-
-          const collision = freshActiveUpgrades.some(
-            (u) => u.builderSlot === slot && u.upgradeType === "BUILDER",
-          );
-
-          if (collision) {
-            showError("Slot conflict", "Please try again.");
-            return;
-          }
-          slot = assignBuilderSlot(freshActiveUpgrades, builderCount, false);
+          slot = assignBuilderSlot(freshBuilders, builderCount, false);
         } else if (allowGoblinNow) {
-          // Only check goblin collision here
-          const goblinAlreadyActive = freshActiveUpgrades.some(
+          const goblinAlreadyActive = freshBuilders.some(
             (u) => u.builderSlot === "G",
           );
 

@@ -1,21 +1,32 @@
 import { Upgrade } from "@/types/upgrade";
 
 export function getVillageStatus({
+  townHall,
   builders,
   builderCount,
   pet,
-  lab,
+  labNormal,
+  labGoblin,
 }: {
+  townHall: number,
   builders: Upgrade[];
   builderCount: number;
-  pet?: Upgrade;
-  lab?: Upgrade;
+  pet?: Upgrade | null;
+  labNormal?: Upgrade;
+  labGoblin?: Upgrade;
 }) {
-  const busyBuilders = builders.length;
-  const freeBuilders = builderCount - busyBuilders;
+  const normalBusyBuilders = builders.filter(
+    (b) => b.builderSlot !== "G"
+  ).length;
+  const freeBuilders = builderCount - normalBusyBuilders;
 
-  const petIdle = !pet;
-  const labIdle = !lab;
+  const hasPetHouse = townHall >= 14;
+  const petIdle = hasPetHouse && !pet;
+
+  const isNormalBusy = !!labNormal && !labNormal.isCompleted;
+  const isGoblinBusy = !!labGoblin && !labGoblin.isCompleted;
+
+  const labIdle = !isNormalBusy || !isGoblinBusy;
 
   return {
     freeBuilders,

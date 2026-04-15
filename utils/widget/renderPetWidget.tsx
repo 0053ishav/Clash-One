@@ -1,9 +1,9 @@
 import { useAccountStore } from "@/stores/accountStore";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
-import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
-import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
+import { PetStatusWidget } from "@/widget/PetStatusWidget";
+import { getPetWidgetData } from "@/widget/getPetWidgetData";
 
-export async function renderBuilderWidget() {
+export async function renderPetWidget() {
   try {
     const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
 
@@ -12,12 +12,11 @@ export async function renderBuilderWidget() {
 
     if (!accounts || accounts.length === 0) {
       return (
-        <BuilderStatusWidget
-          title="Builders"
+        <PetStatusWidget
+          title="Pet"
           subtitle="Loading..."
           progress={0}
           showProgress={false}
-          builderCountText="Please wait"
         />
       );
     }
@@ -30,20 +29,13 @@ export async function renderBuilderWidget() {
 
     if (!tag) {
       return (
-        <BuilderStatusWidget
-          title="Builders"
+        <PetStatusWidget
+          title="Pet"
           subtitle="No account"
           progress={0}
           showProgress={false}
-          builderCountText="Add account"
         />
       );
-    }
-
-    const accountExists = accounts.some((a) => a.tag === tag);
-
-    if (!accountExists) {
-      return renderBuilderWidget();
     }
 
     const account = accounts.find((a) => a.tag === tag);
@@ -52,40 +44,37 @@ export async function renderBuilderWidget() {
       throw new Error("Invalid account");
     }
 
-    const data = await getBuilderWidgetData(tag);
+    const data = await getPetWidgetData(tag);
 
-    setWidgetCache(tag, "builder", {
+    setWidgetCache(tag, "pet", {
       ...data,
       renderedAt: Date.now(),
     });
 
     return (
-      <BuilderStatusWidget
-        title={data.title ?? "Builders"}
-        subtitle={data.subtitle ?? "All builders free"}
-        isCrafted={data.isCrafted}
+      <PetStatusWidget
+        title={data.title ?? "Pet"}
+        subtitle={data.subtitle ?? "Idle"}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
-        builderCountText={data.builderCountText}
-        nextUpgradeText={data.nextUpgradeText}
         dataId={data.dataId}
         type={data.type}
+        suggestion={data.suggestion}
         color={data.color}
         accountInitials={data.accountInitials}
         updatedAt={data.updatedAt}
       />
     );
   } catch (error) {
-    console.log("renderBuilderWidget error:", error);
+    console.log("renderPetWidget error:", error);
 
     return (
-      <BuilderStatusWidget
-        title="Builders"
+      <PetStatusWidget
+        title="Pets"
         subtitle="Open app to sync"
         progress={0}
         showProgress={false}
-        builderCountText="Tap to refresh"
       />
     );
   }

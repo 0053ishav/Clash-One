@@ -1,9 +1,9 @@
 import { useAccountStore } from "@/stores/accountStore";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
-import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
-import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
+import { LabStatusWidget } from "@/widget/LabStatusWidget";
+import { getLabWidgetData } from "@/widget/getLabWidgetData";
 
-export async function renderBuilderWidget() {
+export async function renderLabWidget() {
   try {
     const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
 
@@ -12,12 +12,11 @@ export async function renderBuilderWidget() {
 
     if (!accounts || accounts.length === 0) {
       return (
-        <BuilderStatusWidget
-          title="Builders"
+        <LabStatusWidget
+          title="Laboratory"
           subtitle="Loading..."
           progress={0}
           showProgress={false}
-          builderCountText="Please wait"
         />
       );
     }
@@ -30,12 +29,11 @@ export async function renderBuilderWidget() {
 
     if (!tag) {
       return (
-        <BuilderStatusWidget
-          title="Builders"
+        <LabStatusWidget
+          title="Laboratory"
           subtitle="No account"
           progress={0}
           showProgress={false}
-          builderCountText="Add account"
         />
       );
     }
@@ -43,7 +41,15 @@ export async function renderBuilderWidget() {
     const accountExists = accounts.some((a) => a.tag === tag);
 
     if (!accountExists) {
-      return renderBuilderWidget();
+      // ❌ avoid recursion
+      return (
+        <LabStatusWidget
+          title="Laboratory"
+          subtitle="Invalid account"
+          progress={0}
+          showProgress={false}
+        />
+      );
     }
 
     const account = accounts.find((a) => a.tag === tag);
@@ -52,22 +58,20 @@ export async function renderBuilderWidget() {
       throw new Error("Invalid account");
     }
 
-    const data = await getBuilderWidgetData(tag);
+    const data = await getLabWidgetData(tag);
 
-    setWidgetCache(tag, "builder", {
+    setWidgetCache(tag, "lab", {
       ...data,
       renderedAt: Date.now(),
     });
 
     return (
-      <BuilderStatusWidget
-        title={data.title ?? "Builders"}
-        subtitle={data.subtitle ?? "All builders free"}
-        isCrafted={data.isCrafted}
+      <LabStatusWidget
+        title={data.title ?? "Laboratory"}
+        subtitle={data.subtitle ?? "Idle"}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
-        builderCountText={data.builderCountText}
         nextUpgradeText={data.nextUpgradeText}
         dataId={data.dataId}
         type={data.type}
@@ -77,15 +81,14 @@ export async function renderBuilderWidget() {
       />
     );
   } catch (error) {
-    console.log("renderBuilderWidget error:", error);
+    console.log("renderLabWidget error:", error);
 
     return (
-      <BuilderStatusWidget
-        title="Builders"
+      <LabStatusWidget
+        title="Laboratory"
         subtitle="Open app to sync"
         progress={0}
         showProgress={false}
-        builderCountText="Tap to refresh"
       />
     );
   }

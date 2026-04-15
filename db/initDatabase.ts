@@ -5,7 +5,7 @@ export async function initDatabase() {
   // temporary debug
   // await db.execAsync(`DROP TABLE IF EXISTS accounts`);
 
-  // await db.execAsync(`DROP TABLE IF EXISTS builders`);
+  // await db.execAsync(`DROP TABLE IF EXISTS upgrades`);
 
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS accounts (
@@ -67,6 +67,7 @@ export async function initDatabase() {
 
       builder_type TEXT,
       builder_slot TEXT,
+      lab_slot TEXT,
 
       current_level INTEGER,
       next_level INTEGER,
@@ -85,7 +86,7 @@ export async function initDatabase() {
       REFERENCES accounts(player_tag)
       ON DELETE CASCADE,
 
-      UNIQUE(account_player_tag, builder_slot, is_completed)
+      UNIQUE(account_player_tag, id)
     );
   `);
 

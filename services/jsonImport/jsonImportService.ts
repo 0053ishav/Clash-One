@@ -5,10 +5,9 @@ import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityType } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
+import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
 import { randomUUID } from "expo-crypto";
-import { getEntities } from "../entityService";
-import { getUpgrades } from "../upgradeService";
 
 type RawExport = {
   tag: string;
@@ -20,7 +19,6 @@ type RawExport = {
     timer?: number;
     extra?: boolean;
 
-    // 👇 NEW (crafted defenses live here)
     types?: {
       data: number;
       modules?: {
@@ -36,6 +34,10 @@ type RawExport = {
   pets?: { data: number; lvl: number; timer?: number }[];
   guardians?: { data: number; lvl: number; timer?: number }[];
   helpers?: { data: number; lvl: number; helper_cooldown?: number }[];
+
+  units?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
+  spells?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
+  siege_machines?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
 };
 
 type ActiveTask = {
@@ -44,7 +46,6 @@ type ActiveTask = {
   timer: number;
   extra?: boolean;
 
-  // 👇 NEW
   isCrafted?: boolean;
   moduleId?: number;
 };
@@ -100,6 +101,12 @@ export function normalizeEntityType(entityType?: EntityType): Upgrade["type"] {
       return "GUARDIAN";
     case "lab":
       return "LAB";
+    case "troop":
+      return "LAB";
+    case "siege":
+      return "LAB";
+    case "spell":
+      return "LAB";
     default:
       return "BUILDING"; // fallback (safe)
   }
@@ -115,7 +122,17 @@ export async function importVillageJson(
 
   try {
     parsed = JSON.parse(rawText);
-  } catch {
+    track("json_pipeline", {
+      step: "parse",
+      status: "success",
+      source: getSessionSource(),
+    });
+  } catch (e) {
+    track("json_pipeline", {
+      step: "parse",
+      status: "failed",
+      error: e,
+    });
     throw new Error("INVALID_JSON");
   }
 
@@ -220,6 +237,7 @@ export async function importVillageJson(
       })) ?? []),
   );
 
+
   // ✅ 🔥 Crafted defenses (modules)
   for (const building of parsed.buildings ?? []) {
     if (!building.types) continue;
@@ -238,6 +256,27 @@ export async function importVillageJson(
         }
       }
     }
+  }
+
+  const labSources = [
+    ...(parsed.units ?? []),
+    ...(parsed.spells ?? []),
+    ...(parsed.siege_machines ?? []),
+  ];
+
+  const activeLabs = labSources.filter(
+    (u) => typeof u.timer === "number"
+  );
+
+  const activeLabTasks: ActiveTask[] = [];
+
+  for (const lab of activeLabs) {
+    activeLabTasks.push({
+      data: lab.data,
+      lvl: lab.lvl,
+      timer: lab.timer!,
+      extra: lab.extra,
+    })
   }
 
   // =========================================================
@@ -277,28 +316,49 @@ export async function importVillageJson(
     });
   }
 
+  const validLabTasks: ActiveTask[] = [];
+
+  for (const lab of activeLabTasks) {
+    const remainingMsAtExport = lab.timer * 1000;
+    const realEndTime = exportTimestampMs + remainingMsAtExport;
+    const remainingNow = Math.max(0, realEndTime - now);
+
+    if (remainingNow <= 0) continue;
+
+    validLabTasks.push({
+      ...lab,
+      timer: remainingNow / 1000,
+    });
+  }
+
   // =========================================================
   // 🔥 API SYNC (UNCHANGED)
   // =========================================================
 
   const busyBuildersFromJson = validUpgrades.filter((u) => {
-      const entity = getEntity(u.data);
+    const entity = getEntity(u.data);
 
-      if (!entity) return false;
+    if (!entity) return false;
 
-      const type = resolveUpgradeType(entity.type);
+    const type = resolveUpgradeType(entity.type);
 
-      return type === "BUILDER";
-    }).length;
+    return type === "BUILDER";
+  }).length;
 
-    const totalBuilders = Math.max(1, Math.min(busyBuildersFromJson, 6));
+  const totalBuilders = Math.max(1, Math.min(busyBuildersFromJson, 6));
 
-  
+
   try {
     const apiData = await fetchPlayerFromApi(parsed.tag);
     const existing = await getAccountByTag(parsed.tag);
 
     await updateBuilderCount(parsed.tag, totalBuilders);
+
+    track("json_pipeline", {
+      step: "fetch",
+      status: "sucesss",
+      source: getSessionSource(),
+    });
 
     if (!existing) {
       await addAccount(
@@ -318,7 +378,13 @@ export async function importVillageJson(
 
     await switchAccountStore(parsed.tag);
     await new Promise((resolve) => setTimeout(resolve, 50));
-  } catch { }
+  } catch (e) {
+    track("json_pipeline", {
+      step: "fetch",
+      status: "failed",
+      error: e,
+    });
+  }
 
   if (!validUpgrades.length || !activeBuilderTasks.length) {
     await replaceUpgrades(parsed.tag, []);
@@ -374,6 +440,7 @@ export async function importVillageJson(
       }
     }
 
+
     newUpgrades.push({
       id: randomUUID(),
       accountTag: parsed.tag,
@@ -411,21 +478,63 @@ export async function importVillageJson(
     });
   }
 
+  for (const lab of validLabTasks) {
+    const startTime = now;
+    const durationMinutes = Math.ceil((lab.timer * 1000) / 60000);
+    const endTime = now + lab.timer * 1000;
+
+    const entity = getEntity(lab.data);
+    console.log("here: ", lab)
+    if (!entity) continue;
+
+    newUpgrades.push({
+      id: randomUUID(),
+      accountTag: parsed.tag,
+
+      dataId: lab.data,
+      entity: entity.name,
+
+      type: normalizeEntityType(entity.type),
+      upgradeType: "LAB",
+
+      startTime,
+      durationMinutes,
+      endTime,
+
+      builderSlot: undefined,
+      builderType: undefined,
+
+      labSlot: lab.extra === true ? "GOBLIN" : "NORMAL",
+
+      currentLevel: lab.lvl,
+      nextLevel: lab.lvl + 1,
+
+      isCompleted: false,
+      source: "JSON",
+    });
+  }
   console.log("Writing upgrades:", newUpgrades.length);
 
-  await importJsonData(parsed.tag, newUpgrades, entities);
+  try {
+    await importJsonData(parsed.tag, newUpgrades, entities);
+    track("json_pipeline", {
+      step: "import",
+      status: "sucesss",
+      source: getSessionSource(),
+    });
 
+  } catch (e) {
+    track("json_pipeline", {
+      step: "import",
+      status: "failed",
+      error: e,
+    });
+  }
   setLastJsonSync(parsed.tag, now);
 
-  const upgrades = await getUpgrades(parsed.tag);
-  const entitie = await getEntities(parsed.tag);
-
-  // console.log("UPGRADES:", upgrades);
-  // console.log("ENTITIES:", entitie);
-
   const builderCountOnly = newUpgrades.filter(
-  (u) => u.upgradeType === "BUILDER"
-).length;
+    (u) => u.upgradeType === "BUILDER"
+  ).length;
 
   return {
     status: "SUCCESS",

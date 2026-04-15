@@ -1,53 +1,41 @@
 "use no memo";
 import { EntityType } from "@/types/entity";
-import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
+  ColorProp,
   FlexWidget,
   ImageWidget,
   TextWidget,
 } from "react-native-android-widget";
 
-export function BuilderStatusWidget(props: {
+export function LabStatusWidget(props: {
   title: string;
   subtitle: string;
-  isCrafted?: boolean;
   progress: number;
   showProgress: boolean;
   levelText?: string;
-  builderCountText?: string;
   nextUpgradeText?: string;
   color?: string;
   accountInitials?: string;
   dataId?: number;
   type?: EntityType;
   updatedAt?: number;
-  renderedAt?: number;
 }) {
-  const isFree = props.subtitle === "All builders free";
+  const isIdle = props.subtitle === "Idle";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
   const progressWidth = Math.floor(90 * clamped);
 
-  const { getCraftedIcon } = getCraftedResolver();
-
   const icon =
     props.dataId && props.type
-      ? props.isCrafted && getCraftedIcon(props.dataId)
-        ? getCraftedIcon(props.dataId)
-        : getIconByEntityType(
-            props.dataId,
-            props.type,
-            undefined,
-            props.isCrafted,
-          )
-      : isFree
+      ? getIconByEntityType(props.dataId, props.type)
+      : isIdle
         ? require("@/assets/images/builder/builder-idle.png")
         : require("@/assets/images/builder/builder-working.png");
 
-  const accentColor = (props.color ?? "#fbbf24") as any;
+  const accentColor = (props.color ?? "#8b5cf6") as any; // purple for lab
 
   return (
     <FlexWidget
@@ -59,7 +47,7 @@ export function BuilderStatusWidget(props: {
         flexDirection: "row",
       }}
     >
-      {/* LEFT ACCENT BORDER */}
+      {/* LEFT BORDER */}
       <FlexWidget
         style={{
           width: 4,
@@ -69,7 +57,7 @@ export function BuilderStatusWidget(props: {
         }}
       />
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <FlexWidget
         style={{
           flex: 1,
@@ -79,7 +67,7 @@ export function BuilderStatusWidget(props: {
           justifyContent: "space-between",
         }}
       >
-        {/* TOP SECTION */}
+        {/* TOP */}
         <FlexWidget
           style={{
             flexDirection: "row",
@@ -93,9 +81,9 @@ export function BuilderStatusWidget(props: {
               width: 50,
               height: 50,
               borderRadius: 12,
-              backgroundColor: isFree
+              backgroundColor: isIdle
                 ? "rgba(34, 197, 94, 0.15)"
-                : "rgba(251, 191, 36, 0.15)",
+                : "rgba(139, 92, 246, 0.15)",
               alignItems: "center",
               justifyContent: "center",
               marginRight: 10,
@@ -104,26 +92,13 @@ export function BuilderStatusWidget(props: {
             <ImageWidget image={icon} imageWidth={32} imageHeight={32} />
           </FlexWidget>
 
-          {/* TITLE + SUBTITLE + LEVEL + PROGRESS */}
-          <FlexWidget
-            style={{
-              flex: 1,
-              flexDirection: "column",
-              justifyContent: "center",
-            }}
-          >
-            {/* Initials badge + title */}
-            <FlexWidget
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 2,
-              }}
-            >
+          {/* TEXT */}
+          <FlexWidget style={{ flex: 1 }}>
+            <FlexWidget style={{ flexDirection: "row", marginBottom: 2 }}>
               {props.accountInitials && (
                 <FlexWidget
                   style={{
-                    backgroundColor: "rgba(251, 191, 36, 0.2)",
+                    backgroundColor: "rgba(139, 92, 246, 0.2)",
                     borderRadius: 4,
                     paddingHorizontal: 5,
                     paddingVertical: 1,
@@ -137,10 +112,10 @@ export function BuilderStatusWidget(props: {
                       fontSize: 9,
                       fontWeight: "700",
                     }}
-                    maxLines={1}
                   />
                 </FlexWidget>
               )}
+
               <TextWidget
                 text={props.title}
                 style={{
@@ -155,21 +130,20 @@ export function BuilderStatusWidget(props: {
             <TextWidget
               text={props.subtitle}
               style={{
-                color: isFree ? "#22c55e" : "#fbbf24",
+                color: isIdle ? "#22c55e" : "#a78bfa",
                 fontSize: 12,
                 fontWeight: "700",
               }}
               maxLines={1}
             />
 
-            {!isFree && props.levelText && (
+            {!isIdle && props.levelText && (
               <FlexWidget
                 style={{
                   backgroundColor: "rgba(14, 165, 233, 0.2)",
                   borderRadius: 5,
                   paddingHorizontal: 6,
                   paddingVertical: 2,
-                  alignItems: "flex-start",
                   marginTop: 3,
                 }}
               >
@@ -180,28 +154,26 @@ export function BuilderStatusWidget(props: {
                     fontSize: 9,
                     fontWeight: "600",
                   }}
-                  maxLines={1}
                 />
               </FlexWidget>
             )}
 
-            {!isFree && props.showProgress && (
+            {!isIdle && props.showProgress && (
               <FlexWidget
                 style={{
                   width: "match_parent",
                   height: 6,
-                  backgroundColor: "rgba(148, 163, 184, 0.2)",
+                  backgroundColor: "rgba(148,163,184,0.2)" as ColorProp,
                   borderRadius: 3,
                   marginTop: 3,
                   overflow: "hidden",
-                  flexDirection: "row",
                 }}
               >
                 <FlexWidget
                   style={{
                     width: progressWidth,
                     height: "match_parent",
-                    backgroundColor: "#fbbf24",
+                    backgroundColor: "#a78bfa",
                   }}
                 />
               </FlexWidget>
@@ -209,98 +181,46 @@ export function BuilderStatusWidget(props: {
           </FlexWidget>
         </FlexWidget>
 
-        {/* BOTTOM SECTION */}
-        <FlexWidget
-          style={{
-            width: "match_parent",
-            flexDirection: "column",
-          }}
-        >
-          <FlexWidget
-            style={{
-              width: "match_parent",
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-          >
+        {/* BOTTOM */}
+        <FlexWidget style={{ width: "match_parent", alignItems: "flex-end" }}>
+          {!isIdle && (
             <FlexWidget
               style={{
-                flex: 1,
                 height: 24,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: isFree
-                  ? "rgba(34, 197, 94, 0.12)"
-                  : "rgba(59, 130, 246, 0.12)",
+                backgroundColor: "rgba(139, 92, 246, 0.12)",
                 borderRadius: 6,
-                marginRight: !isFree ? 8 : 0,
                 paddingHorizontal: 8,
+                marginBottom: 2,
               }}
             >
               <TextWidget
                 text={
-                  props.builderCountText ??
-                  (isFree ? "🟢 All Free" : "🔨 Builders Busy")
+                  props.nextUpgradeText
+                    ? "⏱ " + props.nextUpgradeText
+                    : "No parallel research"
                 }
                 style={{
-                  color: isFree ? "#22c55e" : "#60a5fa",
+                  color: "#a78bfa",
                   fontSize: 10,
                   fontWeight: "700",
                 }}
-                maxLines={1}
               />
             </FlexWidget>
+          )}
 
-            {!isFree && (
-              <FlexWidget
-                style={{
-                  flex: 1,
-                  height: 24,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "rgba(251, 191, 36, 0.12)",
-                  borderRadius: 6,
-                  paddingHorizontal: 8,
-                }}
-              >
-                <TextWidget
-                  text={
-                    props.nextUpgradeText
-                      ? "⏱ " + props.nextUpgradeText
-                      : "No next upgrade"
-                  }
-                  style={{
-                    color: "#fbbf24",
-                    fontSize: 10,
-                    fontWeight: "700",
-                  }}
-                  maxLines={1}
-                />
-              </FlexWidget>
-            )}
-          </FlexWidget>
-
-          {/* UPDATED AT */}
-          <FlexWidget
+          <TextWidget
+            text={
+              props.updatedAt
+                ? "↻ Synced " + formatTimeAgo(props.updatedAt) + " ago"
+                : "⚠ No data"
+            }
             style={{
-              width: "match_parent",
-              alignItems: "flex-end",
+              color: "#475569",
+              fontSize: 8,
             }}
-          >
-            <TextWidget
-              text={
-                props.updatedAt
-                  ? "↻ Synced " + formatTimeAgo(props.updatedAt) + " ago"
-                  : "⚠ No data"
-              }
-              style={{
-                color: "#475569",
-                fontSize: 8,
-                fontWeight: "500",
-              }}
-              maxLines={1}
-            />
-          </FlexWidget>
+          />
         </FlexWidget>
       </FlexWidget>
     </FlexWidget>

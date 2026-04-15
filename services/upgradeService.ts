@@ -26,10 +26,19 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
 
     builderSlot:
       r.builder_slot === "G"
-        ? ("G" as const)
-        : (Number(r.builder_slot) as number),
+        ? "G"
+        : r.builder_slot != null
+          ? Number(r.builder_slot)
+          : undefined,
 
     builderType: r.builder_type,
+
+    labSlot:
+      r.lab_slot === "GOBLIN"
+        ? "GOBLIN"
+        : r.lab_slot === "NORMAL"
+          ? "NORMAL"
+          : undefined,
 
     startTime: Number(r.start_time),
     durationMinutes: Number(r.duration_minutes),
@@ -71,8 +80,20 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     type: r.type,
     upgradeType: r.upgrade_type,
 
-    builderSlot: r.builder_slot === "G" ? "G" : Number(r.builder_slot),
+    builderSlot:
+      r.builder_slot === "G"
+        ? "G"
+        : r.builder_slot != null
+          ? Number(r.builder_slot)
+          : undefined,
     builderType: r.builder_type,
+
+    labSlot:
+      r.lab_slot === "GOBLIN"
+        ? "GOBLIN"
+        : r.lab_slot === "NORMAL"
+          ? "NORMAL"
+          : undefined,
 
     startTime: r.start_time,
     durationMinutes: r.duration_minutes,

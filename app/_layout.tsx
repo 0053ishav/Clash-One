@@ -3,11 +3,13 @@ import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { useAccountStore } from "@/stores/accountStore";
+import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
+import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
-import { Redirect, Stack, usePathname } from "expo-router";
+import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -16,6 +18,7 @@ export default function RootLayout() {
   const [bootState, setBootState] = useState<"loading" | "ready" | "error">(
     "loading",
   );
+  const router = useRouter();
 
   const runBootstrap = async () => {
     try {
@@ -45,6 +48,55 @@ export default function RootLayout() {
 
   useEffect(() => {
     runBootstrap();
+  }, []);
+
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+
+        setSessionSource("notification");
+
+        track("notification_open", {
+          type: data?.type,
+        });
+      },
+    );
+
+    return () => sub.remove();
+  }, []);
+  useEffect(() => {
+    const handleDeepLink = (url: string) => {
+      if (!url) return;
+
+      const { hostname, queryParams } = Linking.parse(url);
+
+      if (queryParams?.source === "widget") {
+        setSessionSource("widget");
+        track("widget_open", { target: hostname });
+      } else {
+        setSessionSource("app");
+      }
+
+      if (hostname === "add-account") {
+        router.push("/add-account");
+      }
+      if (hostname === "pro") {
+        router.push("/pro");
+      }
+    };
+
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      handleDeepLink(url);
+    });
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink(url);
+    });
+
+    return () => {
+      sub.remove();
+    };
   }, []);
 
   const pathname = usePathname();

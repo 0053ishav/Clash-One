@@ -18,6 +18,7 @@ export type Upgrade = {
 
   builderType?: "NORMAL" | "GOBLIN";
   builderSlot?: number | "G";
+  labSlot?: "NORMAL" | "GOBLIN";
 
   startTime: number;
   durationMinutes: number;

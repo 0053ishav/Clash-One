@@ -41,7 +41,11 @@ export default function ProfileHeroCard({
         {data.leagueTier?.iconUrls.large && (
           <View style={styles.tierIconWrapper}>
             <Image
-              source={{ uri: data.leagueTier.iconUrls.large }}
+              source={{
+                uri:
+                  data.leagueTier.iconUrls.large ??
+                  data.leagueTier.iconUrls.small,
+              }}
               style={styles.tierIcon}
               contentFit="contain"
               cachePolicy="memory-disk"
@@ -56,6 +60,15 @@ export default function ProfileHeroCard({
               <Text style={styles.trophyEmoji}>🏆</Text>
             </View>
             <Text style={styles.bestText}>Best: {data.bestTrophies}</Text>
+            <Image
+              source={{
+                uri:
+                  data.league?.iconUrls.small ?? data.league?.iconUrls.medium,
+              }}
+              style={styles.tierIcon}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
           </View>
         </View>
       </View>

@@ -1,8 +1,10 @@
 import ProfileActions from "@/components/ProfileSheet/ProfileActions";
 import ProfileHeader from "@/components/ProfileSheet/ProfileHeader";
 import ProfileStatsGrid from "@/components/ProfileSheet/ProfileStatsGrid";
+import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
-import { useEffect } from "react";
+import { EntityRecord } from "@/types/upgrade";
+import { useEffect, useState } from "react";
 import {
   Dimensions,
   Modal,
@@ -21,7 +23,7 @@ type ProfileSheetProps = {
   onOpenProfile: () => void;
 };
 
-export default function ProfileSheet({
+export default function ProfileDropdownSheet({
   visible,
   onClose,
   onSync,
@@ -32,6 +34,11 @@ export default function ProfileSheet({
   const profile = useAccountStore((s) => s.profile);
   const accounts = useAccountStore((s) => s.accounts);
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
+  const activeTag = useAccountStore((s) => s.activeTag);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [entities, setEntities] = useState<EntityRecord[]>([]);
 
   const screenHeight = Dimensions.get("window").height;
 
@@ -39,6 +46,31 @@ export default function ProfileSheet({
     if (!visible) return;
     loadAccounts();
   }, [loadAccounts, visible]);
+
+  const loadProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      if (!activeTag) {
+        setError("No player tag found");
+        return;
+      }
+
+      // const playerData = await fetchFullPlayer(activeTag);
+      const entityData = await getEntities(activeTag);
+
+      setEntities(entityData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load profile");
+      console.error("Profile load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   async function handleAccountSwitch(tag: string) {
     if (tag === profile?.playerTag) return;
@@ -50,6 +82,11 @@ export default function ProfileSheet({
   if (!profile) return null;
 
   const activeAccount = accounts.find((a) => a.tag === profile.playerTag);
+
+  const helpers = entities.filter((e) => e.type?.toLowerCase() === "helper");
+  const guardians = entities.filter(
+    (e) => e.type?.toLowerCase() === "guardian",
+  );
 
   return (
     <Modal
@@ -75,7 +112,11 @@ export default function ProfileSheet({
             bounces={false}
             contentContainerStyle={styles.scrollContent}
           >
-            <ProfileHeader profile={profile} />
+            <ProfileHeader
+              profile={profile}
+              helpers={helpers}
+              guardians={guardians}
+            />
 
             {accounts.length > 0 && (
               <View style={styles.accountsSection}>

@@ -6,18 +6,26 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "#fbbf24",
+        tabBarInactiveTintColor: "#64748b",
+
         tabBarStyle: {
           backgroundColor: "#1e293b",
           borderTopWidth: 1,
           borderTopColor: "#334155",
+          marginBottom: 2,
         },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
+
         headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Clash Widget",
+          title: "Home",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "home-sharp" : "home-outline"}

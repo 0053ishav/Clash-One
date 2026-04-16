@@ -5,8 +5,10 @@ import WidgetPreviewCard from "@/components/WidgetPreviewCard";
 import { getAccountState } from "@/services/accountStateService";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
+import { track } from "@/utils/analytics/analytics";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { addWidget } from "@/utils/widgetPicker";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +32,14 @@ export default function WidgetPreviewScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
+
+  useEffect(() => {
+    track("widget_preview_opened", {
+      accountCount: accounts.length,
+      isPro,
+    });
+    track("widget_selected", { type: selected });
+  }, []);
 
   // 🔹 Load real data (same as Home)
   useEffect(() => {
@@ -111,7 +121,10 @@ export default function WidgetPreviewScreen() {
           }
           image={require("@/assets/images/widget/builder.jpg")}
           selected={selected === "builder"}
-          onPress={() => setSelected("builder")}
+          onPress={() => {
+            setSelected("builder");
+            track("widget_selected", { type: "builder" });
+          }}
           isLocked={false}
         />
 
@@ -119,18 +132,24 @@ export default function WidgetPreviewScreen() {
           title="Lab Widget"
           subtitle="Track research progress • Pro"
           image={require("@/assets/images/widget/lab.jpg")}
-          isLocked={true}
+          isLocked={isPro}
           selected={selected === "lab"}
-          onPress={() => setSelected("lab")}
+          onPress={() => {
+            setSelected("lab");
+            track("widget_selected", { type: "lab" });
+          }}
         />
 
         <WidgetPreviewCard
           title="Pet Widget"
           subtitle="Track hero pets upgrades • Pro"
           image={require("@/assets/images/widget/pet.jpg")}
-          isLocked={true}
+          isLocked={isPro}
           selected={selected === "pet"}
-          onPress={() => setSelected("pet")}
+          onPress={() => {
+            setSelected("pet");
+            track("widget_selected", { type: "pet" });
+          }}
         />
 
         <View style={{ marginTop: 20 }}>
@@ -139,9 +158,7 @@ export default function WidgetPreviewScreen() {
           </Text>
 
           <Text style={{ color: "#94a3b8", marginTop: 6, lineHeight: 18 }}>
-            1. Long press your home screen{"\n"}
-            2. Tap &quot;Widgets&quot;{"\n"}
-            3. Select this app
+            Tap “Add Widget” → confirm → you&apos;re done
           </Text>
 
           <Text style={{ color: "#64748b", fontSize: 11, marginTop: 6 }}>
@@ -153,14 +170,24 @@ export default function WidgetPreviewScreen() {
         <Pressable
           style={styles.cta}
           onPress={() => {
-            setModalTitle("Add Widget");
-            setModalMessage(
-              "Did you add the widget?\n\nIf not:\n1. Long press home screen\n2. Tap Widgets\n3. Select this app",
-            );
-            setModalVisible(true);
+            track("widget_add_clicked", {
+              selectedType: selected,
+              isPro,
+            });
+
+            addWidget(selected === "builder" ? "multi" : selected);
+            setTimeout(() => {
+              router.replace("/(tabs)");
+            }, 1500);
+            // setModalTitle("Add Widget");
+            // setModalMessage(
+            //   "Did you add the widget?\n\nIf not:\n1. Long press home screen\n2. Tap Widgets\n3. Select this app",
+            // );
+            // setModalVisible(true);
           }}
         >
-          <Text style={styles.ctaText}>I&apos;ll add it now</Text>
+          {/* <Text style={styles.ctaText}>I&apos;ll add it now </Text> */}
+          <Text style={styles.ctaText}>Add {selected} Widget</Text>
         </Pressable>
       </ScrollView>
       <ConfirmModal

@@ -8,8 +8,6 @@ export function renderMultiWidget() {
   try {
     const { accounts } = useAccountStore.getState();
     const isPro = usePremiumStore.getState().isPro;
-    // const isPro = true;
-
     if (!accounts || accounts.length === 0) {
       return (
         <MultiAccountWidget

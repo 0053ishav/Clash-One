@@ -3,10 +3,12 @@ import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { useAccountStore } from "@/stores/accountStore";
+import { usePremiumStore } from "@/stores/premiumStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
+import { updateWidgetAccess } from "@/utils/widgetPicker";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
@@ -19,6 +21,7 @@ export default function RootLayout() {
     "loading",
   );
   const router = useRouter();
+  const isPro = usePremiumStore.getState().isPro;
 
   const runBootstrap = async () => {
     try {
@@ -51,6 +54,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    updateWidgetAccess(isPro);
+  }, [isPro]);
+
+  useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
@@ -65,6 +72,7 @@ export default function RootLayout() {
 
     return () => sub.remove();
   }, []);
+
   useEffect(() => {
     const handleDeepLink = (url: string) => {
       if (!url) return;

@@ -19,7 +19,6 @@ import { getAccountState } from "@/services/accountStateService";
 import { track } from "@/utils/analytics/analytics";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ValueScreen() {
   const router = useRouter();
@@ -91,13 +90,7 @@ export default function ValueScreen() {
   }, [account, activeUpgrades]);
 
   if (!account) {
-    return (
-      <SafeAreaView style={styles.root}>
-        <View style={styles.container}>
-          <Text style={{ color: "#94a3b8" }}>Loading account...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return router.push("/(tabs)");
   }
   const totalBuilders = account.builderCount;
   const idleCount = totalBuilders - busyCount;

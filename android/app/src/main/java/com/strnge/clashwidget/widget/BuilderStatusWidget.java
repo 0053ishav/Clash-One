@@ -1,0 +1,6 @@
+package com.strnge.clashwidget.widget;
+
+import com.reactnativeandroidwidget.RNWidgetProvider;
+
+public class BuilderStatusWidget extends RNWidgetProvider {
+}

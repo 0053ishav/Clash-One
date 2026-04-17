@@ -67,15 +67,26 @@ export async function getAccountByTag(
 export const updateAccount = async (
   tag: string,
   name: string,
-  color: string
+  color: string,
+  townhall?: number
 ) => {
   const db = await getDB();
 
+  if (typeof townhall === "number") {
+    await db.runAsync(
+      `UPDATE accounts
+       SET account_name=?, display_color=?, townhall_level=?, last_updated=?
+       WHERE player_tag=?`,
+      [name, color, townhall, Date.now(), tag]
+    );
+    return;
+  }
+
   await db.runAsync(
     `UPDATE accounts
-     SET account_name=?, display_color=?
+     SET account_name=?, display_color=?, last_updated=?
      WHERE player_tag=?`,
-    [name, color, tag]
+    [name, color, Date.now(), tag]
   );
 };
 

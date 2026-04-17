@@ -40,13 +40,12 @@ export default function ValueScreen() {
     track("value_viewed", {
       has_upgrades: activeUpgrades.length > 0,
     });
-  }, []);
+  }, [activeUpgrades]);
 
   useEffect(() => {
     loadAccounts();
-  }, [effectiveTag]);
+  }, []);
 
-  // ✅ SAME AS HOME SCREEN
   useEffect(() => {
     if (!effectiveTag) return;
 
@@ -55,6 +54,12 @@ export default function ValueScreen() {
       setActiveUpgrades(upgrades);
     })();
   }, [effectiveTag]);
+
+  useEffect(() => {
+    if (!account) {
+      router.replace("/(tabs)");
+    }
+  }, [account]);
 
   const { status, remainingMs, busyCount, nextUpgrade } = useMemo(() => {
     if (!account) {
@@ -90,7 +95,7 @@ export default function ValueScreen() {
   }, [account, activeUpgrades]);
 
   if (!account) {
-    return router.push("/(tabs)");
+    return null;
   }
   const totalBuilders = account.builderCount;
   const idleCount = totalBuilders - busyCount;

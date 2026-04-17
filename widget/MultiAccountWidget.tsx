@@ -868,8 +868,14 @@ export function MultiAccountWidget({
     accountsLength: accounts.length,
   });
 
-  const visibleAccounts = isPro ? accounts.slice(0, 3) : accounts.slice(0, 2);
-
+  const visibleAccounts = accounts.slice(
+    0,
+    isPro ? accounts.length : Math.min(3, accounts.length),
+  );
+  console.log(
+    "WIDGET DATA:",
+    accounts.map((a) => a.tag),
+  );
   return (
     <FlexWidget
       style={{

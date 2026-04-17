@@ -113,7 +113,11 @@ export function getPlayerProfile(): PlayerProfile {
     }
 
     try {
-        const parsed: PlayerProfile = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+            throw new Error("INVALID_PLAYER_PROFILE");
+        }
 
         return {
             ...createDefaultProfile(),
@@ -131,10 +135,17 @@ export function getPlayerProfile(): PlayerProfile {
     }
 }
 
-export function savePlayerProfile(profile: PlayerProfile) {
+export function savePlayerProfile(profile: PlayerProfile | null | undefined) {
+    const safeProfile = profile
+        ? {
+            ...createDefaultProfile(),
+            ...profile,
+        }
+        : createDefaultProfile();
+
     storage.set(
         STORAGE_KEYS.PLAYER_PROFILE,
-        JSON.stringify(profile)
+        JSON.stringify(safeProfile)
     );
 }
 

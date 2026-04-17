@@ -119,7 +119,7 @@ export default function WidgetPreviewScreen() {
               ? "Track up to 10 accounts"
               : "Track up to 2 accounts • Upgrade for more"
           }
-          image={require("@/assets/images/widget/builder.jpg")}
+          image={require("@/assets/images/widget/builder.png")}
           selected={selected === "builder"}
           onPress={() => {
             setSelected("builder");
@@ -131,7 +131,7 @@ export default function WidgetPreviewScreen() {
         <WidgetPreviewCard
           title="Lab Widget"
           subtitle="Track research progress • Pro"
-          image={require("@/assets/images/widget/lab.jpg")}
+          image={require("@/assets/images/widget/lab.png")}
           isLocked={isPro}
           selected={selected === "lab"}
           onPress={() => {
@@ -143,7 +143,7 @@ export default function WidgetPreviewScreen() {
         <WidgetPreviewCard
           title="Pet Widget"
           subtitle="Track hero pets upgrades • Pro"
-          image={require("@/assets/images/widget/pet.jpg")}
+          image={require("@/assets/images/widget/pet.png")}
           isLocked={isPro}
           selected={selected === "pet"}
           onPress={() => {

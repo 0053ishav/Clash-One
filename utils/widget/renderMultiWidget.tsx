@@ -21,8 +21,6 @@ export function renderMultiWidget() {
 
     const data = isPro ? getMultiWidgetDataPro() : getMultiWidgetDataFree();
 
-    console.log(data, "data");
-
     if (!data || data.length === 0) {
       return (
         <MultiAccountWidget

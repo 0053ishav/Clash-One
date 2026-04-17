@@ -32,12 +32,12 @@ export function getMultiWidgetDataPro(): MultiWidgetItem[] {
 
   const index = slot % totalRest;
 
+  if (totalRest === 1) {
+    return [primary, rest[0]];
+  }
+
   const second = rest[index];
   const third = rest[(index + 1) % totalRest];
 
-  return [primary, second, third].filter(Boolean);
+  return [primary, second, third];
 }
-
-/**
- * Free builders account must be top priority.
- */

@@ -10,7 +10,10 @@ import {
   getNotificationsEnabled,
   setNotificationsEnabled,
 } from "@/storage/notificationConfig";
-import { updateLocalBuilderCount } from "@/storage/playerProfile";
+import {
+  savePlayerProfile,
+  updateLocalBuilderCount,
+} from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
@@ -708,7 +711,16 @@ export default function SettingsScreen() {
         onCancel={() => setShowResetAccountModal(false)}
         onConfirm={async () => {
           await cancelAllNotifications();
-          if (profile) setProfile({ ...profile, playerTag: undefined });
+          if (profile) {
+            const resetProfile = {
+              ...profile,
+              playerTag: undefined,
+              playerApiConnected: false,
+              lastSyncedAt: undefined,
+            };
+            savePlayerProfile(resetProfile);
+            setProfile(resetProfile);
+          }
           if (profile?.playerTag) {
             resetLastJsonSync(profile.playerTag);
           }

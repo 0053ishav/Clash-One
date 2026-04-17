@@ -2,6 +2,7 @@ import { addAccount, getAccountByTag, replaceUpgrades, updateAccount, updateBuil
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
+import { getPlayerProfile, syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityType } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
@@ -116,6 +117,7 @@ export async function importVillageJson(
   rawText: string
 ): Promise<ImportResult> {
   let parsed: RawExport;
+  let apiData: Awaited<ReturnType<typeof fetchPlayerFromApi>> | null = null;
 
   const switchAccountStore = useAccountStore.getState().switchAccount;
   const importJsonData = useAccountStore.getState().importJsonData;
@@ -143,8 +145,6 @@ export async function importVillageJson(
   console.log("📥 Import JSON tag:", parsed.tag);
 
   const setLastSync = useAccountStore.getState().setLastSync;
-
-  const account = await getAccountByTag(parsed.tag);
 
   const exportTimestampMs = parsed.timestamp * 1000;
   const now = Date.now();
@@ -349,35 +349,13 @@ export async function importVillageJson(
 
 
   try {
-    const apiData = await fetchPlayerFromApi(parsed.tag);
-    const existing = await getAccountByTag(parsed.tag);
-
-    await updateBuilderCount(parsed.tag, totalBuilders);
+    apiData = await fetchPlayerFromApi(parsed.tag);
 
     track("json_pipeline", {
       step: "fetch",
       status: "sucesss",
       source: getSessionSource(),
     });
-
-    if (!existing) {
-      await addAccount(
-        parsed.tag,
-        apiData?.name ?? "Chief",
-        "#fbbf24",
-        apiData?.townHallLevel ?? 1,
-        totalBuilders
-      );
-    } else {
-      await updateAccount(
-        parsed.tag,
-        apiData?.name ?? existing.name,
-        existing.color
-      );
-    }
-
-    await switchAccountStore(parsed.tag);
-    await new Promise((resolve) => setTimeout(resolve, 50));
   } catch (e) {
     track("json_pipeline", {
       step: "fetch",
@@ -385,6 +363,35 @@ export async function importVillageJson(
       error: e,
     });
   }
+
+  const existing = await getAccountByTag(parsed.tag);
+
+  if (!existing) {
+    await addAccount(
+      parsed.tag,
+      apiData?.name ?? "Chief",
+      "#fbbf24",
+      apiData?.townHallLevel ?? 1,
+      totalBuilders
+    );
+  } else {
+    await updateAccount(
+      parsed.tag,
+      apiData?.name ?? existing.name,
+      existing.color,
+      apiData?.townHallLevel ?? existing.townhall
+    );
+    await updateBuilderCount(parsed.tag, totalBuilders);
+  }
+
+  await switchAccountStore(parsed.tag);
+
+  if (apiData) {
+    syncProfileFromApi(apiData);
+    useAccountStore.getState().setProfile(getPlayerProfile());
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 50));
 
   if (!validUpgrades.length || !activeBuilderTasks.length) {
     await replaceUpgrades(parsed.tag, []);

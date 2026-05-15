@@ -6,6 +6,6 @@ type PremiumState = {
 };
 
 export const usePremiumStore = create<PremiumState>((set) => ({
-    isPro: false,
+    isPro: true,
     setPro: (value) => set({ isPro: value }),
 }));

@@ -1,14 +1,16 @@
 import { normalizeEntityType, resolveUpgradeType } from "@/services/jsonImport/jsonImportService";
 import { useCraftedStore } from "@/stores/craftedEventStore";
-import { EntityType } from "@/types/entity";
+import { EntityType, SubType } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import * as Crypto from "expo-crypto";
 import { getEntity } from "./getEntity";
 
-export async function createBuilderUpgrade(params: {
+export async function createUpgrade(params: {
   dataId?: number;
+  moduleId?: number;
   entity: string;
   type?: EntityType;
+  subType?: SubType;
   days: number;
   hours: number;
   minutes: number;
@@ -43,7 +45,16 @@ export async function createBuilderUpgrade(params: {
     : false;
 
   if (isCrafted && params.dataId) {
-    name = crafted.defenses[params.dataId]?.name ?? name;
+    const defense = crafted.defenses[params.dataId];
+
+    if (params.moduleId && defense?.modules?.[params.moduleId]) {
+      const module = defense.modules[params.moduleId];
+
+      name = `${defense.name} → ${module.name}`;
+    } else {
+
+      name = defense?.name ?? name;
+    }
   }
 
   return {
@@ -51,16 +62,29 @@ export async function createBuilderUpgrade(params: {
     accountTag: params.accountTag,
 
     dataId: params.dataId,
+    moduleId: params.moduleId,
     entity: name,
-    
+
     type: normalizedType,
+    subType: params.subType,
     upgradeType,
 
     startTime,
     durationMinutes,
     endTime,
 
-    builderType: params.builderType ?? "NORMAL",
+    builderType:
+      upgradeType === "BUILDER"
+        ? params.builderType ?? "NORMAL"
+        : undefined,
+
+    labSlot:
+      upgradeType === "LAB"
+        ? params.builderType === "GOBLIN"
+          ? "GOBLIN"
+          : "NORMAL"
+        : undefined,
+
     isCompleted: false,
 
     currentLevel: params.currentLevel,

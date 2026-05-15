@@ -1,6 +1,5 @@
-import { getEntities } from "./entityService";
-import { getUpgrades } from "./upgradeService";
-
+// import { getEntities } from "./entityService";
+// import { getUpgrades } from "./upgradeService";
 
 // export async function getAccountState(tag: string) {
 //   const upgrades = await getUpgrades(tag);
@@ -11,7 +10,14 @@ import { getUpgrades } from "./upgradeService";
 //   const activeUpgrades = upgrades.filter(
 //     (u) => !u.isCompleted && u.endTime > now
 //   );
-//   console.log("LAB fetch:", upgrades.filter(u => u.upgradeType === "LAB"));
+
+//   const labUpgrades = activeUpgrades.filter(
+//     (u) => u.upgradeType === "LAB"
+//   );
+
+//   const petUpgrade = activeUpgrades.find(
+//     (u) => u.upgradeType === "PET"
+//   );
 
 //   return {
 //     upgrades,
@@ -20,14 +26,14 @@ import { getUpgrades } from "./upgradeService";
 //     builders: activeUpgrades.filter(
 //       (u) => u.upgradeType === "BUILDER" && u.builderSlot !== undefined
 //     ),
-//     lab: activeUpgrades.find((u) => u.upgradeType === "LAB"),
-//     labNormal: activeUpgrades.find(
-//       (u) => u.upgradeType === "LAB" && u.labSlot === "NORMAL"
-//     ),
-//     labGoblin: activeUpgrades.find(
-//       (u) => u.upgradeType === "LAB" && u.labSlot === "GOBLIN"
-//     ),
-//     pets: activeUpgrades.filter((u) => u.upgradeType === "PET"),
+
+//     lab: {
+//       normal: labUpgrades.find((u) => u.labSlot === "NORMAL"),
+//       goblin: labUpgrades.find((u) => u.labSlot === "GOBLIN"),
+//     },
+
+//     pet: petUpgrade ?? null,
+
 //     guardians: activeUpgrades.filter((u) => u.type === "GUARDIAN"),
 
 //     entities,
@@ -36,6 +42,10 @@ import { getUpgrades } from "./upgradeService";
 //     guardiansState: entities.filter((e) => e.type === "guardian"),
 //   };
 // }
+
+import { isWorkForHireActive } from "@/utils/goblin";
+import { getEntities } from "./entityService";
+import { getUpgrades } from "./upgradeService";
 
 export async function getAccountState(tag: string) {
   const upgrades = await getUpgrades(tag);
@@ -55,6 +65,17 @@ export async function getAccountState(tag: string) {
     (u) => u.upgradeType === "PET"
   );
 
+  const goblinEventActive = isWorkForHireActive();
+
+  const labNormal = labUpgrades.find((u) => u.labSlot === "NORMAL");
+  const labGoblinRaw = labUpgrades.find((u) => u.labSlot === "GOBLIN");
+
+  const labGoblin = goblinEventActive ? labGoblinRaw : null;
+
+  if (!goblinEventActive && labGoblinRaw) {
+    console.warn("⚠️ Stale goblin lab upgrade detected (event inactive)");
+  }
+
   return {
     upgrades,
     activeUpgrades,
@@ -64,8 +85,9 @@ export async function getAccountState(tag: string) {
     ),
 
     lab: {
-      normal: labUpgrades.find((u) => u.labSlot === "NORMAL"),
-      goblin: labUpgrades.find((u) => u.labSlot === "GOBLIN"),
+      normal: labNormal ?? null,
+      goblin: labGoblin ?? null,
+      goblinAvailable: goblinEventActive,
     },
 
     pet: petUpgrade ?? null,

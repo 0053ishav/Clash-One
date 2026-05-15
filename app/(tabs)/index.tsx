@@ -5,16 +5,22 @@ import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet
 import { getEntityTypeByDataId } from "@/data/entityMap";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
-import { cancelBuilderNotification } from "@/services/notifications/builderNotificationService";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
   setGoblinBannerDismissedUntil,
   shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
+import {
+  clearFeatureVote,
+  getFeatureVote,
+  setFeatureVote,
+} from "@/storage/notesStorage";
 import { useAccountStore } from "@/stores/accountStore";
 import { useCraftedStore } from "@/stores/craftedEventStore";
+import { usePremiumStore } from "@/stores/premiumStore";
 import { BuilderWidgetData, Upgrade } from "@/types/upgrade";
+import { FeatureId, Vote } from "@/types/vote";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -29,6 +35,7 @@ import {
   isWorkForHireActive,
 } from "@/utils/goblin";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resyncNotifications } from "@/utils/notificationSync";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
@@ -51,7 +58,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-
+  const isPro = usePremiumStore.getState().isPro;
   type AccountState = Awaited<ReturnType<typeof getAccountState>>;
   const [accountState, setAccountState] = useState<AccountState | null>(null);
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
@@ -86,6 +93,22 @@ export default function HomeScreen() {
 
   const builderCount = account?.builderCount ?? 0;
   const townHall = account?.townhall ?? 1;
+  const [vote, setVoteState] = useState<Vote | null>(null);
+  const refreshState = useCallback(async () => {
+    if (!activeTag) return;
+    const state = await getAccountState(activeTag);
+    setAccountState(state);
+  }, [activeTag]);
+
+  useEffect(() => {
+    if (activeTag) refreshState();
+  }, [activeTag]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setVoteState(getFeatureVote("notes"));
+    }, []),
+  );
 
   const builders = useMemo(() => accountState?.builders ?? [], [accountState]);
 
@@ -114,16 +137,6 @@ export default function HomeScreen() {
       loadLastSync();
     }, []),
   );
-
-  const refreshState = useCallback(async () => {
-    if (!activeTag) return;
-    const state = await getAccountState(activeTag);
-    setAccountState(state);
-  }, [activeTag]);
-
-  useEffect(() => {
-    if (activeTag) refreshState();
-  }, [activeTag]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -155,6 +168,7 @@ export default function HomeScreen() {
       await refreshState();
       emitWidgetUpdate();
       startSmartWidgetScheduler();
+      await resyncNotifications();
       setCompletedId(null);
     }, 800);
 
@@ -189,6 +203,36 @@ export default function HomeScreen() {
   }, [refreshState]);
 
   const { config } = useRemoteConfig();
+
+  const handleVote = (featureId: FeatureId, newVote: Vote) => {
+    const currentVote = vote;
+
+    if (currentVote === newVote) {
+      clearFeatureVote(featureId);
+      setVoteState(null);
+
+      track("feature_vote_removed", {
+        feature: featureId,
+        previous: currentVote,
+        screen: "home",
+        townhall: profile?.townHallLevel ?? 0,
+      });
+      return;
+    }
+
+    setFeatureVote(featureId, newVote);
+    setVoteState(newVote);
+
+    track("feature_vote_set", {
+      feature: featureId,
+      vote: newVote,
+      previous: currentVote ?? "none",
+      screen: "home",
+      townhall: profile?.townHallLevel ?? 0,
+      builder_count: builderCount ?? 0,
+      has_idle_builders: villageStatus?.freeBuilders > 0,
+    });
+  };
 
   if (isLoadingProfile) {
     return (
@@ -320,16 +364,18 @@ export default function HomeScreen() {
       statusIcon = getIconByEntityType(
         nextUpgrade.dataId,
         type,
-        undefined,
+        nextUpgrade.subType,
         nextUpgrade.isCrafted,
+        { townHallLevel: profile.townHallLevel },
       );
     }
   }
+
   const villageStatus = getVillageStatus({
     townHall,
     builders,
     builderCount,
-    pet: pet,
+    pet: townHall >= 14 ? pet : null,
     labNormal: lab?.normal,
     labGoblin: lab?.goblin,
   });
@@ -344,14 +390,13 @@ export default function HomeScreen() {
     insightParts.push("🧪 Lab idle");
   }
 
-  if (villageStatus.petIdle) {
+  if (townHall >= 14 && villageStatus.petIdle) {
     insightParts.push("🐾 Pet idle");
   }
 
   const insight =
     insightParts.length > 0 ? insightParts.join(" • ") : "All systems running";
   const isUrgent = villageStatus.freeBuilders > 0;
-
   return (
     <View style={styles.container}>
       <View style={styles.contentWrapper}>
@@ -401,6 +446,26 @@ export default function HomeScreen() {
                         cachePolicy="memory-disk"
                       />
                     )}
+                    {isPro && (
+                      <View
+                        style={{
+                          backgroundColor: "#fbbf24",
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "700",
+                            color: "#0f172a",
+                          }}
+                        >
+                          PRO
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   {/* Secondary Line */}
@@ -409,8 +474,11 @@ export default function HomeScreen() {
                       <View style={styles.leagueIcon}>
                         <Image
                           source={getIconByEntityType(
-                            profile.townHallLevel,
-                            "townhall",
+                            1000001,
+                            "building",
+                            "TOWNHALL",
+                            false,
+                            { townHallLevel: profile.townHallLevel },
                           )}
                           style={styles.leagueIcon}
                           contentFit="contain"
@@ -633,8 +701,11 @@ export default function HomeScreen() {
                                   ? getIconByEntityType(
                                       u.dataId,
                                       entityType,
-                                      undefined,
+                                      u.subType,
                                       u.isCrafted,
+                                      {
+                                        townHallLevel: profile.townHallLevel,
+                                      },
                                     )
                                   : require("@/assets/images/builder/builder-working.png")
                               }
@@ -707,6 +778,7 @@ export default function HomeScreen() {
                   cachePolicy="memory-disk"
                 />
               </View>
+
               <Text style={styles.emptyTitle}>No Active Upgrades</Text>
               <Text style={styles.emptySubtitle}>
                 Start your first upgrade to begin tracking
@@ -727,23 +799,108 @@ export default function HomeScreen() {
           <LabSection
             labNormal={lab?.normal}
             labGoblin={lab?.goblin}
-            // onAddPress={() => router.push("/add-upgrade?type=lab")}
             onAddPress={() => {
               setSessionSource("app");
-              router.push("/upload-json");
+              router.push("/add-upgrade?type=lab");
             }}
             onLongPress={handleRowLongPress}
           />
 
-          <PetSection
-            pet={pet}
-            // onAddPress={() => router.push("/add-upgrade?type=pet")}
-            onAddPress={() => {
-              setSessionSource("app");
-              router.push("/upload-json");
-            }}
-            onLongPress={handleRowLongPress}
-          />
+          {townHall >= 14 && (
+            <PetSection
+              pet={pet}
+              townHall={townHall}
+              onAddPress={() => {
+                setSessionSource("app");
+                router.push("/add-upgrade?type=pet");
+              }}
+              onLongPress={handleRowLongPress}
+            />
+          )}
+
+          {/* 🔥 Notes (Coming Soon) */}
+          <View style={styles.notesCard}>
+            <View style={styles.notesHeader}>
+              <Text style={styles.notesTitle}>📝 Strategy Notes</Text>
+              <Text style={styles.comingSoonBadge}>Coming Soon</Text>
+            </View>
+
+            <Text style={styles.notesSubtitle}>
+              Plan upgrades, avoid idle builders, and optimize your entire
+              village strategy
+            </Text>
+
+            <View style={styles.notesPreview}>
+              <Text style={styles.notesPreviewText}>
+                • Upgrade Inferno Tower after TH14 unlock
+              </Text>
+
+              {villageStatus.freeBuilders > 0 && (
+                <Text style={styles.notesPreviewText}>
+                  • You have {villageStatus.freeBuilders} idle builder — assign
+                  now
+                </Text>
+              )}
+
+              {villageStatus.labIdle && (
+                <Text style={styles.notesPreviewText}>
+                  • Lab is idle — start research
+                </Text>
+              )}
+              <Text style={styles.notesPreviewText}>
+                • Save Dark Elixir for Royal Champion
+              </Text>
+              <Text style={styles.notesPreviewText}>
+                • Keep 1 builder free for walls
+              </Text>
+            </View>
+
+            {/* Feedback */}
+            <View style={styles.notesFeedbackRow}>
+              <Text style={styles.feedbackText}>Want this feature?</Text>
+
+              <View style={styles.feedbackButtons}>
+                <Pressable
+                  style={[
+                    styles.feedbackButton,
+                    vote === "like" && styles.feedbackButtonActive,
+                  ]}
+                  onPress={() => handleVote("notes", "like")}
+                >
+                  <Ionicons
+                    name="thumbs-up"
+                    size={16}
+                    color={vote === "like" ? "#22c55e" : "#64748b"}
+                  />
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.feedbackButton,
+                    vote === "dislike" && styles.feedbackButtonActive,
+                  ]}
+                  onPress={() => handleVote("notes", "dislike")}
+                >
+                  <Ionicons
+                    name="thumbs-down"
+                    size={16}
+                    color={vote === "dislike" ? "#ef4444" : "#64748b"}
+                  />
+                </Pressable>
+              </View>
+            </View>
+
+            {vote && (
+              <Text style={{ color: "#22c55e", fontSize: 11 }}>
+                Thanks for your feedback
+              </Text>
+            )}
+            {vote === "like" && (
+              <Text style={{ color: "#fbbf24", fontSize: 11 }}>
+                🚀 We&apos;ll prioritize this for you
+              </Text>
+            )}
+          </View>
 
           <View style={styles.refreshHint}>
             <Ionicons name="arrow-down" size={16} color="#64748b" />
@@ -762,27 +919,7 @@ export default function HomeScreen() {
               <Text style={styles.devButtonText}>Test Completion</Text>
             </Pressable>
           )}
-          {/* {__DEV__ && data && (
-            <WidgetPreview
-              renderWidget={() => (
-                <BuilderStatusWidget
-                  title={data.title}
-                  subtitle={data.subtitle}
-                  progress={data.progress}
-                  showProgress={data.showProgress}
-                  levelText={data.levelText}
-                  builderCountText={data.builderCountText}
-                  nextUpgradeText={data.nextUpgradeText}
-                  dataId={data.dataId}
-                  type={data.type}
-                  color={color}
-                  accountInitials={data.accountInitials}
-                />
-              )}
-              width={260}
-              height={150}
-            />
-          )} */}
+
           {__DEV__ && (
             <Pressable
               style={styles.resetButton}
@@ -818,7 +955,10 @@ export default function HomeScreen() {
                 setActionModalVisible(false);
                 router.push({
                   pathname: "/add-upgrade",
-                  params: { editId: selectedUpgrade?.id },
+                  params: {
+                    editId: selectedUpgrade?.id,
+                    type: selectedUpgrade?.upgradeType?.toLowerCase(),
+                  },
                 });
               }}
             >
@@ -841,10 +981,10 @@ export default function HomeScreen() {
               onPress={async () => {
                 if (!selectedUpgrade) return;
 
-                await cancelBuilderNotification(selectedUpgrade.id);
+                // await cancelBuilderNotification(selectedUpgrade.id);
                 await deleteUpgrade(selectedUpgrade.id);
                 emitWidgetUpdate();
-
+                await resyncNotifications();
                 startSmartWidgetScheduler();
                 await refreshState();
                 setActionModalVisible(false);
@@ -1168,7 +1308,7 @@ const styles = StyleSheet.create({
   },
 
   builderDotBusy: {
-    backgroundColor: "#475569",
+    backgroundColor: "#ef4444",
   },
 
   addButton: {
@@ -1269,7 +1409,7 @@ const styles = StyleSheet.create({
   },
 
   goblinDotBusy: {
-    backgroundColor: "#16793a",
+    backgroundColor: "#ef4444",
   },
 
   goblinDotInactive: {
@@ -1444,6 +1584,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#0f172a",
+  },
+  notesCard: {
+    marginTop: 20,
+    backgroundColor: "#0f172a",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(148,163,184,0.1)",
+  },
+
+  notesHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  notesTitle: {
+    color: "#f1f5f9",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  comingSoonBadge: {
+    color: "#94a3b8",
+    fontSize: 11,
+  },
+
+  notesSubtitle: {
+    color: "#94a3b8",
+    fontSize: 12,
+    marginBottom: 10,
+    lineHeight: 18,
+  },
+
+  notesPreview: {
+    marginBottom: 12,
+  },
+
+  notesPreviewText: {
+    color: "#64748b",
+    fontSize: 12,
+    marginBottom: 4,
+  },
+
+  notesFeedbackRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  feedbackText: {
+    color: "#94a3b8",
+    fontSize: 12,
+  },
+
+  feedbackButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  feedbackButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(148,163,184,0.08)",
+  },
+
+  feedbackButtonActive: {
+    backgroundColor: "rgba(148,163,184,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(148,163,184,0.3)",
   },
 
   devButton: {

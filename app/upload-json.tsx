@@ -1,9 +1,6 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
-import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
-import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
-import { cancelAllNotifications } from "@/utils/notificationEngine";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
@@ -69,7 +66,6 @@ export default function UploadJsonScreen() {
         setModalVisible(true);
         return;
       }
-      await cancelAllNotifications();
       const result = await importVillageJson(clipboardText);
 
       if (result.status === "NO_ACTIVE_BUILDERS") {
@@ -86,10 +82,6 @@ export default function UploadJsonScreen() {
 
       if (result.status === "SUCCESS") {
         await refreshWidget();
-
-        if (getNotificationsEnabled()) {
-          await rescheduleAllBuilderNotifications();
-        }
 
         setModalTitle(
           result.skippedExpired > 0

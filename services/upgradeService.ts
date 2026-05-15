@@ -22,6 +22,7 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     entity: r.entity,
 
     type: r.type,
+    subType: r.sub_type,
     upgradeType: r.upgrade_type,
 
     builderSlot:
@@ -78,6 +79,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     entity: r.entity,
 
     type: r.type,
+    subType: r.sub_type,
     upgradeType: r.upgrade_type,
 
     builderSlot:
@@ -132,12 +134,88 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     }
   }
 
+  if (upgrade.upgradeType === "LAB") {
+    const existing = await db.getFirstAsync(
+      `SELECT id FROM upgrades
+     WHERE account_player_tag=? 
+     AND upgrade_type='LAB'
+     AND is_completed=0`,
+      [tag]
+    );
+
+    if (existing) throw new Error("LAB_ALREADY_RUNNING");
+  }
+
+  if (upgrade.upgradeType === "PET") {
+    const existing = await db.getFirstAsync(
+      `SELECT id FROM upgrades
+     WHERE account_player_tag=? 
+     AND upgrade_type='PET'
+     AND is_completed=0`,
+      [tag]
+    );
+
+    if (existing) throw new Error("PET_HOUSE_OCCUPIED");
+  }
+
+  // await db.runAsync(
+  //   `INSERT INTO upgrades
+  //   (id, account_player_tag, data_id, entity, type, upgrade_type, builder_slot, builder_type,
+  //   current_level, next_level, start_time, duration_minutes,
+  //   finish_timestamp, is_completed, source, is_crafted, module_id)
+  //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  //   [
+  //     upgrade.id,
+  //     tag,
+  //     upgrade.dataId ?? null,
+  //     upgrade.entity,
+
+  //     upgrade.type,
+  //     upgrade.upgradeType,
+
+  //     upgrade.builderSlot != null ? String(upgrade.builderSlot) : null,
+  //     upgrade.builderType ?? null,
+
+  //     upgrade.currentLevel ?? null,
+  //     upgrade.nextLevel ?? null,
+
+  //     upgrade.startTime,
+  //     upgrade.durationMinutes,
+  //     upgrade.endTime,
+
+  //     upgrade.isCompleted ? 1 : 0,
+  //     upgrade.source ?? null,
+
+  //     upgrade.isCrafted ? 1 : 0,
+  //     upgrade.moduleId ?? null
+  //   ]
+  // );
+
+
   await db.runAsync(
     `INSERT INTO upgrades
-    (id, account_player_tag, data_id, entity, type, upgrade_type, builder_slot, builder_type,
-    current_level, next_level, start_time, duration_minutes,
-    finish_timestamp, is_completed, source, is_crafted, module_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  (
+    id,
+    account_player_tag,
+    data_id,
+    entity,
+    type,
+    sub_type,
+    upgrade_type,
+    builder_slot,
+    builder_type,
+    lab_slot,
+    current_level,
+    next_level,
+    start_time,
+    duration_minutes,
+    finish_timestamp,
+    is_completed,
+    source,
+    is_crafted,
+    module_id
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
@@ -145,10 +223,13 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
       upgrade.entity,
 
       upgrade.type,
+      upgrade.subType ?? null,
       upgrade.upgradeType,
 
       upgrade.builderSlot != null ? String(upgrade.builderSlot) : null,
       upgrade.builderType ?? null,
+
+      upgrade.labSlot ?? null,
 
       upgrade.currentLevel ?? null,
       upgrade.nextLevel ?? null,
@@ -161,7 +242,7 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
       upgrade.source ?? null,
 
       upgrade.isCrafted ? 1 : 0,
-      upgrade.moduleId ?? null
+      upgrade.moduleId ?? null,
     ]
   );
 }

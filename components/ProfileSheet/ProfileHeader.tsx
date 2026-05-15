@@ -56,7 +56,13 @@ export default function ProfileHeader({
       <View style={styles.leagueThRow}>
         <View style={styles.thBadge}>
           <Image
-            source={getIconByEntityType(profile.townHallLevel, "townhall")}
+            source={getIconByEntityType(
+              1000001,
+              "building",
+              "townhall",
+              false,
+              { townHallLevel: profile.townHallLevel },
+            )}
             style={styles.thBadgeIcon}
             contentFit="contain"
             cachePolicy="memory-disk"

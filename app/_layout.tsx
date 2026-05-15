@@ -5,6 +5,7 @@ import { isOnboardingComplete } from "@/storage/appConfig";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
+import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
@@ -28,11 +29,11 @@ export default function RootLayout() {
       await initDatabase();
       await loadActiveAccount();
       await ensureCraftedLoaded();
+      await configureNotifications();
 
       initWidgetManager();
       startSmartWidgetScheduler();
       emitWidgetUpdate();
-
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
           shouldShowBanner: true,

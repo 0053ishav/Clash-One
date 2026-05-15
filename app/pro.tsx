@@ -11,22 +11,26 @@ export default function ProScreen() {
   }, []);
 
   const handleUpgrade = () => {
-    // TODO: integrate RevenueCat later
+    // TODO: RevenueCat
     console.log("Upgrade clicked");
   };
 
   return (
     <View style={styles.container}>
       {/* HEADER */}
-      <Text style={styles.title}>Upgrade to Pro</Text>
-      <Text style={styles.subtitle}>Track all your accounts. Stay ahead.</Text>
+      <Text style={styles.title}>Become an Architect</Text>
+      <Text style={styles.subtitle}>
+        Stop wasting builders. Run your village like a system.
+      </Text>
 
       {/* FEATURES */}
       <View style={styles.features}>
-        <Feature text="📊 Multi-account widget tracking" />
-        <Feature text="⏱ Smart upgrade prioritization" />
-        <Feature text="🔔 Notifications for upgrades" />
-        <Feature text="⚡ Faster sync & performance" />
+        <Feature text="🧠 Smart upgrade priority engine (what to upgrade next)" />
+        <Feature text="📊 Multi-account tracking (no limits)" />
+        <Feature text="🔔 Precise completion notifications (no idle time)" />
+        <Feature text="⚡ Faster sync + background optimization" />
+        <Feature text="📅 Upgrade planning (coming soon)" />
+        <Feature text="📝 Strategy notes & planning (coming soon)" />
       </View>
 
       {/* PRICING */}
@@ -37,12 +41,12 @@ export default function ProScreen() {
 
       {/* CTA */}
       <Pressable style={styles.cta} onPress={handleUpgrade}>
-        <Text style={styles.ctaText}>Unlock Pro</Text>
+        <Text style={styles.ctaText}>Unlock Architect</Text>
       </Pressable>
 
       {/* SECONDARY */}
       <Pressable onPress={() => router.back()}>
-        <Text style={styles.secondary}>Maybe later</Text>
+        <Text style={styles.secondary}>Continue without upgrade</Text>
       </Pressable>
     </View>
   );

@@ -1,12 +1,12 @@
 import { Account, deleteAccount, getAccounts, replaceEntities, replaceUpgrades } from "@/services/accountService";
 import { switchAccountService } from "@/services/accountSwitchService";
-import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { getActiveAccount } from "@/storage/activeAccount";
 import { getLastJsonSync, setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { getPlayerProfile } from "@/storage/playerProfile";
 import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord, Upgrade } from "@/types/upgrade";
+import { scheduleAllNotifications } from "@/utils/notificationEngine";
 import { create } from "zustand";
 
 type AccountState = {
@@ -31,7 +31,7 @@ type AccountState = {
   removeAccount: (tag: string) => Promise<void>;
   setProfile: (profile: PlayerProfile) => void;
   importJsonData: (
-    tag: string, 
+    tag: string,
     upgrades: Upgrade[],
     entities: EntityRecord[]
   ) => Promise<void>;
@@ -242,8 +242,11 @@ export const useAccountStore = create<AccountState>((set) => ({
       await loadAccounts();
 
       await switchAccount(tag);
-      await rescheduleAllBuilderNotifications();
+      const accounts = useAccountStore.getState().accounts;
 
+      setTimeout(() => {
+        scheduleAllNotifications(accounts);
+      }, 300);
       const now = Date.now();
       setLastJsonSync(tag, now);
       setLastSync(tag, now);

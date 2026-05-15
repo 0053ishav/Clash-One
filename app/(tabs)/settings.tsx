@@ -1,11 +1,17 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { getDB } from "@/db/database";
 import {
+  getAccounts,
   updateAccountColor,
   updateBuilderCount,
 } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
-import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { resetLastJsonSync } from "@/storage/jsonSyncStorage";
+import {
+  clearFeatureVote,
+  getFeatureVote,
+  setFeatureVote,
+} from "@/storage/notesStorage";
 import {
   getNotificationsEnabled,
   setNotificationsEnabled,
@@ -15,15 +21,14 @@ import {
   updateLocalBuilderCount,
 } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
+import { usePremiumStore } from "@/stores/premiumStore";
+import { FeatureId, Vote } from "@/types/vote";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
-import {
-  NotificationType,
-  cancelAllNotifications,
-  configureNotifications,
-  scheduleTimedNotification,
-} from "@/utils/notificationEngine";
+import { scheduleAllNotifications } from "@/utils/notificationEngine";
+import { resyncNotifications } from "@/utils/notificationSync";
+
 import {
   startSmartWidgetScheduler,
   stopSmartWidgetScheduler,
@@ -31,12 +36,11 @@ import {
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
+import { Image } from "expo-image";
 import * as Notifications from "expo-notifications";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Image,
-  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -57,6 +61,61 @@ const ACCOUNT_COLORS = [
   "#f87171", // red
 ];
 
+async function insertTestUpgrade({
+  tag,
+  type,
+  delayMs,
+}: {
+  tag: string;
+  type: "BUILDER" | "LAB" | "PET";
+  delayMs: number;
+}) {
+  const db = await getDB();
+  const now = Date.now();
+
+  const entityType =
+    type === "BUILDER" ? "BUILDING" : type === "LAB" ? "LAB" : "PET";
+
+  await db.runAsync(
+    `INSERT INTO upgrades (
+      id,
+      account_player_tag,
+      data_id,
+      entity,
+      type,
+      upgrade_type,
+      builder_slot,
+      builder_type,
+      lab_slot,
+      start_time,
+      duration_minutes,
+      finish_timestamp,
+      is_completed,
+      source
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      Math.random().toString(),
+      tag,
+      999,
+      "Test Upgrade",
+
+      entityType, // ✅ FIXED
+      type, // upgradeType
+
+      type === "BUILDER" ? "0" : null,
+      type === "BUILDER" ? "NORMAL" : null,
+
+      type === "LAB" ? "NORMAL" : null, // ✅ CRITICAL
+
+      now,
+      Math.ceil(delayMs / 60000),
+      now + delayMs,
+      0,
+      "DEV",
+    ],
+  );
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -72,7 +131,7 @@ export default function SettingsScreen() {
   const activeTag = useAccountStore((s) => s.activeTag);
 
   const activeAccount = accounts.find((a) => a.tag === activeTag);
-
+  const isPro = usePremiumStore.getState().isPro;
   const dbBuilderCount = activeAccount?.builderCount ?? 1;
 
   const [localBuilderCount, setLocalBuilderCount] =
@@ -95,10 +154,23 @@ export default function SettingsScreen() {
   const lastSync = activeTag ? lastJsonSyncMap[activeTag] : null;
 
   const widgetTag = widgetPrefs.selectedAccountTag ?? activeTag;
+  const [votes, setVotes] = useState<Record<string, Vote | null>>({});
 
   useEffect(() => {
     track("screen_view", { screen: "settings" });
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const initial: Record<string, Vote | null> = {};
+
+      ["progress", "planner", "ai", "notes"].forEach((id) => {
+        initial[id] = getFeatureVote(id);
+      });
+
+      setVotes(initial);
+    }, []),
+  );
 
   useEffect(() => {
     loadAccounts();
@@ -128,7 +200,6 @@ export default function SettingsScreen() {
 
     setLocalBuilderCount(count);
 
-    // Only update if changed
     if (count !== current) {
       await updateBuilderCount(activeTag, count);
       updateLocalBuilderCount(count);
@@ -142,6 +213,39 @@ export default function SettingsScreen() {
 
     stopSmartWidgetScheduler();
   };
+
+  const handleVote = (id: FeatureId, newVote: Vote) => {
+    // Toggle off
+    const currentVote = votes[id];
+
+    if (currentVote === newVote) {
+      clearFeatureVote(id);
+      setVotes((prev) => ({ ...prev, [id]: null }));
+
+      track("feature_vote_removed", {
+        feature: id,
+        previous: currentVote,
+        screen: "settings",
+        townhall: profile?.townHallLevel ?? 0,
+      });
+
+      return;
+    }
+
+    // Set vote
+    setFeatureVote(id, newVote);
+    setVotes((prev) => ({ ...prev, [id]: newVote }));
+
+    track("feature_vote_set", {
+      feature: id,
+      vote: newVote,
+      previous: currentVote ?? "none",
+      screen: "settings",
+      townhall: profile?.townHallLevel ?? 0,
+      builder_count: activeAccount?.builderCount ?? 0,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -182,21 +286,47 @@ export default function SettingsScreen() {
                     {profile.expLevel ? ` • Lv ${profile.expLevel}` : ""}
                   </Text>
                 </View>
+                {isPro && (
+                  <View
+                    style={{
+                      backgroundColor: "#fbbf24",
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: "#0f172a",
+                      }}
+                    >
+                      PRO
+                    </Text>
+                  </View>
+                )}
                 {profile.leagueTierIconUrl && (
                   <Image
                     source={{ uri: profile.leagueTierIconUrl }}
                     style={styles.leagueIcon}
-                    resizeMode="contain"
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
                   />
                 )}
+
                 {profile.townHallLevel && (
                   <Image
                     source={getIconByEntityType(
-                      profile.townHallLevel,
-                      "townhall",
+                      1000001,
+                      "building",
+                      "TOWNHALL",
+                      false,
+                      { townHallLevel: profile.townHallLevel },
                     )}
                     style={styles.thIcon}
-                    resizeMode="contain"
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
                   />
                 )}
               </View>
@@ -512,16 +642,19 @@ export default function SettingsScreen() {
                   const { status } =
                     await Notifications.requestPermissionsAsync();
                   if (status === "granted") {
-                    await configureNotifications();
                     setNotificationsEnabled(true);
                     setLocalNotificationsEnabled(true);
-                    await rescheduleAllBuilderNotifications();
+
+                    const accounts = await getAccounts();
+
+                    setTimeout(() => {
+                      scheduleAllNotifications(accounts);
+                    }, 300);
                   }
                 } else {
-                  Linking.openSettings();
                   setNotificationsEnabled(false);
                   setLocalNotificationsEnabled(false);
-                  await cancelAllNotifications();
+                  await Notifications.cancelAllScheduledNotificationsAsync();
                 }
               }}
               trackColor={{ false: "#334155", true: "#fbbf24" }}
@@ -538,13 +671,19 @@ export default function SettingsScreen() {
               <Pressable
                 style={styles.testButton}
                 onPress={async () => {
-                  await scheduleTimedNotification({
-                    type: NotificationType.BUILDER,
-                    id: "test-builder",
-                    title: "Builder Ready ⚒️",
-                    body: "Test Builder notification.",
-                    endTime: Date.now() + 5000,
+                  if (!activeTag) return;
+
+                  await insertTestUpgrade({
+                    tag: activeTag,
+                    type: "BUILDER",
+                    delayMs: 5000,
                   });
+
+                  const accounts = await getAccounts();
+
+                  setTimeout(() => {
+                    scheduleAllNotifications(accounts);
+                  }, 300);
                 }}
               >
                 <Ionicons name="hammer" size={18} color="#fff" />
@@ -553,13 +692,19 @@ export default function SettingsScreen() {
               <Pressable
                 style={[styles.testButton, styles.testButtonLab]}
                 onPress={async () => {
-                  await scheduleTimedNotification({
-                    type: NotificationType.LAB,
-                    id: "test-lab",
-                    title: "Research Complete 🧪",
-                    body: "Test Lab notification.",
-                    endTime: Date.now() + 8000,
+                  if (!activeTag) return;
+
+                  await insertTestUpgrade({
+                    tag: activeTag,
+                    type: "LAB",
+                    delayMs: 8000,
                   });
+
+                  const accounts = await getAccounts();
+
+                  setTimeout(() => {
+                    scheduleAllNotifications(accounts);
+                  }, 300);
                 }}
               >
                 <Ionicons name="flask" size={18} color="#fff" />
@@ -568,13 +713,19 @@ export default function SettingsScreen() {
               <Pressable
                 style={[styles.testButton, styles.testButtonPet]}
                 onPress={async () => {
-                  await scheduleTimedNotification({
-                    type: NotificationType.PET,
-                    id: "test-pet",
-                    title: "Pet Training Done 🐾",
-                    body: "Test Pet notification.",
-                    endTime: Date.now() + 12000,
+                  if (!activeTag) return;
+
+                  await insertTestUpgrade({
+                    tag: activeTag,
+                    type: "PET",
+                    delayMs: 12000,
                   });
+
+                  const accounts = await getAccounts();
+
+                  setTimeout(() => {
+                    scheduleAllNotifications(accounts);
+                  }, 300);
                 }}
               >
                 <Ionicons name="paw" size={18} color="#fff" />
@@ -629,6 +780,72 @@ export default function SettingsScreen() {
             <Ionicons name="trash" size={18} color="#ef4444" />
             <Text style={styles.dangerText}>Clear All Tracked Upgrades</Text>
           </Pressable>
+        </View>
+
+        {/* SECTION: Roadmap */}
+        <Text style={styles.sectionTitle}>Roadmap</Text>
+
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>🚀 What&apos;s Coming</Text>
+          <Text style={styles.helperText}>
+            Vote what you want next — we build based on player demand
+          </Text>
+          {[
+            {
+              id: "progress",
+              label: "📊 Base Progress Tracking",
+              desc: "Track total village completion",
+            },
+            {
+              id: "planner",
+              label: "📅 Upgrade Planner",
+              desc: "Plan upgrades smarter",
+            },
+            {
+              id: "ai",
+              label: "🧠 Smart Suggestions",
+              desc: "Auto recommend next upgrades",
+            },
+            {
+              id: "notes",
+              label: "📝 Strategy Notes",
+              desc: "Save plans & upgrade ideas",
+            },
+          ].map((item) => {
+            const vote = votes[item.id];
+            return (
+              <View key={item.id} style={styles.roadmapItem}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.roadmapTitle}>{item.label}</Text>
+                  <Text style={styles.roadmapDesc}>{item.desc}</Text>
+                </View>
+
+                <View style={styles.roadmapActions}>
+                  {/* LIKE */}
+                  <Pressable
+                    onPress={() => handleVote(item.id as FeatureId, "like")}
+                  >
+                    <Ionicons
+                      name="thumbs-up"
+                      size={16}
+                      color={vote === "like" ? "#22c55e" : "#64748b"}
+                    />
+                  </Pressable>
+
+                  {/* DISLIKE */}
+                  <Pressable
+                    onPress={() => handleVote(item.id as FeatureId, "dislike")}
+                  >
+                    <Ionicons
+                      name="thumbs-down"
+                      size={16}
+                      color={vote === "dislike" ? "#ef4444" : "#64748b"}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         {/* SECTION: Legal */}
@@ -710,7 +927,7 @@ export default function SettingsScreen() {
         destructive
         onCancel={() => setShowResetAccountModal(false)}
         onConfirm={async () => {
-          await cancelAllNotifications();
+          // await cancelAllNotifications();
           if (profile) {
             const resetProfile = {
               ...profile,
@@ -739,7 +956,7 @@ export default function SettingsScreen() {
         destructive
         onCancel={() => setShowClearUpgradesModal(false)}
         onConfirm={async () => {
-          await cancelAllNotifications();
+          await resyncNotifications();
           setShowClearUpgradesModal(false);
           emitWidgetUpdate();
           startSmartWidgetScheduler();
@@ -760,6 +977,7 @@ export default function SettingsScreen() {
           track("account_removed", {
             total_accounts_before: accounts.length - 1,
           });
+          await resyncNotifications();
           setAccountToDelete(null);
           await loadAccounts();
           emitWidgetUpdate();
@@ -1212,6 +1430,33 @@ const styles = StyleSheet.create({
     color: "#ef4444",
     fontWeight: "700",
     fontSize: 14,
+  },
+
+  roadmapItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#0f172a",
+  },
+
+  roadmapTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#f1f5f9",
+  },
+
+  roadmapDesc: {
+    fontSize: 12,
+    color: "#64748b",
+    marginTop: 2,
+  },
+
+  roadmapActions: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
   },
 
   testButton: {

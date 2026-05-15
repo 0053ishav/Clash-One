@@ -12,8 +12,8 @@ export function LabSection({
   onAddPress,
   onLongPress,
 }: {
-  labNormal?: Upgrade;
-  labGoblin?: Upgrade;
+  labNormal?: Upgrade | null;
+  labGoblin?: Upgrade | null;
   onAddPress?: () => void;
   onLongPress?: (lab: Upgrade) => void;
 }) {

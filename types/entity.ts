@@ -1,4 +1,5 @@
 export type Village = "home" | "builder" | "global";
+export type Resource = "gold" | "elixir" | "dark" ;
 export type EntityType =
     | "building"
     | "trap"
@@ -11,4 +12,6 @@ export type EntityType =
     | "guardian"
     | "townhall"
     | "lab"
+    | "crafted"
     | "Custom";
+export type SubType= "TOWNHALL" | "DEFENSE" | "RESOURCE" | "HERO_ALT";

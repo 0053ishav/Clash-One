@@ -8,6 +8,7 @@ import { EntityType } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
+import { resyncNotifications } from "@/utils/notificationSync";
 import { randomUUID } from "expo-crypto";
 
 type RawExport = {
@@ -538,6 +539,8 @@ export async function importVillageJson(
     });
   }
   setLastJsonSync(parsed.tag, now);
+
+await resyncNotifications();
 
   const builderCountOnly = newUpgrades.filter(
     (u) => u.upgradeType === "BUILDER"

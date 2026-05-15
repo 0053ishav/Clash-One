@@ -141,6 +141,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     data_id,
     entity,
     type,
+    sub_type,
     upgrade_type,
     builder_slot,
     builder_type,
@@ -155,7 +156,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -163,6 +164,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
           u.entity,
 
           u.type,
+          u.subType ?? null,
           u.upgradeType,
 
           u.builderSlot != null ? String(u.builderSlot) : null,

@@ -9,15 +9,20 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function PetSection({
   pet,
+  townHall,
   onAddPress,
   onLongPress,
 }: {
   pet: Upgrade | null;
+  townHall: number;
+
   onAddPress?: () => void;
   onLongPress?: (pet: Upgrade) => void;
 }) {
   const activePet = pet;
+  const isUnlocked = townHall >= 14;
   const isBusy = !!activePet;
+  const isIdle = isUnlocked && !isBusy;
 
   const now = Date.now();
   const progress = activePet
@@ -29,7 +34,7 @@ export function PetSection({
   const entityType = activePet?.dataId
     ? getEntityTypeByDataId(activePet.dataId, activePet.isCrafted)
     : undefined;
-
+  if (townHall < 14) return null;
   return (
     <View style={styles.container}>
       {/* Section Header */}
@@ -60,7 +65,7 @@ export function PetSection({
       </View>
 
       {/* Active Upgrade Card */}
-      {activePet ? (
+      {isBusy ? (
         <Pressable
           style={({ pressed }) => [
             styles.card,
@@ -129,7 +134,7 @@ export function PetSection({
             </View>
           </View>
         </Pressable>
-      ) : (
+      ) : isIdle ? (
         <View style={styles.emptyCard}>
           <View style={styles.emptyIconWrapper}>
             <Ionicons name="paw" size={28} color="#475569" />
@@ -150,7 +155,7 @@ export function PetSection({
             </Pressable>
           )}
         </View>
-      )}
+      ) : null}
     </View>
   );
 }

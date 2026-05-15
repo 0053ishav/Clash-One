@@ -12,8 +12,8 @@ export function getVillageStatus({
   builders: Upgrade[];
   builderCount: number;
   pet?: Upgrade | null;
-  labNormal?: Upgrade;
-  labGoblin?: Upgrade;
+  labNormal?: Upgrade | null;
+  labGoblin?: Upgrade | null;
 }) {
   const normalBusyBuilders = builders.filter(
     (b) => b.builderSlot !== "G"

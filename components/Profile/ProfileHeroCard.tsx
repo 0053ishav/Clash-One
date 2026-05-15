@@ -28,7 +28,13 @@ export default function ProfileHeroCard({
         </View>
         <View style={styles.thBadge}>
           <Image
-            source={getIconByEntityType(data.townHallLevel, "townhall")}
+            source={getIconByEntityType(
+              1000001,
+              "building",
+              "townhall",
+              false,
+              { townHallLevel: data.townHallLevel },
+            )}
             style={styles.thBadgeIcon}
             contentFit="contain"
             cachePolicy="memory-disk"

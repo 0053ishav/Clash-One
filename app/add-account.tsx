@@ -2,10 +2,8 @@
 
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { importVillageJson } from "@/services/jsonImport/jsonImportService";
-import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
-import { cancelAllNotifications } from "@/utils/notificationEngine";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
@@ -55,7 +53,7 @@ export default function AddAccountScreen() {
         setModalVisible(true);
         return;
       }
-      await cancelAllNotifications();
+      // await cancelAllNotifications();
       const result = await importVillageJson(clipboardText);
       if (result.status === "NO_ACTIVE_BUILDERS") {
         await refreshWidget();
@@ -74,7 +72,7 @@ export default function AddAccountScreen() {
 
         setTag(result.tag);
         if (getNotificationsEnabled()) {
-          await rescheduleAllBuilderNotifications();
+          // await rescheduleAllBuilderNotifications();
         }
 
         setModalTitle(
@@ -96,8 +94,6 @@ export default function AddAccountScreen() {
         trigger: "add-account",
       });
     } catch (error: any) {
-      console.error("IMPORT ERROR:", error);
-
       track("account_add_failed", {
         error: error,
         trigger: "add-account",

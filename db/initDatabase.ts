@@ -62,6 +62,7 @@ export async function initDatabase() {
       data_id INTEGER,
       entity TEXT,
       type TEXT,
+      sub_type TEXT,
 
       upgrade_type TEXT,
 

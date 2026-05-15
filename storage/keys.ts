@@ -3,7 +3,7 @@ export const STORAGE_KEYS = {
   // BUILDER_UPGRADES: "builder_upgrades",
   BUILDER_COUNT: "builder_count",
   // LAB_UPGRADE: "lab_upgrade",
-  ONBOARDING_KEY:"onboarding_complete",
+  ONBOARDING_KEY: "onboarding_complete",
   NOTIFICATION_KEY: "notifications_enabled",
   GOBLIN_BANNER_DISMISSED_UNTIL: "goblin_banner_dismissed_until",
   REMOTE_CONFIG: "remote_config",
@@ -11,4 +11,5 @@ export const STORAGE_KEYS = {
   ACTIVE_KEY: "active_account",
   WIDGET_PREFS: "widget_prefs",
   WIDGET_CACHE: "widget_cache",
+  FEATURE_VOTES: "feature_votes",
 };

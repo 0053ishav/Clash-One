@@ -1,8 +1,8 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
-import { rescheduleAllBuilderNotifications } from "@/services/notifications/builderNotificationService";
-import { ensureNotificationPermission } from "@/services/notifications/notificationPermissions";
+import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
+import { setNotificationsEnabled } from "@/storage/notificationConfig";
 import { track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
@@ -95,19 +95,9 @@ export default function OnboardingScreen() {
   };
 
   const finishOnboarding = async () => {
-    // if (index === SLIDES.length - 1) {
-    //   const result = await ensureNotificationPermission();
-
-    //   if (result === "granted") {
-    //     setNotificationsGranted(true);
-    //     return "granted";
-    //   }
-
-    //   if (result === "blocked") {
-    //     setShowPermissionModal(true);
-    //   }
-    // }
-
+    if (!notificationsGranted) {
+      setNotificationsEnabled(false);
+    }
     setOnboardingComplete();
 
     track("onboarding_complete", {
@@ -115,7 +105,7 @@ export default function OnboardingScreen() {
     });
     emitWidgetUpdate();
 
-    rescheduleAllBuilderNotifications();
+    // rescheduleAllBuilderNotifications();
     router.replace("/add-account");
   };
 
@@ -176,10 +166,11 @@ export default function OnboardingScreen() {
                     pressed && styles.enableButtonPressed,
                   ]}
                   onPress={async () => {
-                    const result = await ensureNotificationPermission();
+                    const result = await requestNotificationPermissions();
 
-                    if (result === "granted") {
+                    if (result) {
                       setNotificationsGranted(true);
+                      setNotificationsEnabled(true);
                     }
                   }}
                 >
@@ -287,6 +278,7 @@ export default function OnboardingScreen() {
         }}
         onCancel={() => {
           setShowPermissionModal(false);
+          setNotificationsEnabled(false);
           setOnboardingComplete();
           emitWidgetUpdate();
           router.replace("/add-account");

@@ -1,7 +1,9 @@
 import { initDatabase } from "@/db/initDatabase";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
+import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { isOnboardingComplete } from "@/storage/appConfig";
+import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
@@ -30,6 +32,8 @@ export default function RootLayout() {
       await loadActiveAccount();
       await ensureCraftedLoaded();
       await configureNotifications();
+      hydrateEntities();
+      syncEntities();
 
       initWidgetManager();
       startSmartWidgetScheduler();

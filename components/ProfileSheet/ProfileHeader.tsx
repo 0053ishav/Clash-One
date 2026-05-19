@@ -1,7 +1,7 @@
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord } from "@/types/upgrade";
 import { formatCountdown } from "@/utils/formatCountdown";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
@@ -56,13 +56,15 @@ export default function ProfileHeader({
       <View style={styles.leagueThRow}>
         <View style={styles.thBadge}>
           <Image
-            source={getIconByEntityType(
-              1000001,
-              "building",
-              "townhall",
-              false,
-              { townHallLevel: profile.townHallLevel },
-            )}
+            source={{
+              uri: resolveEntityIcon(1000001, {
+                subType: "TOWNHALL",
+
+                context: {
+                  townHallLevel: profile.townHallLevel,
+                },
+              }),
+            }}
             style={styles.thBadgeIcon}
             contentFit="contain"
             cachePolicy="memory-disk"
@@ -80,7 +82,7 @@ export default function ProfileHeader({
           {typeof profile.bestTrophies === "number" && (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text style={styles.bestTrophies}>
-                Best: {profile.bestTrophies}
+                Legacy Best: {profile.bestTrophies}
               </Text>
               <Image
                 source={{ uri: profile.leagueIconUrl }}
@@ -162,12 +164,14 @@ export default function ProfileHeader({
                   >
                     <View style={styles.helperBadge}>
                       <Image
-                        source={getIconByEntityType(helper.dataId, "helper")}
+                        source={{
+                          uri: resolveEntityIcon(helper.dataId),
+                        }}
                         style={styles.helperIcon}
                         contentFit="contain"
                         cachePolicy="memory-disk"
                       />
-                      <Text style={styles.helperLevel}>L{helper.level}</Text>
+                      <Text style={styles.helperLevel}>Lv{helper.level}</Text>
                     </View>
                     {/* Cooldown or Ready State Below */}
                     {helper.cooldown && helper.cooldown > 0 ? (
@@ -212,12 +216,14 @@ export default function ProfileHeader({
                     style={styles.guardianBadge}
                   >
                     <Image
-                      source={getIconByEntityType(guardian.dataId, "guardian")}
+                      source={{
+                        uri: resolveEntityIcon(guardian.dataId),
+                      }}
                       style={styles.helperIcon}
                       contentFit="contain"
                       cachePolicy="memory-disk"
                     />
-                    <Text style={styles.guardianLevel}>L{guardian.level}</Text>
+                    <Text style={styles.guardianLevel}>Lv{guardian.level}</Text>
                   </View>
                 ))}
               </View>
@@ -405,7 +411,7 @@ const styles = StyleSheet.create({
 
   entityContainer: {
     gap: 14,
-    flexDirection: "row",
+    flexDirection: "column",
   },
 
   entityColumn: {

@@ -1,8 +1,5 @@
 "use no memo";
-import { EntityType } from "@/types/entity";
-import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
   FlexWidget,
@@ -13,7 +10,7 @@ import {
 export function BuilderStatusWidget(props: {
   title: string;
   subtitle: string;
-  isCrafted?: boolean;
+  icon?: string | number;
   progress: number;
   showProgress: boolean;
   levelText?: string;
@@ -21,8 +18,6 @@ export function BuilderStatusWidget(props: {
   nextUpgradeText?: string;
   color?: string;
   accountInitials?: string;
-  dataId?: number;
-  type?: EntityType;
   updatedAt?: number;
   renderedAt?: number;
 }) {
@@ -31,21 +26,11 @@ export function BuilderStatusWidget(props: {
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
   const progressWidth = Math.floor(90 * clamped);
 
-  const { getCraftedIcon } = getCraftedResolver();
-
-  const icon =
-    props.dataId && props.type
-      ? props.isCrafted && getCraftedIcon(props.dataId)
-        ? getCraftedIcon(props.dataId)
-        : getIconByEntityType(
-            props.dataId,
-            props.type,
-            undefined,
-            props.isCrafted,
-          )
-      : isFree
-        ? require("@/assets/images/builder/builder-idle.png")
-        : require("@/assets/images/builder/builder-working.png");
+  // const icon = props.dataId
+  //   ? resolveEntityIcon(props.dataId, {
+  //       isCrafted: props.isCrafted,
+  //     })
+  //   : null;
 
   const accentColor = (props.color ?? "#fbbf24") as any;
 
@@ -101,7 +86,17 @@ export function BuilderStatusWidget(props: {
               marginRight: 10,
             }}
           >
-            <ImageWidget image={icon} imageWidth={32} imageHeight={32} />
+            <ImageWidget
+              image={
+                props.icon
+                  ? props.icon
+                  : isFree
+                    ? require("@/assets/images/builder/builder-idle.png")
+                    : require("@/assets/images/builder/builder-working.png")
+              }
+              imageWidth={32}
+              imageHeight={32}
+            />
           </FlexWidget>
 
           {/* TITLE + SUBTITLE + LEVEL + PROGRESS */}

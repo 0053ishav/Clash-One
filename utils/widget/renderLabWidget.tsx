@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/stores/accountStore";
+import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { LabStatusWidget } from "@/widget/LabStatusWidget";
 import { getLabWidgetData } from "@/widget/getLabWidgetData";
@@ -59,6 +60,9 @@ export async function renderLabWidget() {
     }
 
     const data = await getLabWidgetData(tag);
+    const icon = data.dataId
+      ? ((await resolveWidgetEntityIcon(data.dataId)) ?? undefined)
+      : undefined;
 
     setWidgetCache(tag, "lab", {
       ...data,
@@ -69,12 +73,11 @@ export async function renderLabWidget() {
       <LabStatusWidget
         title={data.title ?? "Laboratory"}
         subtitle={data.subtitle ?? "Idle"}
+        icon={icon}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
         nextUpgradeText={data.nextUpgradeText}
-        dataId={data.dataId}
-        type={data.type}
         color={data.color}
         accountInitials={data.accountInitials}
         updatedAt={data.updatedAt}

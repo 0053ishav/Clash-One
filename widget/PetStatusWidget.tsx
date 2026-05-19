@@ -1,7 +1,5 @@
 "use no memo";
-import { EntityType } from "@/types/entity";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
   ColorProp,
@@ -13,27 +11,19 @@ import {
 export function PetStatusWidget(props: {
   title: string;
   subtitle: string;
+  icon?: string | number;
   progress: number;
   showProgress: boolean;
   levelText?: string;
   suggestion?: string;
   color?: string;
   accountInitials?: string;
-  dataId?: number;
-  type?: EntityType;
   updatedAt?: number;
 }) {
   const isIdle = props.subtitle === "Idle";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
   const progressWidth = Math.floor(90 * clamped);
-
-  const icon =
-    props.dataId && props.type
-      ? getIconByEntityType(props.dataId, props.type)
-      : isIdle
-        ? require("@/assets/images/builder/builder-idle.png")
-        : require("@/assets/images/builder/builder-working.png");
 
   const accentColor = (props.color ?? "#ec4899") as any;
 
@@ -89,7 +79,17 @@ export function PetStatusWidget(props: {
               marginRight: 10,
             }}
           >
-            <ImageWidget image={icon} imageWidth={32} imageHeight={32} />
+            <ImageWidget
+              image={
+                props.icon
+                  ? props.icon
+                  : isIdle
+                    ? require("@/assets/images/builder/builder-idle.png")
+                    : require("@/assets/images/builder/builder-working.png")
+              }
+              imageWidth={32}
+              imageHeight={32}
+            />
           </FlexWidget>
 
           {/* TEXT */}

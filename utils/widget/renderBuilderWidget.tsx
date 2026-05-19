@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/stores/accountStore";
+import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
 import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
@@ -59,18 +60,22 @@ export async function renderBuilderWidget() {
       renderedAt: Date.now(),
     });
 
+    const icon = data.dataId
+      ? ((await resolveWidgetEntityIcon(data.dataId, {
+          isCrafted: data.isCrafted,
+        })) ?? undefined)
+      : undefined;
+
     return (
       <BuilderStatusWidget
         title={data.title ?? "Builders"}
         subtitle={data.subtitle ?? "All builders free"}
-        isCrafted={data.isCrafted}
+        icon={icon}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
         builderCountText={data.builderCountText}
         nextUpgradeText={data.nextUpgradeText}
-        dataId={data.dataId}
-        type={data.type}
         color={data.color}
         accountInitials={data.accountInitials}
         updatedAt={data.updatedAt}

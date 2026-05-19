@@ -1,4 +1,3 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { getAccountState } from "@/services/accountStateService";
 import { useAccountStore } from "@/stores/accountStore";
 import { getBuilderStatus } from "@/utils/builderStatus";
@@ -88,11 +87,6 @@ export async function getBuilderWidgetData(inputTag?: string) {
       : formatBuildingName(nextUpgrade.entity)
     : null;
 
-  const type = getEntityTypeByDataId(
-    currentUpgrade.dataId,
-    currentUpgrade.isCrafted,
-  );
-
   const remainingMs = Math.max(currentUpgrade.endTime - Date.now(), 0);
   const totalMs = currentUpgrade.endTime - currentUpgrade.startTime;
 
@@ -124,7 +118,6 @@ export async function getBuilderWidgetData(inputTag?: string) {
       ? `${nextTitle} • ${formatCountdown(nextUpgrade.endTime - Date.now())}`
       : "No next upgrade",
     dataId: currentUpgrade.dataId,
-    type,
     color: account.color,
     accountInitials: account.name.slice(0, 2).toUpperCase(),
     remainingMs: remainingMs,

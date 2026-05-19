@@ -12,4 +12,5 @@ export const STORAGE_KEYS = {
   WIDGET_PREFS: "widget_prefs",
   WIDGET_CACHE: "widget_cache",
   FEATURE_VOTES: "feature_votes",
+  ENTITY_MANIFEST: "entity_manifest",
 };

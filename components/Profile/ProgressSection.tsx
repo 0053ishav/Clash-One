@@ -1,6 +1,6 @@
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function ProgressSection({ data }: { data: PlayerFull }) {
   const hasAchievements = data.achievements && data.achievements.length > 0;
@@ -26,7 +26,7 @@ export default function ProgressSection({ data }: { data: PlayerFull }) {
                 key={i}
                 name={achievement.name}
                 stars={achievement.stars}
-                icon={achievement.iconUrls?.medium}
+                info={achievement.info}
               />
             ))}
           </View>
@@ -36,24 +36,18 @@ export default function ProgressSection({ data }: { data: PlayerFull }) {
   );
 }
 
-function AchievementItem({ name, stars, icon }: any) {
+function AchievementItem({ name, stars, info }: any) {
   return (
     <View style={styles.achievementItem}>
-      {icon ? (
-        <Image
-          source={{ uri: icon }}
-          style={styles.achievementIcon}
-          resizeMode="contain"
-        />
-      ) : (
-        <Ionicons name="image" size={24} color="#64748b" />
-      )}
+      <Text style={styles.achievementStars}>
+        {"⭐".repeat(Math.min(stars || 0, 3))}
+      </Text>
       <View style={styles.achievementText}>
         <Text style={styles.achievementName} numberOfLines={1}>
           {name}
         </Text>
-        <Text style={styles.achievementStars}>
-          {"⭐".repeat(Math.min(stars || 0, 3))}
+        <Text style={styles.achievementInfo} numberOfLines={1}>
+          {info}
         </Text>
       </View>
     </View>
@@ -119,12 +113,19 @@ const styles = StyleSheet.create({
 
   achievementText: {
     flex: 1,
+    gap: 8,
   },
 
   achievementName: {
     fontSize: 12,
     fontWeight: "600",
     color: "#f1f5f9",
+  },
+
+  achievementInfo: {
+    fontSize: 10,
+    fontWeight: "400",
+    color: "#f1f5f97e",
   },
 
   achievementStars: {

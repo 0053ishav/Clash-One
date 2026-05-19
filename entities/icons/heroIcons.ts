@@ -1,10 +1,10 @@
 const heroIcons: Record<number, number> = {
-  28000000: require("@/assets/images/clash/heroes/barbarian-king.png"),
-  28000001: require("@/assets/images/clash/heroes/archer-queen.png"),
-  28000002: require("@/assets/images/clash/heroes/grand-warden.png"),
-  28000004: require("@/assets/images/clash/heroes/royal-champion.png"),
-  28000006: require("@/assets/images/clash/heroes/minion-prince.png"),
-  28000007: require("@/assets/images/clash/heroes/dragon-duke.png"),
+  28000000: require("@/assets/images/clash/heroes/28000000.png"),
+  28000001: require("@/assets/images/clash/heroes/28000001.png"),
+  28000002: require("@/assets/images/clash/heroes/28000002.png"),
+  28000004: require("@/assets/images/clash/heroes/28000004.png"),
+  28000006: require("@/assets/images/clash/heroes/28000006.png"),
+  28000007: require("@/assets/images/clash/heroes/28000007.png"),
 };
 
 export default heroIcons;

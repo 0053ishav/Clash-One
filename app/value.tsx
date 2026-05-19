@@ -14,10 +14,9 @@ import {
   View,
 } from "react-native";
 
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { getAccountState } from "@/services/accountStateService";
 import { track } from "@/utils/analytics/analytics";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function ValueScreen() {
@@ -100,10 +99,6 @@ export default function ValueScreen() {
   const totalBuilders = account.builderCount;
   const idleCount = totalBuilders - busyCount;
 
-  const nextType = nextUpgrade
-    ? getEntityTypeByDataId(nextUpgrade.dataId, nextUpgrade.isCrafted)
-    : null;
-
   return (
     <View style={styles.root}>
       <ScrollView
@@ -153,12 +148,15 @@ export default function ValueScreen() {
               {profile.townHallLevel && (
                 <View style={styles.statItem}>
                   <Image
-                    source={getIconByEntityType(
-                      profile.townHallLevel,
-                      "townhall",
-                      undefined,
-                      false,
-                    )}
+                    source={{
+                      uri: resolveEntityIcon(1000001, {
+                        subType: "TOWNHALL",
+
+                        context: {
+                          townHallLevel: profile.townHallLevel,
+                        },
+                      }),
+                    }}
                     style={styles.statIcon}
                   />
                   <Text style={styles.statText}>TH{profile.townHallLevel}</Text>
@@ -221,15 +219,23 @@ export default function ValueScreen() {
           ) : (
             <View style={styles.statusContent}>
               <View style={styles.timerIcon}>
-                {nextUpgrade && nextType ? (
+                {nextUpgrade ? (
                   <Image
-                    source={getIconByEntityType(
-                      nextUpgrade.dataId,
-                      nextType,
-                      undefined,
-                      nextUpgrade.isCrafted,
-                    )}
-                    style={{ width: 32, height: 32 }}
+                    source={{
+                      uri: resolveEntityIcon(nextUpgrade.dataId, {
+                        isCrafted: nextUpgrade.isCrafted,
+
+                        subType: nextUpgrade.subType,
+
+                        context: {
+                          townHallLevel: profile?.townHallLevel,
+                        },
+                      }),
+                    }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                    }}
                   />
                 ) : (
                   <Image
@@ -273,20 +279,21 @@ export default function ValueScreen() {
             <Text style={styles.liveTitle}>Live Upgrades</Text>
 
             {activeUpgrades.map((u) => {
-              const type = getEntityTypeByDataId(u.dataId, u.isCrafted);
-
-              if (!type) return null;
-
               return (
                 <View key={u.id} style={styles.liveRow}>
                   <View style={styles.liveIcon}>
                     <Image
-                      source={getIconByEntityType(
-                        u.dataId,
-                        type,
-                        undefined,
-                        u.isCrafted,
-                      )}
+                      source={{
+                        uri: resolveEntityIcon(u.dataId, {
+                          isCrafted: u.isCrafted,
+
+                          subType: u.subType,
+
+                          context: {
+                            townHallLevel: profile?.townHallLevel,
+                          },
+                        }),
+                      }}
                       style={styles.liveImg}
                     />
                   </View>

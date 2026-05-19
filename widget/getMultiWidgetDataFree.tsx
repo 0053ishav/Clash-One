@@ -1,8 +1,9 @@
 import { useAccountStore } from "@/stores/accountStore";
 import { MultiWidgetItem } from "@/types/widgetTypes";
+import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { getAllWidgetCaches } from "@/utils/widget/widgetCache";
 
-export function getMultiWidgetDataFree(): MultiWidgetItem[] {
+export async function getMultiWidgetDataFree(): Promise<MultiWidgetItem[]> {
   const { accounts } = useAccountStore.getState();
 
   const tags = accounts.map((a) => a.tag);
@@ -19,5 +20,23 @@ export function getMultiWidgetDataFree(): MultiWidgetItem[] {
   });
 
   // ✅ take top 3
-  return sorted.slice(0, 3);
+  const visible = sorted.slice(0, 3);
+
+  return await Promise.all(
+    visible.map(async (item) => {
+      const icon = item.data.dataId
+        ? ((await resolveWidgetEntityIcon(item.data.dataId, {
+            isCrafted: item.data.isCrafted,
+          })) ?? undefined)
+        : undefined;
+
+      return {
+        ...item,
+        data: {
+          ...item.data,
+          icon,
+        },
+      };
+    }),
+  );
 }

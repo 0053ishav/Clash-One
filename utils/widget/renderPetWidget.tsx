@@ -1,4 +1,5 @@
 import { useAccountStore } from "@/stores/accountStore";
+import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { PetStatusWidget } from "@/widget/PetStatusWidget";
 import { getPetWidgetData } from "@/widget/getPetWidgetData";
@@ -45,6 +46,9 @@ export async function renderPetWidget() {
     }
 
     const data = await getPetWidgetData(tag);
+    const icon = data.dataId
+      ? ((await resolveWidgetEntityIcon(data.dataId)) ?? undefined)
+      : undefined;
 
     setWidgetCache(tag, "pet", {
       ...data,
@@ -55,11 +59,10 @@ export async function renderPetWidget() {
       <PetStatusWidget
         title={data.title ?? "Pet"}
         subtitle={data.subtitle ?? "Idle"}
+        icon={icon}
         progress={data.progress ?? 0}
         showProgress={data.showProgress ?? false}
         levelText={data.levelText}
-        dataId={data.dataId}
-        type={data.type}
         suggestion={data.suggestion}
         color={data.color}
         accountInitials={data.accountInitials}

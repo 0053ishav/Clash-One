@@ -25,7 +25,7 @@ import { usePremiumStore } from "@/stores/premiumStore";
 import { FeatureId, Vote } from "@/types/vote";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { scheduleAllNotifications } from "@/utils/notificationEngine";
 import { resyncNotifications } from "@/utils/notificationSync";
 
@@ -317,13 +317,15 @@ export default function SettingsScreen() {
 
                 {profile.townHallLevel && (
                   <Image
-                    source={getIconByEntityType(
-                      1000001,
-                      "building",
-                      "TOWNHALL",
-                      false,
-                      { townHallLevel: profile.townHallLevel },
-                    )}
+                    source={{
+                      uri: resolveEntityIcon(1000001, {
+                        subType: "TOWNHALL",
+
+                        context: {
+                          townHallLevel: profile.townHallLevel,
+                        },
+                      }),
+                    }}
                     style={styles.thIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"

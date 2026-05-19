@@ -159,7 +159,7 @@ export const ENTITY_MAP: Record<number, EntityDefinition> = {
     4000017: { name: "Lava Hound", type: "troop", village: "home", resource: "dark" },
     4000022: { name: "Bowler", type: "troop", village: "home", resource: "dark" },
     4000058: { name: "Ice Golem", type: "troop", village: "home", resource: "dark" },
-    4000082: { name: "Head Hunter", type: "troop", village: "home", resource: "dark" },
+    4000082: { name: "Headhunter", type: "troop", village: "home", resource: "dark" },
     4000097: { name: "Apprentice Warden", type: "troop", village: "home", resource: "dark" },
     4000123: { name: "Druid", type: "troop", village: "home", resource: "dark" },
     4000150: { name: "Furnace", type: "troop", village: "home", resource: "dark" },
@@ -177,7 +177,6 @@ export const ENTITY_MAP: Record<number, EntityDefinition> = {
     4000070: { name: "Hog Glider", type: "troop", village: "builder" },
     4000106: { name: "Electrofire Wizard", type: "troop", village: "builder" },
 
-//  WARN  Missing entity mapping:  Headhunter home
 //  WARN  Missing entity mapping:  Super Barbarian home
 //  WARN  Missing entity mapping:  Super Archer home
 //  WARN  Missing entity mapping:  Super Wall Breaker home
@@ -248,33 +247,8 @@ export const ENTITY_MAP: Record<number, EntityDefinition> = {
     // ---- Guardians ---------------------
     107000000: { name: "Longshot", type: "guardian", village: "home" },
     107000001: { name: "Smasher", type: "guardian", village: "home" },
+    107000008: { name: "Logger", type: "guardian", village: "home" },
 };
-
-// // ---- Crafted Defense Types ---------------------
-// export const CRAFTED_DEFENSE_TYPE_MAP: Record<number, { name: string }> = {
-//     103000008: { name: "Roaster" },
-//     103000009: { name: "Air Bombs" },
-//     103000010: { name: "Lava Launcher" },
-// };
-
-// // ---- Crafted Defense Modules ---------------------
-// export const CRAFTED_DEFENSE_MODULE_MAP: Record<number, { name: string; stat: string }> = {
-//     // Roaster modules
-//     102000024: { name: "Roaster - Hitpoints", stat: "hitpoints" },
-//     102000025: { name: "Roaster - Defense Per Hit", stat: "damage_per_hit" },
-//     102000026: { name: "Roaster - Burst Fire Shots", stat: "burst_fire_shots" },
-
-//     // Air Bombs modules
-//     102000027: { name: "Air Bombs - Hitpoints", stat: "hitpoints" },
-//     102000028: { name: "Air Bombs - Damage Per Hit", stat: "damage_per_hit" },
-//     102000029: { name: "Air Bombs - Attack Cooldown", stat: "attack_cooldown" },
-
-//     // Lava Launcher modules
-//     102000030: { name: "Lava Launcher - Hitpoints", stat: "hitpoints" },
-//     102000031: { name: "Lava Launcher - Damage Per Second", stat: "damage_per_second" },
-//     102000032: { name: "Lava Launcher - Tiles", stat: "tiles" },
-// };
-
 
 export const ENTITY_LOOKUP: Record<string, Partial<Record<Village, number>>> =
     {};

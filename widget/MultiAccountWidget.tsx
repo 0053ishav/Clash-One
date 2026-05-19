@@ -1,9 +1,7 @@
 "use no memo";
 
 import { MultiWidgetItem } from "@/types/widgetTypes";
-import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
 import React from "react";
 import {
   ColorProp,
@@ -38,19 +36,6 @@ function getColor(u: ReturnType<typeof getUrgency>) {
       return "#fbbf24";
     default:
       return "#94a3b8";
-  }
-}
-
-function getBg(u: ReturnType<typeof getUrgency>): ColorProp {
-  switch (u) {
-    case "free":
-      return "rgba(34,197,94,0.15)" as ColorProp;
-    case "critical":
-      return "rgba(239,68,68,0.15)" as ColorProp;
-    case "high":
-      return "rgba(251,191,36,0.15)" as ColorProp;
-    default:
-      return "rgba(148,163,184,0.1)" as ColorProp;
   }
 }
 
@@ -530,34 +515,18 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
 }
 
 // ---------- CARD ----------
-function renderCard(
-  item: MultiWidgetItem,
-  index: number,
-  totalAccounts?: number,
-  isPro?: boolean,
-): React.ReactNode {
+function renderCard(item: MultiWidgetItem): React.ReactNode {
   const { tag, data } = item;
 
   const urgency = getUrgency(data);
   const urgencyColor = getColor(urgency) as any;
-  const urgencyBg = getBg(urgency) as any;
   const accentColor = (data.color ?? "#fbbf24") as any;
 
   const clamped = Math.max(0, Math.min(data.progress ?? 0, 1));
   const BAR_MAX_WIDTH = 100;
   const progressWidth = Math.floor(BAR_MAX_WIDTH * 0.8 * clamped);
 
-  const { getCraftedIcon } = getCraftedResolver();
-
-  const icon =
-    data.dataId && data.type
-      ? data.isCrafted && getCraftedIcon(data.dataId)
-        ? getCraftedIcon(data.dataId)
-        : getIconByEntityType(data.dataId, data.type, undefined, data.isCrafted)
-      : urgency === "free"
-        ? require("@/assets/images/builder/builder-idle.png")
-        : require("@/assets/images/builder/builder-working.png");
-
+  const icon = data.icon;
   return (
     <FlexWidget
       key={tag}
@@ -617,7 +586,17 @@ function renderCard(
                   : "rgba(251, 191, 36, 0.15)",
             }}
           >
-            <ImageWidget image={icon} imageWidth={28} imageHeight={28} />
+            <ImageWidget
+              image={
+                icon
+                  ? icon
+                  : urgency === "free"
+                    ? require("@/assets/images/builder/builder-idle.png")
+                    : require("@/assets/images/builder/builder-working.png")
+              }
+              imageWidth={28}
+              imageHeight={28}
+            />{" "}
           </FlexWidget>
 
           {/* TITLE COLUMN */}
@@ -896,7 +875,7 @@ export function MultiAccountWidget({
             marginRight: 4,
           }}
         >
-          {renderCard(acc, i, totalAccounts, isPro)}
+          {renderCard(acc)}
         </FlexWidget>
       ))}
 

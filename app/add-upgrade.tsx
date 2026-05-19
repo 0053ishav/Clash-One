@@ -23,7 +23,7 @@ import {
   canUseGoblinLab,
   isWorkForHireActive,
 } from "@/utils/goblin";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { resyncNotifications } from "@/utils/notificationSync";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
@@ -91,9 +91,9 @@ export default function AddUpgradeScreen() {
   const isEditMode = !!editId;
 
   const MODE_ICONS = {
-    builder: () => getIconByEntityType(1000015, "building"),
-    lab: () => getIconByEntityType(1000007, "building"),
-    pet: () => getIconByEntityType(1000068, "building"),
+    builder: () => resolveEntityIcon(1000015),
+    lab: () => resolveEntityIcon(1000007),
+    pet: () => resolveEntityIcon(1000068),
   };
 
   const insets = useSafeAreaInsets();
@@ -1074,7 +1074,7 @@ export default function AddUpgradeScreen() {
                 >
                   <View style={styles.iconWrapper}>
                     <Image
-                      source={MODE_ICONS[m]()}
+                      source={{ uri: MODE_ICONS[m]() }}
                       style={[
                         styles.modeIcon,
                         isActive && styles.modeIconActive,
@@ -1387,22 +1387,16 @@ export default function AddUpgradeScreen() {
                               >
                                 {/* left icon */}
                                 <Image
-                                  source={
-                                    item.isCrafted
-                                      ? {
-                                          uri: item.icon,
-                                        }
-                                      : getIconByEntityType(
-                                          item.dataId,
-                                          item.type,
-                                          item.subType,
-                                          item.isCrafted,
-                                          {
-                                            townHallLevel:
-                                              profile.townHallLevel,
-                                          },
-                                        )
-                                  }
+                                  source={{
+                                    uri: resolveEntityIcon(item.dataId, {
+                                      subType: item.subType,
+                                      isCrafted: item.isCrafted,
+
+                                      context: {
+                                        townHallLevel: profile.townHallLevel,
+                                      },
+                                    }),
+                                  }}
                                   style={{ width: 32, height: 32 }}
                                   contentFit="contain"
                                 />
@@ -1442,19 +1436,17 @@ export default function AddUpgradeScreen() {
                           onPress={() => handleEntitySelect(item)}
                         >
                           <Image
-                            source={
-                              item.isCrafted && item.icon
-                                ? { uri: item.icon }
-                                : getIconByEntityType(
-                                    item.dataId,
-                                    item.type,
-                                    item.subType,
-                                    item.isCrafted,
-                                    {
-                                      townHallLevel: profile.townHallLevel,
-                                    },
-                                  )
-                            }
+                            source={{
+                              uri: resolveEntityIcon(item.dataId, {
+                                subType: item.subType,
+
+                                isCrafted: item.isCrafted,
+
+                                context: {
+                                  townHallLevel: profile.townHallLevel,
+                                },
+                              }),
+                            }}
                             style={{ width: 32, height: 32 }}
                             contentFit="contain"
                           />

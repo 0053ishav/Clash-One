@@ -41,7 +41,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     const widgetName = props.widgetInfo?.widgetName;
 
     if (widgetName === "MultiAccountWidget") {
-      const widget = renderMultiWidget();
+      const widget = await renderMultiWidget();
       props.renderWidget(widget);
       return;
     }

@@ -1,6 +1,6 @@
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
@@ -28,13 +28,15 @@ export default function ProfileHeroCard({
         </View>
         <View style={styles.thBadge}>
           <Image
-            source={getIconByEntityType(
-              1000001,
-              "building",
-              "townhall",
-              false,
-              { townHallLevel: data.townHallLevel },
-            )}
+            source={{
+              uri: resolveEntityIcon(1000001, {
+                subType: "TOWNHALL",
+
+                context: {
+                  townHallLevel: data.townHallLevel,
+                },
+              }),
+            }}
             style={styles.thBadgeIcon}
             contentFit="contain"
             cachePolicy="memory-disk"
@@ -65,7 +67,9 @@ export default function ProfileHeroCard({
               <Text style={styles.trophyText}>{data.trophies}</Text>
               <Text style={styles.trophyEmoji}>🏆</Text>
             </View>
-            <Text style={styles.bestText}>Best: {data.bestTrophies}</Text>
+            <Text style={styles.bestText}>
+              Legacy Best: {data.bestTrophies}
+            </Text>
             <Image
               source={{
                 uri:
@@ -94,7 +98,9 @@ export default function ProfileHeroCard({
                 {helpers.map((helper) => (
                   <View key={`helper-${helper.id}`} style={styles.helperBadge}>
                     <Image
-                      source={getIconByEntityType(helper.dataId, "helper")}
+                      source={{
+                        uri: resolveEntityIcon(helper.dataId),
+                      }}
                       style={styles.helperIcon}
                       contentFit="contain"
                       cachePolicy="memory-disk"
@@ -121,7 +127,9 @@ export default function ProfileHeroCard({
                     style={styles.guardianBadge}
                   >
                     <Image
-                      source={getIconByEntityType(guardian.dataId, "guardian")}
+                      source={{
+                        uri: resolveEntityIcon(guardian.dataId),
+                      }}
                       style={styles.helperIcon}
                       contentFit="contain"
                       cachePolicy="memory-disk"
@@ -311,8 +319,8 @@ const styles = StyleSheet.create({
   },
 
   tierIcon: {
-    width: 48,
-    height: 48,
+    width: 32,
+    height: 32,
   },
 
   leagueInfo: {
@@ -360,7 +368,7 @@ const styles = StyleSheet.create({
 
   entityContainer: {
     gap: 14,
-    flexDirection: "row",
+    flexDirection: "column",
   },
 
   entityColumn: {

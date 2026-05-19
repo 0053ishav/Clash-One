@@ -28,6 +28,13 @@ interface Troop {
   village: string;
 }
 
+const STATUS_PRIORITY: Record<Troop["status"], number> = {
+  max: 0,
+  near: 1,
+  mid: 2,
+  low: 3,
+};
+
 export default function TroopsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -37,90 +44,114 @@ export default function TroopsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "maxed" | "upgradable">("all");
 
   useEffect(() => {
-    track("screen_view", { screen: "troops" });
+    track("screen_view", {
+      screen: "troops",
+    });
   }, []);
 
-  const load = async () => {
+  const load = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
+
       setError(null);
 
-      if (!profile.playerTag) {
+      if (!profile?.playerTag) {
         setError("No player tag found");
         return;
       }
 
       const data = await fetchFullPlayer(profile.playerTag);
-      const { troops } = parseArmy(data);
 
-      const homeTroops = troops
-        ?.filter((t: any) => t.village === "home")
-        .map((t: any) => ({
-          dataId: t.dataId,
-          name: t.name,
-          level: t.level,
-          maxLevel: t.maxLevel,
-          village: t.village,
-          status: getUpgradeStatus(t.level, t.maxLevel),
-        }))
-        .sort((a: Troop, b: Troop) => {
-          if (a.status === "max" && b.status !== "max") return 1;
-          if (b.status === "max" && a.status !== "max") return -1;
+      const parsed = parseArmy(data);
 
-          const remainingA = a.maxLevel - a.level;
-          const remainingB = b.maxLevel - b.level;
-
-          return remainingB - remainingA;
-        });
+      const homeTroops: Troop[] =
+        parsed.troops
+          ?.filter((t: any) => t.village === "home")
+          .map((t: any) => ({
+            dataId: t.dataId,
+            name: t.name,
+            level: t.level,
+            maxLevel: t.maxLevel,
+            village: t.village,
+            status: getUpgradeStatus(t.level, t.maxLevel),
+          }))
+          .sort(
+            (a: Troop, b: Troop) =>
+              STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status],
+          ) ?? [];
 
       setTroops(homeTroops);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load troops");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     load();
-  }, [profile.playerTag]);
+  }, [profile?.playerTag]);
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
+    try {
+      setRefreshing(true);
+      await load(true);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filtered = useMemo(() => {
     let list = troops;
 
-    if (search) {
+    if (search.trim()) {
       list = list.filter((t) =>
         t.name.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
-    if (filter === "maxed") list = list.filter((t) => t.status === "max");
-    if (filter === "upgradable") list = list.filter((t) => t.status !== "max");
+    if (filter === "maxed") {
+      list = list.filter((t) => t.status === "max");
+    }
+
+    if (filter === "upgradable") {
+      list = list.filter((t) => t.status !== "max");
+    }
 
     return list;
   }, [troops, search, filter]);
 
-  const maxedCount = troops.filter((t) => t.status === "max").length;
-  const totalLevels = troops.reduce((sum, t) => sum + t.level, 0);
-  const maxLevels = troops.reduce((sum, t) => sum + t.maxLevel, 0);
+  const stats = useMemo(() => {
+    const maxed = troops.filter((t) => t.status === "max").length;
 
-  const overallProgress =
-    maxLevels > 0 ? Math.round((totalLevels / maxLevels) * 100) : 0;
+    const totalLevels = troops.reduce((sum, troop) => sum + troop.level, 0);
+
+    const maxLevels = troops.reduce((sum, troop) => sum + troop.maxLevel, 0);
+
+    const progress =
+      maxLevels > 0 ? Math.round((totalLevels / maxLevels) * 100) : 0;
+
+    return {
+      maxed,
+      remaining: troops.length - maxed,
+      progress,
+    };
+  }, [troops]);
 
   if (loading && troops.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size={48} color="#fbbf24" />
+        <ActivityIndicator size={42} color="#fbbf24" />
+
         <Text style={styles.loadingText}>Loading troops...</Text>
       </View>
     );
@@ -129,9 +160,15 @@ export default function TroopsScreen() {
   if (error && troops.length === 0) {
     return (
       <View style={[styles.container, styles.centerContent]}>
-        <Ionicons name="alert-circle" size={56} color="#ef4444" />
+        <Ionicons name="alert-circle-outline" size={52} color="#ef4444" />
+
         <Text style={styles.errorText}>{error}</Text>
-        <Pressable style={styles.retryButton} onPress={load}>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => load()}
+          style={styles.retryButton}
+        >
           <Text style={styles.retryButtonText}>Retry</Text>
         </Pressable>
       </View>
@@ -142,12 +179,15 @@ export default function TroopsScreen() {
     <View style={styles.container}>
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.dataId.toString()}
         numColumns={3}
+        showsVerticalScrollIndicator={false}
+        keyExtractor={(item) => `${item.dataId}-${item.level}-${item.village}`}
         columnWrapperStyle={styles.gridRow}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 8 },
+          {
+            paddingTop: insets.top + 8,
+          },
         ]}
         refreshControl={
           <RefreshControl
@@ -161,34 +201,33 @@ export default function TroopsScreen() {
             {/* Header */}
             <View style={styles.header}>
               <Pressable
+                accessibilityRole="button"
                 onPress={() => router.back()}
                 style={styles.backButton}
               >
-                <Ionicons name="chevron-back" size={24} color="#fbbf24" />
+                <Ionicons name="chevron-back" size={22} color="#f8fafc" />
               </Pressable>
 
-              <Text style={styles.headerTitle}>Troops Collection</Text>
+              <Text style={styles.headerTitle}>Troops</Text>
 
               <View style={{ width: 40 }} />
             </View>
 
-            {/* Overview Card */}
+            {/* Overview */}
             <View style={styles.overviewCard}>
-              <View style={styles.overviewHeader}>
-                <View style={styles.overviewIconWrapper}>
-                  <Ionicons name="flash" size={20} color="#fbbf24" />
-                </View>
-                <View style={styles.overviewHeaderText}>
-                  <Text style={styles.overviewLabel}>Collection Progress</Text>
-                  <Text style={styles.overviewValue}>{overallProgress}%</Text>
-                </View>
+              <View style={styles.overviewTop}>
+                <Text style={styles.overviewTitle}>Progress</Text>
+
+                <Text style={styles.overviewValue}>{stats.progress}%</Text>
               </View>
 
               <View style={styles.overviewProgressBar}>
                 <View
                   style={[
                     styles.overviewProgressFill,
-                    { width: `${overallProgress}%` },
+                    {
+                      width: `${stats.progress}%`,
+                    },
                   ]}
                 />
               </View>
@@ -196,28 +235,36 @@ export default function TroopsScreen() {
               <View style={styles.overviewStats}>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{troops.length}</Text>
+
                   <Text style={styles.statLabel}>Total</Text>
                 </View>
+
                 <View style={styles.statDivider} />
+
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: "#22c55e" }]}>
-                    {maxedCount}
+                    {stats.maxed}
                   </Text>
+
                   <Text style={styles.statLabel}>Maxed</Text>
                 </View>
+
                 <View style={styles.statDivider} />
+
                 <View style={styles.statBox}>
-                  <Text style={[styles.statValue, { color: "#ef4444" }]}>
-                    {troops.length - maxedCount}
+                  <Text style={[styles.statValue, { color: "#94a3b8" }]}>
+                    {stats.remaining}
                   </Text>
+
                   <Text style={styles.statLabel}>Remaining</Text>
                 </View>
               </View>
             </View>
 
-            {/* Search Bar */}
+            {/* Search */}
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={18} color="#94a3b8" />
+              <Ionicons name="search" size={16} color="#64748b" />
+
               <TextInput
                 placeholder="Search troops..."
                 placeholderTextColor="#64748b"
@@ -227,50 +274,73 @@ export default function TroopsScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
               />
+
               {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setSearch("")}
+                >
                   <Ionicons name="close-circle" size={18} color="#64748b" />
                 </Pressable>
               )}
             </View>
 
-            {/* Filter Buttons */}
+            {/* Filters */}
             <View style={styles.filterButtons}>
               {[
-                { key: "all", label: "All", icon: "grid" },
-                { key: "upgradable", label: "Upgradable", icon: "arrow-up" },
-                { key: "maxed", label: "Maxed", icon: "checkmark" },
-              ].map((f) => (
-                <Pressable
-                  key={f.key}
-                  onPress={() => setFilter(f.key as any)}
-                  style={({ pressed }) => [
-                    styles.filterButton,
-                    filter === f.key && styles.filterButtonActive,
-                    pressed && styles.filterButtonPressed,
-                  ]}
-                >
-                  <Ionicons
-                    name={f.icon as any}
-                    size={14}
-                    color={filter === f.key ? "#0f172a" : "#94a3b8"}
-                  />
-                  <Text
+                {
+                  key: "all",
+                  label: "All",
+                  icon: "grid",
+                },
+                {
+                  key: "upgradable",
+                  label: "Upgradable",
+                  icon: "arrow-up",
+                },
+                {
+                  key: "maxed",
+                  label: "Maxed",
+                  icon: "checkmark",
+                },
+              ].map((f) => {
+                const active = filter === f.key;
+
+                return (
+                  <Pressable
+                    key={f.key}
+                    accessibilityRole="button"
+                    onPress={() =>
+                      setFilter(f.key as "all" | "maxed" | "upgradable")
+                    }
                     style={[
-                      styles.filterButtonText,
-                      filter === f.key && styles.filterButtonTextActive,
+                      styles.filterButton,
+                      active && styles.filterButtonActive,
                     ]}
                   >
-                    {f.label}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Ionicons
+                      name={f.icon as any}
+                      size={14}
+                      color={active ? "#fbbf24" : "#64748b"}
+                    />
+
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        active && styles.filterButtonTextActive,
+                      ]}
+                    >
+                      {f.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
-            {/* Results Count */}
+            {/* Results */}
             <Text style={styles.resultsText}>
-              {filtered.length} {filtered.length === 1 ? "troop" : "troops"}{" "}
-              {search || filter !== "all" ? "found" : ""}
+              {filtered.length} troop
+              {filtered.length !== 1 ? "s" : ""}
             </Text>
           </>
         }
@@ -280,15 +350,16 @@ export default function TroopsScreen() {
             level={item.level}
             maxLevel={item.maxLevel}
             dataId={item.dataId}
-            type="troop"
           />
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search" size={48} color="#475569" />
+            <Ionicons name="search-outline" size={42} color="#475569" />
+
             <Text style={styles.emptyText}>No troops found</Text>
+
             <Text style={styles.emptySubtext}>
-              Try adjusting your search or filters
+              Try changing your search or filters
             </Text>
           </View>
         }
@@ -303,14 +374,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
   },
 
-  gridRow: {
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-
   centerContent: {
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 24,
   },
 
   scrollContent: {
@@ -318,18 +385,16 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+  gridRow: {
+    gap: 10,
+    marginBottom: 10,
+  },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
-  },
-
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#fbbf24",
-    letterSpacing: -0.5,
+    marginBottom: 18,
   },
 
   backButton: {
@@ -339,116 +404,100 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  overviewCard: {
-    backgroundColor: "#1e293b",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#334155",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fbbf24",
+    letterSpacing: -0.4,
   },
 
-  overviewHeader: {
+  overviewCard: {
+    backgroundColor: "#111827",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+
+  overviewTop: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 14,
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
 
-  overviewIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "rgba(251, 191, 36, 0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  overviewHeaderText: {
-    flex: 1,
-    gap: 4,
-  },
-
-  overviewLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
+  overviewTitle: {
+    fontSize: 13,
     fontWeight: "600",
+    color: "#94a3b8",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 
   overviewValue: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#fbbf24",
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#f8fafc",
     letterSpacing: -0.5,
   },
 
   overviewProgressBar: {
-    height: 8,
-    backgroundColor: "rgba(51, 65, 85, 0.5)",
-    borderRadius: 4,
-    marginBottom: 14,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.06)",
     overflow: "hidden",
+    marginBottom: 16,
   },
 
   overviewProgressFill: {
     height: "100%",
     backgroundColor: "#fbbf24",
+    borderRadius: 999,
   },
 
   overviewStats: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
 
   statBox: {
     flex: 1,
     alignItems: "center",
-    gap: 4,
+    gap: 2,
   },
 
   statValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#fbbf24",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#f8fafc",
   },
 
   statLabel: {
     fontSize: 11,
-    color: "#94a3b8",
     fontWeight: "600",
+    color: "#64748b",
     textTransform: "uppercase",
   },
 
   statDivider: {
     width: 1,
-    height: 32,
-    backgroundColor: "#334155",
+    height: 28,
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
 
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1e293b",
+    backgroundColor: "#111827",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
     gap: 10,
   },
 
   searchInput: {
     flex: 1,
-    color: "#fff",
+    color: "#f8fafc",
     fontSize: 14,
     fontWeight: "500",
   },
@@ -456,7 +505,7 @@ const styles = StyleSheet.create({
   filterButtons: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 14,
   },
 
   filterButton: {
@@ -467,80 +516,73 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#334155",
+    backgroundColor: "#111827",
   },
 
   filterButtonActive: {
-    backgroundColor: "#fbbf24",
-    borderColor: "#fbbf24",
-  },
-
-  filterButtonPressed: {
-    opacity: 0.7,
+    backgroundColor: "rgba(251,191,36,0.12)",
   },
 
   filterButtonText: {
-    textAlign: "center",
-    color: "#94a3b8",
-    fontWeight: "700",
     fontSize: 12,
+    fontWeight: "600",
+    color: "#64748b",
   },
 
   filterButtonTextActive: {
-    color: "#0f172a",
+    color: "#fbbf24",
   },
 
   resultsText: {
     fontSize: 12,
-    color: "#64748b",
     fontWeight: "600",
+    color: "#64748b",
     marginBottom: 12,
-    textAlign: "center",
+    paddingHorizontal: 2,
   },
 
   loadingText: {
-    color: "#94a3b8",
     marginTop: 12,
+    color: "#94a3b8",
     fontSize: 14,
     fontWeight: "600",
   },
 
   errorText: {
+    marginTop: 12,
     color: "#ef4444",
-    marginVertical: 12,
     fontSize: 14,
     fontWeight: "600",
+    textAlign: "center",
   },
 
   retryButton: {
+    marginTop: 16,
     backgroundColor: "#fbbf24",
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 10,
-    marginTop: 8,
   },
 
   retryButtonText: {
-    fontWeight: "700",
     color: "#0f172a",
+    fontWeight: "700",
   },
 
   emptyState: {
     alignItems: "center",
-    paddingVertical: 60,
-    gap: 12,
+    paddingVertical: 64,
+    gap: 10,
   },
 
   emptyText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#64748b",
+    color: "#94a3b8",
   },
 
   emptySubtext: {
     fontSize: 13,
-    color: "#475569",
+    color: "#64748b",
   },
 });

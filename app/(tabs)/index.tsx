@@ -34,7 +34,10 @@ import {
   getCurrentWorkForHireEventEnd,
   isWorkForHireActive,
 } from "@/utils/goblin";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import {
+  FALLBACK_ICON,
+  resolveEntityIcon,
+} from "@/utils/icons/resolveEntityIcon";
 import { resyncNotifications } from "@/utils/notificationSync";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
@@ -71,6 +74,8 @@ export default function HomeScreen() {
   const { getCraftedName, getModuleName } = useCraftedResolver();
 
   useCraftedStore((s) => s.defenses);
+  const blurhash =
+    "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[";
 
   const [data, setData] = useState<BuilderWidgetData>({
     title: "Builders",
@@ -355,20 +360,13 @@ export default function HomeScreen() {
   let statusIcon = require("@/assets/images/builder/builder-idle.png");
 
   if (!status.allFree && nextUpgrade?.dataId) {
-    const type = getEntityTypeByDataId(
-      nextUpgrade.dataId,
-      nextUpgrade.isCrafted,
-    );
-
-    if (type) {
-      statusIcon = getIconByEntityType(
-        nextUpgrade.dataId,
-        type,
-        nextUpgrade.subType,
-        nextUpgrade.isCrafted,
-        { townHallLevel: profile.townHallLevel },
-      );
-    }
+    statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
+      subType: nextUpgrade.subType,
+      isCrafted: nextUpgrade.isCrafted,
+      context: {
+        townHallLevel: profile.townHallLevel,
+      },
+    });
   }
 
   const villageStatus = getVillageStatus({
@@ -473,13 +471,14 @@ export default function HomeScreen() {
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <View style={styles.leagueIcon}>
                         <Image
-                          source={getIconByEntityType(
-                            1000001,
-                            "building",
-                            "TOWNHALL",
-                            false,
-                            { townHallLevel: profile.townHallLevel },
-                          )}
+                          source={{
+                            uri: resolveEntityIcon(1000001, {
+                              subType: "TOWNHALL",
+                              context: {
+                                townHallLevel: profile.townHallLevel,
+                              },
+                            }),
+                          }}
                           style={styles.leagueIcon}
                           contentFit="contain"
                           cachePolicy="memory-disk"
@@ -696,19 +695,18 @@ export default function HomeScreen() {
                         <View style={styles.upgradeLeft}>
                           <View style={styles.iconContainer}>
                             <Image
-                              source={
-                                u.dataId && entityType
-                                  ? getIconByEntityType(
-                                      u.dataId,
-                                      entityType,
-                                      u.subType,
-                                      u.isCrafted,
-                                      {
+                              source={{
+                                uri: u.dataId
+                                  ? resolveEntityIcon(u.dataId, {
+                                      subType: u.subType,
+                                      isCrafted: u.isCrafted,
+                                      context: {
                                         townHallLevel: profile.townHallLevel,
                                       },
-                                    )
-                                  : require("@/assets/images/builder/builder-working.png")
-                              }
+                                    })
+                                  : FALLBACK_ICON,
+                              }}
+                              placeholder={{ blurhash }}
                               style={styles.upgradeIcon}
                               contentFit="contain"
                               cachePolicy="memory-disk"

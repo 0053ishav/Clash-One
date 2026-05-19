@@ -1,4 +1,3 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { getAccountState } from "@/services/accountStateService";
 import { useAccountStore } from "@/stores/accountStore";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -63,10 +62,6 @@ export async function getLabWidgetData(inputTag?: string) {
       ? calculateProgress(current.startTime, current.endTime)
       : 0;
 
-  const type = current.dataId
-    ? getEntityTypeByDataId(current.dataId)
-    : undefined;
-
   return {
     title: `${isGoblinOnly ? "Goblin Lab" : "Lab"} - ${formatBuildingName(current.entity)}`,
     subtitle: formatCountdown(remainingMs),
@@ -86,7 +81,6 @@ export async function getLabWidgetData(inputTag?: string) {
         : "No parallel research",
 
     dataId: current.dataId,
-    type,
 
     color: account.color,
     accountInitials: account.name.slice(0, 2).toUpperCase(),

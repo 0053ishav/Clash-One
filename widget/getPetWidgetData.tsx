@@ -1,4 +1,3 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { getAccountState } from "@/services/accountStateService";
 import { getEntities } from "@/services/entityService";
 import { useAccountStore } from "@/stores/accountStore";
@@ -65,8 +64,6 @@ export async function getPetWidgetData(inputTag?: string) {
   const progress =
     totalMs > 0 ? calculateProgress(pet.startTime, pet.endTime) : 0;
 
-  const type = pet.dataId ? getEntityTypeByDataId(pet.dataId) : "pet";
-
   return {
     title: `Pet - ${pet.entity}`,
     subtitle: formatCountdown(remainingMs),
@@ -79,7 +76,6 @@ export async function getPetWidgetData(inputTag?: string) {
         : undefined,
 
     dataId: pet.dataId,
-    type,
     suggestion: suggestion
       ? `Upgrade ${getEntity(suggestion?.dataId).name} • Lv ${suggestion.level}`
       : "Maxed",

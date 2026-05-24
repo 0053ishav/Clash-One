@@ -65,7 +65,7 @@ export async function getPetWidgetData(inputTag?: string) {
     totalMs > 0 ? calculateProgress(pet.startTime, pet.endTime) : 0;
 
   return {
-    title: `Pet - ${pet.entity}`,
+    title: pet.entity,
     subtitle: formatCountdown(remainingMs),
     progress,
     showProgress: true,

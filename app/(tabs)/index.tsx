@@ -3,6 +3,7 @@ import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
 import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { getEntityTypeByDataId } from "@/data/entityMap";
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
 import { deleteUpgrade } from "@/services/upgradeService";
@@ -17,9 +18,8 @@ import {
   setFeatureVote,
 } from "@/storage/notesStorage";
 import { useAccountStore } from "@/stores/accountStore";
-import { useCraftedStore } from "@/stores/craftedEventStore";
 import { usePremiumStore } from "@/stores/premiumStore";
-import { BuilderWidgetData, Upgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
 import { FeatureId, Vote } from "@/types/vote";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { getBuilderStatus } from "@/utils/builderStatus";
@@ -41,7 +41,6 @@ import {
 import { resyncNotifications } from "@/utils/notificationSync";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
-import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -61,7 +60,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const isPro = usePremiumStore.getState().isPro;
+  const isPro = usePremiumStore((s) => s.isPro);
   type AccountState = Awaited<ReturnType<typeof getAccountState>>;
   const [accountState, setAccountState] = useState<AccountState | null>(null);
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
@@ -73,31 +72,14 @@ export default function HomeScreen() {
 
   const { getCraftedName, getModuleName } = useCraftedResolver();
 
-  useCraftedStore((s) => s.defenses);
-  const blurhash =
-    "|rF?hV%2WCj[ayj[a|j[az_NaeWBj@ayfRayfQfQM{M|azj[azf6fQfQfQIpWXofj[ayj[j[fQayWCoeoeaya}j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[fQj[ayayj[ayfjj[j[ayjuayj[";
-
-  const [data, setData] = useState<BuilderWidgetData>({
-    title: "Builders",
-    subtitle: "All builders free",
-    progress: 0,
-    showProgress: false,
-  });
-
-  const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const activeTag = useAccountStore((s) => s.activeTag);
-  const profile = useAccountStore((s) => s.profile);
+  const { profile } = usePlayerProfile();
   const isLoadingProfile = useAccountStore((s) => s.isLoadingProfile);
-  const loadLastSync = useAccountStore((s) => s.loadLastSync);
   const lastJsonSyncMap = useAccountStore((s) => s.lastJsonSyncMap);
   const lastSync = activeTag ? lastJsonSyncMap[activeTag] : null;
 
-  const accounts = useAccountStore.getState().accounts;
-
-  const account = accounts.find((a) => a.tag === activeTag);
-
-  const builderCount = account?.builderCount ?? 0;
-  const townHall = account?.townhall ?? 1;
+  const builderCount = profile?.normalBuilderCount ?? 0;
+  const townHall = profile?.townHallLevel ?? 1;
   const [vote, setVoteState] = useState<Vote | null>(null);
   const refreshState = useCallback(async () => {
     if (!activeTag) return;
@@ -136,12 +118,17 @@ export default function HomeScreen() {
     return map;
   }, [builders]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadAccounts();
-      loadLastSync();
-    }, []),
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     loadAccounts();
+  //     loadLastSync();
+  //   }, []),
+  // );
+
+  // useEffect(() => {
+  //   loadAccounts();
+  //   loadLastSync();
+  // }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -180,27 +167,32 @@ export default function HomeScreen() {
     return () => clearTimeout(timeout);
   }, [completedId]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const widgetData = await getBuilderWidgetData();
-        setData(widgetData);
-      } catch {
-        setData({
-          title: "Builders",
-          subtitle: "Preview unavailable",
-          progress: 0,
-          showProgress: false,
-        });
-      }
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     try {
+  //       if (!activeTag) return;
+  //       const widgetData = await getBuilderWidgetData(activeTag);
+  //       setData(widgetData);
+  //     } catch {
+  //       setData({
+  //         title: "Builders",
+  //         subtitle: "Preview unavailable",
+  //         progress: 0,
+  //         showProgress: false,
+  //       });
+  //     }
+  //   })();
+  // }, [activeTag, profile?.townHallLevel]);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshState();
-    }, [refreshState]),
-  );
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     refreshState();
+  //   }, [refreshState]),
+  // );
+
+  useEffect(() => {
+    refreshState();
+  }, [refreshState]);
 
   useEffect(() => {
     const interval = setInterval(refreshState, 60 * 1000);
@@ -361,7 +353,6 @@ export default function HomeScreen() {
 
   if (!status.allFree && nextUpgrade?.dataId) {
     statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
-      subType: nextUpgrade.subType,
       isCrafted: nextUpgrade.isCrafted,
       context: {
         townHallLevel: profile.townHallLevel,
@@ -473,7 +464,6 @@ export default function HomeScreen() {
                         <Image
                           source={{
                             uri: resolveEntityIcon(1000001, {
-                              subType: "TOWNHALL",
                               context: {
                                 townHallLevel: profile.townHallLevel,
                               },
@@ -610,7 +600,7 @@ export default function HomeScreen() {
             </View>
           </View>
           {/* Add Upgrade Button */}
-          <Pressable
+          {/* <Pressable
             style={({ pressed }) => [
               styles.addButton,
               pressed && styles.addButtonPressed,
@@ -627,7 +617,7 @@ export default function HomeScreen() {
           >
             <Ionicons name="add-circle" size={24} color="#0f172a" />
             <Text style={styles.addButtonText}>Add Upgrade</Text>
-          </Pressable>
+          </Pressable> */}
           {/* Active Upgrades Section */}
           {sortedUpgrades.length > 0 && (
             <View style={styles.upgradesSection}>
@@ -706,7 +696,6 @@ export default function HomeScreen() {
                                     })
                                   : FALLBACK_ICON,
                               }}
-                              placeholder={{ blurhash }}
                               style={styles.upgradeIcon}
                               contentFit="contain"
                               cachePolicy="memory-disk"
@@ -797,10 +786,10 @@ export default function HomeScreen() {
           <LabSection
             labNormal={lab?.normal}
             labGoblin={lab?.goblin}
-            onAddPress={() => {
-              setSessionSource("app");
-              router.push("/add-upgrade?type=lab");
-            }}
+            // onAddPress={() => {
+            //   setSessionSource("app");
+            //   router.push("/add-upgrade?type=lab");
+            // }}
             onLongPress={handleRowLongPress}
           />
 
@@ -808,10 +797,10 @@ export default function HomeScreen() {
             <PetSection
               pet={pet}
               townHall={townHall}
-              onAddPress={() => {
-                setSessionSource("app");
-                router.push("/add-upgrade?type=pet");
-              }}
+              // onAddPress={() => {
+              //   setSessionSource("app");
+              //   router.push("/add-upgrade?type=pet");
+              // }}
               onLongPress={handleRowLongPress}
             />
           )}
@@ -1048,7 +1037,7 @@ export default function HomeScreen() {
       />
 
       {/* Floating Action Button */}
-      <Pressable
+      {/* <Pressable
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         onPress={() => {
           track("navigation", {
@@ -1062,7 +1051,7 @@ export default function HomeScreen() {
         <View style={styles.fabContent}>
           <Ionicons name="add" size={32} color="#0f172a" />
         </View>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 }

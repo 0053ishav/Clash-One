@@ -32,9 +32,12 @@ export async function renderMultiWidget() {
 
           setWidgetCache(acc.tag, "builder", {
             ...data,
-            renderedAt: Date.now(),
+            cachedAt: Date.now(),
           });
         }
+        const fresh = getWidgetCache(acc.tag, "builder");
+
+        // console.log("CACHE VERIFY", fresh);
       }),
     );
     const data = isPro

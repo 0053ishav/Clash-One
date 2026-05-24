@@ -5,11 +5,13 @@ import { importVillageJson } from "@/services/jsonImport/jsonImportService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
+import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -119,6 +121,20 @@ export default function AddAccountScreen() {
     }
   };
 
+  const openClashSettings = async () => {
+    const url = "https://link.clashofclans.com/en/?action=OpenMoreSettings";
+
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setModalTitle("Unable to open Clash of Clans");
+      setModalMessage(
+        "Please open the game manually and go to Settings → More Settings.",
+      );
+      setModalVisible(true);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.container}>
@@ -136,21 +152,36 @@ export default function AddAccountScreen() {
           and never waste builder time
         </Text>
 
-        {/* 🔹 CTA */}
-        <Pressable
-          onPress={handleImport}
-          style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
-        >
-          {isImporting ? (
-            <ActivityIndicator color="#0f172a" />
-          ) : (
-            <Text style={styles.ctaText}>Upload JSON</Text>
-          )}
-        </Pressable>
+        {/* Open Game Button */}
+        {/* Open Game Button */}
+        <View style={styles.buttonGroup}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.uploadButton,
+              pressed && styles.uploadButtonPressed,
+            ]}
+            onPress={openClashSettings}
+          >
+            <Ionicons name="open-outline" size={20} color="#0f172a" />
+            <Text style={styles.uploadButtonText}>Open Game → Export Data</Text>
+          </Pressable>
+        </View>
 
+        {/* 🔹 CTA */}
+        <View style={styles.buttonGroup}>
+          <Pressable
+            onPress={handleImport}
+            style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}
+          >
+            {isImporting ? (
+              <ActivityIndicator color="#0f172a" />
+            ) : (
+              <Text style={styles.ctaText}>Upload JSON</Text>
+            )}
+          </Pressable>
+        </View>
         {/* 🔹 Error */}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-
         {/* 🔹 Trust */}
         <View style={styles.trustBox}>
           <Text style={styles.trustTitle}>How it works:</Text>
@@ -228,6 +259,37 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 32,
+  },
+
+  buttonGroup: {
+    marginHorizontal: 20,
+    marginTop: 8,
+    gap: 10,
+  },
+
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#fbbf24",
+    shadowColor: "#fbbf24",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+
+  uploadButtonPressed: {
+    opacity: 0.85,
+  },
+
+  uploadButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0f172a",
   },
 
   cta: {

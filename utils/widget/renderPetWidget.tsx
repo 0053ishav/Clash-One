@@ -52,7 +52,7 @@ export async function renderPetWidget() {
 
     setWidgetCache(tag, "pet", {
       ...data,
-      renderedAt: Date.now(),
+      cachedAt: Date.now(),
     });
 
     return (

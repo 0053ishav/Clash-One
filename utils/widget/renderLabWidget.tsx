@@ -66,7 +66,7 @@ export async function renderLabWidget() {
 
     setWidgetCache(tag, "lab", {
       ...data,
-      renderedAt: Date.now(),
+      cachedAt: Date.now(),
     });
 
     return (

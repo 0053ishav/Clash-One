@@ -1,26 +1,21 @@
 import { useAccountStore } from "@/stores/accountStore";
 import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
-import { setWidgetCache } from "@/utils/widget/widgetCache";
+import { getWidgetCache, setWidgetCache } from "@/utils/widget/widgetCache";
+import { isWidgetCacheStale } from "@/utils/widget/widgetFreshness";
 import { BuilderStatusWidget } from "@/widget/BuilderStatusWidget";
 import { getBuilderWidgetData } from "@/widget/getBuilderWidgetData";
+import { DEFAULT_BUILDER_WIDGET } from "./defaultWidgetData";
 
 export async function renderBuilderWidget() {
   try {
     const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
 
     const selectedTag = widgetPrefs.selectedAccountTag;
+
     const fallbackTag = accounts[0]?.tag;
 
     if (!accounts || accounts.length === 0) {
-      return (
-        <BuilderStatusWidget
-          title="Builders"
-          subtitle="Loading..."
-          progress={0}
-          showProgress={false}
-          builderCountText="Please wait"
-        />
-      );
+      return <BuilderStatusWidget {...DEFAULT_BUILDER_WIDGET} />;
     }
 
     const tag = accounts.some((a) => a.tag === selectedTag)
@@ -30,35 +25,43 @@ export async function renderBuilderWidget() {
         : fallbackTag;
 
     if (!tag) {
-      return (
-        <BuilderStatusWidget
-          title="Builders"
-          subtitle="No account"
-          progress={0}
-          showProgress={false}
-          builderCountText="Add account"
-        />
-      );
+      return <BuilderStatusWidget {...DEFAULT_BUILDER_WIDGET} />;
     }
 
     const accountExists = accounts.some((a) => a.tag === tag);
 
     if (!accountExists) {
-      return renderBuilderWidget();
+      return <BuilderStatusWidget {...DEFAULT_BUILDER_WIDGET} />;
     }
 
-    const account = accounts.find((a) => a.tag === tag);
+    // -----------------------------------
+    // CACHE FIRST
+    // -----------------------------------
 
-    if (!account) {
-      throw new Error("Invalid account");
+    const cache = getWidgetCache(tag, "builder");
+
+    let data = cache;
+
+    // -----------------------------------
+    // REFRESH IF STALE
+    // -----------------------------------
+
+    if (!cache || isWidgetCacheStale(cache, "builder")) {
+      const fresh = await getBuilderWidgetData(tag);
+
+      const cachedData = {
+        ...fresh,
+        cachedAt: Date.now(),
+      };
+
+      setWidgetCache(tag, "builder", cachedData);
+
+      data = cachedData;
     }
 
-    const data = await getBuilderWidgetData(tag);
-
-    setWidgetCache(tag, "builder", {
-      ...data,
-      renderedAt: Date.now(),
-    });
+    if (!data) {
+      throw new Error("No widget data");
+    }
 
     const icon = data.dataId
       ? ((await resolveWidgetEntityIcon(data.dataId, {

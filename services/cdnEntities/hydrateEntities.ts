@@ -35,9 +35,9 @@ export function hydrateEntities() {
         parsed,
       );
 
-      console.log(
-        `Hydrated ${category}`,
-      );
+      // console.log(
+      //   `Hydrated ${category}`,
+      // );
     } catch (err) {
       console.log(
         `Failed hydrating ${category}`,

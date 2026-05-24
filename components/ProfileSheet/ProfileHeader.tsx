@@ -30,6 +30,13 @@ export default function ProfileHeader({
   const hasHelpers = helpers.length > 0;
   const hasGuardians = guardians.length > 0;
 
+  console.log("🧠 PROFILE HEADER", {
+    tag: profile.playerTag,
+    guardians: guardians.length,
+    guardiansDataId: guardians.map((g) => g.dataId),
+    icon: resolveEntityIcon(107000008),
+  });
+
   return (
     <View style={styles.container}>
       {/* Top Row - Name & Tier Icon */}
@@ -42,24 +49,10 @@ export default function ProfileHeader({
           )}
         </View>
 
-        {profile.leagueTierIconUrl && (
-          <Image
-            source={{ uri: profile.leagueTierIconUrl }}
-            style={styles.tierIcon}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
-        )}
-      </View>
-
-      {/* League & TH Row */}
-      <View style={styles.leagueThRow}>
         <View style={styles.thBadge}>
           <Image
             source={{
               uri: resolveEntityIcon(1000001, {
-                subType: "TOWNHALL",
-
                 context: {
                   townHallLevel: profile.townHallLevel,
                 },
@@ -71,27 +64,55 @@ export default function ProfileHeader({
           />
         </View>
 
+        {/* {profile.leagueTierIconUrl && (
+          <View style={styles.tierIconWrapper}>
+            <Image
+              source={{ uri: profile.leagueTierIconUrl }}
+              style={styles.tierIcon}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+          </View>
+        )} */}
+      </View>
+
+      {/* League & TH Row */}
+      <View style={styles.leagueThRow}>
+        <View style={styles.tierIconWrapper}>
+          <Image
+            source={{ uri: profile.leagueTierIconUrl }}
+            style={styles.tierIcon}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
+        </View>
         <View style={styles.leagueInfo}>
           {profile.leagueTierName && (
             <Text style={styles.leagueName}>{profile.leagueTierName}</Text>
           )}
-          {typeof profile.trophies === "number" && (
-            <Text style={styles.trophies}>{profile.trophies} 🏆</Text>
-          )}
+          <View style={styles.trophyRow}>
+            {typeof profile.trophies === "number" && (
+              <View style={styles.trophyBadge}>
+                <Text style={styles.trophyText}>{profile.trophies}</Text>
 
-          {typeof profile.bestTrophies === "number" && (
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Text style={styles.bestTrophies}>
-                Legacy Best: {profile.bestTrophies}
-              </Text>
-              <Image
-                source={{ uri: profile.leagueIconUrl }}
-                style={styles.tierIcon}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
-            </View>
-          )}
+                <Text style={styles.trophyEmoji}>🏆</Text>
+              </View>
+            )}
+
+            {typeof profile.bestTrophies === "number" && (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={styles.bestTrophies}>
+                  Legacy Best: {profile.bestTrophies}
+                </Text>
+                <Image
+                  source={{ uri: profile.leagueIconUrl }}
+                  style={styles.tierIcon}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
@@ -174,7 +195,8 @@ export default function ProfileHeader({
                       <Text style={styles.helperLevel}>Lv{helper.level}</Text>
                     </View>
                     {/* Cooldown or Ready State Below */}
-                    {helper.cooldown && helper.cooldown > 0 ? (
+                    {typeof helper.cooldown === "number" &&
+                    helper.cooldown > 0 ? (
                       <View style={styles.cooldownBadge}>
                         <Ionicons
                           name="time-outline"
@@ -296,6 +318,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
+  tierIconWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(14, 165, 233, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   tierIcon: {
     width: 40,
     height: 40,
@@ -304,16 +335,21 @@ const styles = StyleSheet.create({
   leagueThRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
+    backgroundColor: "rgba(14, 165, 233, 0.1)",
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(14, 165, 233, 0.25)",
   },
 
   thBadge: {
-    backgroundColor: "rgba(251, 191, 36, 0.2)",
+    backgroundColor: "rgba(251, 191, 36, 0.15)",
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: "#fbbf24",
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "rgba(251, 191, 36, 0.3)",
   },
 
   thBadgeIcon: {
@@ -336,6 +372,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#0ea5e9",
+  },
+
+  trophyRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+  },
+
+  trophyBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(241, 245, 249, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+
+  trophyText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#f1f5f9",
+  },
+
+  trophyEmoji: {
+    fontSize: 13,
   },
 
   trophies: {
@@ -435,6 +497,7 @@ const styles = StyleSheet.create({
   entityList: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
   },
 
   guardianBadge: {

@@ -12,7 +12,7 @@ function cleanUndefined(obj: any) {
 
 export function setWidgetCache(
   tag: string,
-  type: "builder" | "lab" | "pet" | "multi",
+  type: "builder" | "lab" | "pet",
   data: WidgetCacheData) {
   try {
     const cleaned = cleanUndefined(data);
@@ -24,7 +24,7 @@ export function setWidgetCache(
 
 export function getWidgetCache(
   tag: string,
-  type: "builder" | "lab" | "pet" | "multi",
+  type: "builder" | "lab" | "pet",
 ): WidgetCacheData | null {
   try {
     const raw = storage.getString(getKey(tag, type));
@@ -37,7 +37,7 @@ export function getWidgetCache(
 
 export function getAllWidgetCaches(
   tags: string[], 
-  type: "builder" | "lab" | "pet" | "multi",
+  type: "builder" | "lab" | "pet",
 ) {
   return tags
     .map((tag) => ({

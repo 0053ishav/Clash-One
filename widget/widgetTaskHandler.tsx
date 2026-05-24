@@ -2,6 +2,7 @@ import { useAccountStore } from "@/stores/accountStore";
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { renderMultiWidget } from "@/utils/widget/renderMultiWidget";
 import { getWidgetCache } from "@/utils/widget/widgetCache";
+import { isWidgetCacheStale } from "@/utils/widget/widgetFreshness";
 import type { WidgetTaskHandlerProps } from "react-native-android-widget";
 import { BuilderStatusWidget } from "./BuilderStatusWidget";
 import { LabStatusWidget } from "./LabStatusWidget";
@@ -69,7 +70,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
 
     const cached = getWidgetCache(tag, type);
 
-    if (cached) {
+    if (cached && !isWidgetCacheStale(cached, type)) {
       if (type === "builder") {
         props.renderWidget(<BuilderStatusWidget {...cached} />);
 

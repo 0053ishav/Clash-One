@@ -1,5 +1,4 @@
 import { ENTITY_MAP } from "@/data/entityMap";
-import { getPlayerProfile } from "@/storage/playerProfile";
 import { useCraftedStore } from "@/stores/craftedEventStore";
 import { EntityType, Resource, SubType } from "@/types/entity";
 
@@ -87,16 +86,17 @@ const BASE_ENTITIES: GameEntity[] = Object.entries(ENTITY_MAP)
   )
   .sort((a, b) => a.name.localeCompare(b.name));
 
-export function getGameEntities(): GameEntity[] {
+export function getGameEntities(
+  townHallLevel: number,
+): GameEntity[] {
   const crafted = useCraftedStore.getState();
 
   const isActive = crafted.isActive();
   const thRequirement = crafted.availableForTH ?? 18;
 
-  const profile = getPlayerProfile();
-  const playerTH = profile.townHallLevel;
-
-  const craftedEntities = isActive && playerTH === thRequirement
+  const craftedEntities = 
+    isActive &&
+    townHallLevel === thRequirement
     ? mapCraftedToEntities({
       defenses: crafted.defenses,
       duration: crafted.duration,
@@ -106,20 +106,20 @@ export function getGameEntities(): GameEntity[] {
   return [...BASE_ENTITIES, ...craftedEntities];
 }
 
-export function getBuildings() {
-  return getGameEntities().filter(
+export function getBuildings(townHallLevel: number,) {
+  return getGameEntities(townHallLevel).filter(
     (e) => e.type === "building" && !e.isCrafted
   );
 }
 
-export function getCraftedDefenses() {
-  return getGameEntities().filter((e) => e.isCrafted);
+export function getCraftedDefenses(townHallLevel: number,) {
+  return getGameEntities(townHallLevel).filter((e) => e.isCrafted);
 }
 
-export function getHeroes() {
-  return getGameEntities().filter((e) => e.type === "hero");
+export function getHeroes(townHallLevel: number,) {
+  return getGameEntities(townHallLevel).filter((e) => e.type === "hero");
 }
 
-export function getTraps() {
-  return getGameEntities().filter((e) => e.type === "trap");
+export function getTraps(townHallLevel: number,) {
+  return getGameEntities(townHallLevel).filter((e) => e.type === "trap");
 }

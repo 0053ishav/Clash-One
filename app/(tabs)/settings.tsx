@@ -1,5 +1,6 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { getDB } from "@/db/database";
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import {
   getAccounts,
   updateAccountColor,
@@ -120,7 +121,6 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const profile = useAccountStore((s) => s.profile);
   const accounts = useAccountStore((s) => s.accounts);
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const switchAccount = useAccountStore((s) => s.switchAccount);
@@ -130,6 +130,7 @@ export default function SettingsScreen() {
   const setWidgetAccount = useAccountStore((s) => s.setWidgetAccount);
   const activeTag = useAccountStore((s) => s.activeTag);
 
+  const { profile } = usePlayerProfile();
   const activeAccount = accounts.find((a) => a.tag === activeTag);
   const isPro = usePremiumStore.getState().isPro;
   const dbBuilderCount = activeAccount?.builderCount ?? 1;
@@ -202,7 +203,7 @@ export default function SettingsScreen() {
 
     if (count !== current) {
       await updateBuilderCount(activeTag, count);
-      updateLocalBuilderCount(count);
+      updateLocalBuilderCount(activeTag, count);
       track("builder_count_changed", {
         value: count,
         previous: current,
@@ -319,8 +320,6 @@ export default function SettingsScreen() {
                   <Image
                     source={{
                       uri: resolveEntityIcon(1000001, {
-                        subType: "TOWNHALL",
-
                         context: {
                           townHallLevel: profile.townHallLevel,
                         },
@@ -937,8 +936,9 @@ export default function SettingsScreen() {
               playerApiConnected: false,
               lastSyncedAt: undefined,
             };
-            savePlayerProfile(resetProfile);
-            setProfile(resetProfile);
+            if (!activeTag) return;
+            savePlayerProfile(activeTag, resetProfile);
+            setProfile(activeTag, resetProfile);
           }
           if (profile?.playerTag) {
             resetLastJsonSync(profile.playerTag);

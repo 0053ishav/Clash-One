@@ -13,29 +13,26 @@ export function BuilderStatusWidget(props: {
   icon?: string | number;
   progress: number;
   showProgress: boolean;
+  isFree?: boolean;
   levelText?: string;
   builderCountText?: string;
   nextUpgradeText?: string;
   color?: string;
   accountInitials?: string;
   updatedAt?: number;
-  renderedAt?: number;
+  cachedAt?: number;
 }) {
   const isFree = props.subtitle === "All builders free";
 
   const clamped = Math.max(0, Math.min(props.progress ?? 0, 1));
   const progressWidth = Math.floor(90 * clamped);
 
-  // const icon = props.dataId
-  //   ? resolveEntityIcon(props.dataId, {
-  //       isCrafted: props.isCrafted,
-  //     })
-  //   : null;
-
   const accentColor = (props.color ?? "#fbbf24") as any;
 
   return (
     <FlexWidget
+      clickAction="OPEN_URI"
+      clickActionData={{ uri: "clashwidget://add-account?source=widget" }}
       style={{
         width: "match_parent",
         height: "match_parent",

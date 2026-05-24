@@ -12,7 +12,7 @@ export async function getMultiWidgetDataFree(): Promise<MultiWidgetItem[]> {
 
   const valid = cachedList.filter((x) => x.data);
 
-  const sorted = valid.sort((a, b) => {
+  const sorted = [...valid].sort((a, b) => {
     const aTime = a.data.remainingMs ?? 1;
     const bTime = b.data.remainingMs ?? 1;
 

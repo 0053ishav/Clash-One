@@ -3,6 +3,7 @@ import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { isOnboardingComplete } from "@/storage/appConfig";
+import { storage } from "@/storage/mmkv";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
@@ -15,7 +16,7 @@ import { updateWidgetAccess } from "@/utils/widgetPicker";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function RootLayout() {
@@ -24,17 +25,22 @@ export default function RootLayout() {
     "loading",
   );
   const router = useRouter();
-  const isPro = usePremiumStore.getState().isPro;
+  const isPro = usePremiumStore((s) => s.isPro);
 
-  const runBootstrap = async () => {
+  const loadAccounts = useAccountStore((s) => s.loadAccounts);
+  const loadLastSync = useAccountStore((s) => s.loadLastSync);
+  const runBootstrap = useCallback(async () => {
     try {
       await initDatabase();
+      await loadAccounts();
+      loadLastSync();
       await loadActiveAccount();
       await ensureCraftedLoaded();
       await configureNotifications();
-      hydrateEntities();
-      syncEntities();
 
+      await syncEntities();
+      hydrateEntities();
+      console.log("MMKV ENTITY", storage.getString("entities_guardians"));
       initWidgetManager();
       startSmartWidgetScheduler();
       emitWidgetUpdate();
@@ -52,7 +58,7 @@ export default function RootLayout() {
       console.error("Bootstrap Failed: ", e);
       setBootState("error");
     }
-  };
+  }, []);
 
   useEffect(() => {
     runBootstrap();

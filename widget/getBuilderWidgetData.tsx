@@ -6,6 +6,7 @@ import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { isWorkForHireActive } from "@/utils/goblin";
+import { DEFAULT_BUILDER_WIDGET } from "@/utils/widget/defaultWidgetData";
 
 export async function getBuilderWidgetData(inputTag?: string) {
   const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
@@ -39,7 +40,17 @@ export async function getBuilderWidgetData(inputTag?: string) {
     };
   }
 
-  const activeUpgrades = (await getAccountState(tag)).builders;
+  const state = await getAccountState(tag);
+
+  if (!state) {
+    return {
+      ...DEFAULT_BUILDER_WIDGET,
+      subtitle: "Village not synced",
+    };
+  }
+
+  const activeUpgrades = state.builders ?? [];
+  // const activeUpgrades = (await getAccountState(tag)).builders;
 
   const builderCount = account.builderCount;
   const goblinBuilder = isWorkForHireActive();
@@ -59,7 +70,7 @@ export async function getBuilderWidgetData(inputTag?: string) {
       showProgress: false,
       builderCountText: `${status.freeBuilders} / ${status.maxBuilders} free`,
       color: account.color,
-      accountInitials: account.name.slice(0, 2).toUpperCase(),
+      accountInitials: account.name?.slice(0, 2)?.toUpperCase() ?? "??",
       updatedAt,
     };
   }
@@ -103,8 +114,8 @@ export async function getBuilderWidgetData(inputTag?: string) {
         : "?";
 
   return {
-    title: `${builderLabel} - ${title}`,
-    subtitle: formatCountdown(remainingMs),
+    title: title,
+    subtitle: `${builderLabel} - ${formatCountdown(remainingMs)}`,
     isCrafted: currentUpgrade.isCrafted,
     progress,
     showProgress: !status.allFree,

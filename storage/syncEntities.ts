@@ -25,19 +25,23 @@ export async function syncEntities() {
     const dataKey =
       `entities_${category}`;
 
+
+      console.log("📦 CATEGORY", category);
+
     const localVersion =
       storage.getNumber(
         versionKey,
       );
+
 
     // already latest
     if (
       localVersion ===
       remoteVersion
     ) {
-      console.log(
-        `${category} already latest`,
-      );
+      // console.log(
+      //   `${category} already latest`,
+      // );
 
       continue;
     }
@@ -47,6 +51,10 @@ export async function syncEntities() {
         await fetchCategory(
           category,
         );
+
+      //    console.log(
+      //   `${category} fetched`,
+      // );
 
       // save to zustand
       useEntityStore

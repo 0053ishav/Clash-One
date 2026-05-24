@@ -84,7 +84,6 @@ export function resolveEntityIcon(
   // -----------------------------------
   // Default icon
   // -----------------------------------
-
   return (
     entity.icon ??
     FALLBACK_ICON

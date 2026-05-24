@@ -1,8 +1,8 @@
-import { addAccount, getAccountByTag, replaceUpgrades, updateAccount, updateBuilderCount } from "@/services/accountService";
+import { addAccount, getAccountByTag, replaceEntities, replaceUpgrades, updateAccount, updateBuilderCount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
-import { getPlayerProfile, syncProfileFromApi } from "@/storage/playerProfile";
+import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
 import { EntityType } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
@@ -388,14 +388,15 @@ export async function importVillageJson(
   await switchAccountStore(parsed.tag);
 
   if (apiData) {
-    syncProfileFromApi(apiData);
-    useAccountStore.getState().setProfile(getPlayerProfile());
+    const synced = syncProfileFromApi(parsed.tag, apiData);
+    useAccountStore.getState().setProfile(parsed.tag, synced);
   }
 
   await new Promise((resolve) => setTimeout(resolve, 50));
 
   if (!validUpgrades.length || !activeBuilderTasks.length) {
     await replaceUpgrades(parsed.tag, []);
+    await replaceEntities(parsed.tag, entities);
     setLastSync(parsed.tag, now);
     setLastJsonSync(parsed.tag, now);
     return { status: "NO_ACTIVE_BUILDERS", tag: parsed.tag };
@@ -492,7 +493,6 @@ export async function importVillageJson(
     const endTime = now + lab.timer * 1000;
 
     const entity = getEntity(lab.data);
-    console.log("here: ", lab)
     if (!entity) continue;
 
     newUpgrades.push({
@@ -540,7 +540,7 @@ export async function importVillageJson(
   }
   setLastJsonSync(parsed.tag, now);
 
-await resyncNotifications();
+  await resyncNotifications();
 
   const builderCountOnly = newUpgrades.filter(
     (u) => u.upgradeType === "BUILDER"

@@ -15,7 +15,7 @@ export type WidgetCacheData = {
   color?: string;
   accountInitials?: string;
   updatedAt?: number;
-  renderedAt: number;
+  cachedAt: number;
   remainingMs?: number;
 };
 

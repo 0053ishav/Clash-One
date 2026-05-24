@@ -202,7 +202,11 @@ export async function replaceEntities(
 ) {
   const db = await getDB();
   if (!tag) return;
-
+// console.log(
+//   "📝 replaceEntities START",
+//   tag,
+//   entities.length,
+// );
   try {
     await db.execAsync("BEGIN TRANSACTION");
 
@@ -212,6 +216,12 @@ export async function replaceEntities(
     );
 
     for (const e of entities) {
+//       console.log(
+//   "📝 INSERT ENTITY",
+//   tag,
+//   e.type,
+//   e.dataId,
+// );
       await db.runAsync(
         `INSERT INTO entities
         (id, account_player_tag, data_id, type, level, cooldown)
@@ -227,7 +237,12 @@ export async function replaceEntities(
       );
     }
 
+    
     await db.execAsync("COMMIT");
+//     console.log(
+//   "✅ replaceEntities COMMIT",
+//   tag,
+// );
   } catch (e) {
     console.error("replaceEntities failed:", e);
     await db.execAsync("ROLLBACK");

@@ -30,50 +30,59 @@ export default function ProfileDropdownSheet({
   onSetting,
   onOpenProfile,
 }: ProfileSheetProps) {
-  const switchAccount = useAccountStore((s) => s.switchAccount);
-  const profile = useAccountStore((s) => s.profile);
-  const accounts = useAccountStore((s) => s.accounts);
-  const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const activeTag = useAccountStore((s) => s.activeTag);
+  const accounts = useAccountStore((s) => s.accounts);
+  const switchAccount = useAccountStore((s) => s.switchAccount);
+  const profile = useAccountStore((s) =>
+    s.activeTag ? (s.profilesByTag[s.activeTag] ?? null) : null,
+  );
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [entities, setEntities] = useState<EntityRecord[]>([]);
+  const [entities, setEntities] = useState<EntityRecord[] | null>(null);
 
   const screenHeight = Dimensions.get("window").height;
 
   useEffect(() => {
-    if (!visible) return;
-    loadAccounts();
-  }, [loadAccounts, visible]);
+    let mounted = true;
 
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      if (!activeTag) {
-        setError("No player tag found");
-        return;
+    async function load() {
+      // console.log("🎯 DROPDOWN LOAD START", activeTag);
+      if (!visible || !activeTag) return;
+
+      setEntities(null);
+
+      try {
+        const data = await getEntities(activeTag);
+
+        // console.log("🎯 DROPDOWN ENTITIES", activeTag, data);
+
+        if (mounted) {
+          setEntities(data);
+        }
+      } catch (e) {
+        console.error("❌ DROPDOWN ENTITY ERROR", activeTag, e);
+
+        if (mounted) {
+          setEntities([]);
+        }
       }
-
-      // const playerData = await fetchFullPlayer(activeTag);
-      const entityData = await getEntities(activeTag);
-
-      setEntities(entityData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load profile");
-      console.error("Profile load error:", err);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, [visible, activeTag]);
+
+  // useEffect(() => {
+  //   if (!visible) return;
+  //   if (!activeTag) return;
+
+  //   getEntities(activeTag).then(setEntities).catch(console.error);
+  // }, [visible, activeTag]);
 
   async function handleAccountSwitch(tag: string) {
-    if (tag === profile?.playerTag) return;
+    if (tag === activeTag) return;
 
     onClose();
     await switchAccount(tag);
@@ -81,12 +90,23 @@ export default function ProfileDropdownSheet({
 
   if (!profile) return null;
 
-  const activeAccount = accounts.find((a) => a.tag === profile.playerTag);
+  if (entities === null) {
+    return null;
+  }
+
+  const activeAccount = accounts.find((a) => a.tag === activeTag);
 
   const helpers = entities.filter((e) => e.type?.toLowerCase() === "helper");
   const guardians = entities.filter(
     (e) => e.type?.toLowerCase() === "guardian",
   );
+  // console.log(
+  //   "ENTITY TYPES:",
+  //   entities.map((e) => e.type),
+  // );
+  // console.log("here", activeTag);
+  // console.log("here", helpers);
+  // console.log("here", guardians);
 
   return (
     <Modal
@@ -113,6 +133,7 @@ export default function ProfileDropdownSheet({
             contentContainerStyle={styles.scrollContent}
           >
             <ProfileHeader
+              key={activeTag}
               profile={profile}
               helpers={helpers}
               guardians={guardians}
@@ -128,7 +149,7 @@ export default function ProfileDropdownSheet({
                   contentContainerStyle={styles.avatarRow}
                 >
                   {accounts
-                    .filter((acc) => acc.tag !== profile?.playerTag)
+                    .filter((acc) => acc.tag !== activeTag)
                     .map((acc) => {
                       const initials = acc.name.slice(0, 2).toUpperCase();
 

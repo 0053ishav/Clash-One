@@ -11,7 +11,7 @@ export async function prefillAllWidgetCache() {
 
       setWidgetCache(acc.tag, "builder", {
         ...data,
-        renderedAt: Date.now(),
+        cachedAt: Date.now(),
       });
     } catch {
       console.log("prefill cache failed:", acc.tag);

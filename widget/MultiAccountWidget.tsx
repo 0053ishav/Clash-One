@@ -44,6 +44,8 @@ function getColor(u: ReturnType<typeof getUrgency>) {
 function renderNoAccounts(): React.ReactNode {
   return (
     <FlexWidget
+      clickAction="OPEN_URI"
+      clickActionData={{ uri: "clashwidget://add-account?source=widget" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -596,7 +598,7 @@ function renderCard(item: MultiWidgetItem): React.ReactNode {
               }
               imageWidth={28}
               imageHeight={28}
-            />{" "}
+            />
           </FlexWidget>
 
           {/* TITLE COLUMN */}
@@ -847,14 +849,22 @@ export function MultiAccountWidget({
     accountsLength: accounts.length,
   });
 
-  const visibleAccounts = accounts.slice(
-    0,
-    isPro ? accounts.length : Math.min(3, accounts.length),
-  );
-  console.log(
-    "WIDGET DATA:",
-    accounts.map((a) => a.tag),
-  );
+  const total = totalAccounts ?? 0;
+
+  let visibleCount = 0;
+
+  if (isPro) {
+    visibleCount = Math.min(3, accounts.length);
+  } else {
+    visibleCount = total >= 3 ? 2 : Math.min(2, accounts.length);
+  }
+
+  const visibleAccounts = accounts.slice(0, visibleCount);
+
+  const shouldShowUpsell = !isPro && total >= 3;
+
+  const shouldShowAddAccount = total === 1;
+
   return (
     <FlexWidget
       style={{
@@ -867,7 +877,7 @@ export function MultiAccountWidget({
         backgroundColor: "#0f172a",
       }}
     >
-      {visibleAccounts.map((acc, i) => (
+      {visibleAccounts.map((acc) => (
         <FlexWidget
           key={acc.tag}
           style={{
@@ -879,14 +889,24 @@ export function MultiAccountWidget({
         </FlexWidget>
       ))}
 
-      {!isPro && (totalAccounts ?? 0) > 2 && (
-        <FlexWidget style={{ flex: 1, height: "match_parent" }}>
+      {shouldShowUpsell && (
+        <FlexWidget
+          style={{
+            flex: 1,
+            height: "match_parent",
+          }}
+        >
           {renderUpsellCard(totalAccounts)}
         </FlexWidget>
       )}
 
-      {(totalAccounts ?? 0) === 1 && (
-        <FlexWidget style={{ flex: 1, height: "match_parent" }}>
+      {shouldShowAddAccount && (
+        <FlexWidget
+          style={{
+            flex: 1,
+            height: "match_parent",
+          }}
+        >
           {renderAddAccountCard(totalAccounts)}
         </FlexWidget>
       )}

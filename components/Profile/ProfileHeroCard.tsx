@@ -30,8 +30,6 @@ export default function ProfileHeroCard({
           <Image
             source={{
               uri: resolveEntityIcon(1000001, {
-                subType: "TOWNHALL",
-
                 context: {
                   townHallLevel: data.townHallLevel,
                 },
@@ -105,7 +103,7 @@ export default function ProfileHeroCard({
                       contentFit="contain"
                       cachePolicy="memory-disk"
                     />
-                    <Text style={styles.helperLevel}>L{helper.level}</Text>
+                    <Text style={styles.helperLevel}>Lv{helper.level}</Text>
                   </View>
                 ))}
               </View>
@@ -134,7 +132,7 @@ export default function ProfileHeroCard({
                       contentFit="contain"
                       cachePolicy="memory-disk"
                     />
-                    <Text style={styles.guardianLevel}>L{guardian.level}</Text>
+                    <Text style={styles.guardianLevel}>Lv{guardian.level}</Text>
                   </View>
                 ))}
               </View>

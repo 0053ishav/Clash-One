@@ -63,8 +63,8 @@ export async function getLabWidgetData(inputTag?: string) {
       : 0;
 
   return {
-    title: `${isGoblinOnly ? "Goblin Lab" : "Lab"} - ${formatBuildingName(current.entity)}`,
-    subtitle: formatCountdown(remainingMs),
+    title: formatBuildingName(current.entity),
+    subtitle: `${isGoblinOnly ? "Goblin Lab" : "Lab"} -  ${formatCountdown(remainingMs)}`,
     progress,
     showProgress: true,
 

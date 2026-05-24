@@ -1,8 +1,7 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -31,9 +30,9 @@ export function PetSection({
   const remainingMs = activePet ? Math.max(activePet.endTime - now, 0) : 0;
   const totalMs = activePet ? activePet.endTime - activePet.startTime : 0;
 
-  const entityType = activePet?.dataId
-    ? getEntityTypeByDataId(activePet.dataId, activePet.isCrafted)
-    : undefined;
+  const petIconUri =
+    activePet?.dataId != null ? resolveEntityIcon(activePet.dataId) : null;
+
   if (townHall < 14) return null;
   return (
     <View style={styles.container}>
@@ -80,13 +79,8 @@ export function PetSection({
             <View style={[styles.iconContainer, styles.petIconContainer]}>
               <Image
                 source={
-                  activePet.dataId && entityType
-                    ? getIconByEntityType(
-                        activePet.dataId,
-                        entityType,
-                        undefined,
-                        activePet.isCrafted,
-                      )
+                  petIconUri
+                    ? { uri: petIconUri }
                     : require("@/assets/images/builder/builder-working.png")
                 }
                 style={styles.petIcon}

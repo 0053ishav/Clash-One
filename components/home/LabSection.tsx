@@ -1,11 +1,11 @@
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
-import { getIconByEntityType } from "@/utils/icons/getIconByEntityType";
+import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
 export function LabSection({
   labNormal,
   labGoblin,
@@ -113,9 +113,11 @@ function LabCard({
   const remainingMs = Math.max(lab.endTime - now, 0);
   const totalMs = lab.endTime - lab.startTime;
 
-  const entityType = lab.dataId
-    ? getEntityTypeByDataId(lab.dataId, lab.isCrafted)
-    : undefined;
+  // const entityType = lab.dataId
+  //   ? getEntityTypeByDataId(lab.dataId, lab.isCrafted)
+  //   : undefined;
+
+  const iconUri = lab.dataId != null ? resolveEntityIcon(lab.dataId) : null;
 
   return (
     <Pressable
@@ -132,14 +134,19 @@ function LabCard({
         {/* ICON */}
         <View style={[styles.iconContainer, styles.labIconContainer]}>
           <Image
+            // source={
+            //   lab.dataId && entityType
+            //     ? getIconByEntityType(
+            //         lab.dataId,
+            //         entityType,
+            //         undefined,
+            //         lab.isCrafted,
+            //       )
+            //     : require("@/assets/images/builder/builder-working.png")
+            // }
             source={
-              lab.dataId && entityType
-                ? getIconByEntityType(
-                    lab.dataId,
-                    entityType,
-                    undefined,
-                    lab.isCrafted,
-                  )
+              iconUri
+                ? { uri: iconUri }
                 : require("@/assets/images/builder/builder-working.png")
             }
             style={styles.labIcon}
@@ -205,6 +212,7 @@ function LabCard({
     </Pressable>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     marginTop: 32,

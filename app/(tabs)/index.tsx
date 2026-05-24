@@ -2,7 +2,6 @@ import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
 import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
-import { getEntityTypeByDataId } from "@/data/entityMap";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -642,9 +641,6 @@ export default function HomeScreen() {
                       ? `B${u.builderSlot + 1}`
                       : "?";
                 const isCompleted = completedId === u.id;
-                const entityType = u.dataId
-                  ? getEntityTypeByDataId(u.dataId, u.isCrafted)
-                  : undefined;
                 return (
                   <Pressable
                     key={u.id}

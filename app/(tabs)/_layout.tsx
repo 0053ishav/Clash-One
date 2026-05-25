@@ -40,7 +40,6 @@ export default function TabLayout() {
         name="analytics"
         options={{
           title: "Analytics",
-          tabBarBadge: "Soon",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "stats-chart" : "stats-chart-outline"}
@@ -55,7 +54,6 @@ export default function TabLayout() {
         name="war"
         options={{
           title: "War",
-          tabBarBadge: "Soon",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "shield" : "shield-outline"}

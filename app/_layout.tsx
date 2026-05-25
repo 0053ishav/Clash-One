@@ -209,7 +209,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="upload-json" options={{ headerShown: false }} />
-        <Stack.Screen name="add-upgrade" options={{ headerShown: false }} />
+        {/* <Stack.Screen name="add-upgrade" options={{ headerShown: false }} /> */}
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       </Stack>
     </RemoteConfigProvider>

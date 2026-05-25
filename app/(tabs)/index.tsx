@@ -54,7 +54,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -385,221 +388,893 @@ export default function HomeScreen() {
   const insight =
     insightParts.length > 0 ? insightParts.join(" • ") : "All systems running";
   const isUrgent = villageStatus.freeBuilders > 0;
+  // return (
+  //   <View style={styles.container}>
+  //     <View style={styles.contentWrapper}>
+  //       <ScrollView
+  //         style={styles.container}
+  //         contentContainerStyle={styles.scrollContent}
+  //         showsVerticalScrollIndicator={false}
+  //         refreshControl={
+  //           <RefreshControl
+  //             refreshing={refreshing}
+  //             onRefresh={handleRefresh}
+  //             tintColor="#fbbf24"
+  //           />
+  //         }
+  //       >
+  //         {showBanner && eventEndsAt && (
+  //           <GoblinEventBanner
+  //             eventEndsAt={eventEndsAt}
+  //             onDismiss={() => {
+  //               setGoblinBannerDismissedUntil(eventEndsAt);
+  //             }}
+  //           />
+  //         )}
+
+  //         {/* Header */}
+  //         <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+  //           <View>
+  //             <Text style={styles.headerTitle}>Builder Status</Text>
+
+  //             <Pressable
+  //               style={styles.profileDropdown}
+  //               onPress={() => setProfileSheetVisible(true)}
+  //             >
+  //               <View style={{ flex: 1 }}>
+  //                 <View style={styles.profileTopRow}>
+  //                   <Text style={styles.profileName}>
+  //                     {profile.playerTag
+  //                       ? profile.playerName
+  //                       : "No Profile Synced"}
+  //                   </Text>
+
+  //                   {/* Current League Icon */}
+  //                   {profile.leagueTierIconUrl && (
+  //                     <Image
+  //                       source={{ uri: profile.leagueTierIconUrl }}
+  //                       style={styles.leagueIcon}
+  //                       contentFit="contain"
+  //                       cachePolicy="memory-disk"
+  //                     />
+  //                   )}
+  //                   {isPro && (
+  //                     <View
+  //                       style={{
+  //                         backgroundColor: "#fbbf24",
+  //                         paddingHorizontal: 6,
+  //                         paddingVertical: 2,
+  //                         borderRadius: 6,
+  //                       }}
+  //                     >
+  //                       <Text
+  //                         style={{
+  //                           fontSize: 10,
+  //                           fontWeight: "700",
+  //                           color: "#0f172a",
+  //                         }}
+  //                       >
+  //                         PRO
+  //                       </Text>
+  //                     </View>
+  //                   )}
+  //                 </View>
+
+  //                 {/* Secondary Line */}
+  //                 {profile.playerTag && (
+  //                   <View style={{ flexDirection: "row", gap: 8 }}>
+  //                     <View style={styles.leagueIcon}>
+  //                       <Image
+  //                         source={{
+  //                           uri: resolveEntityIcon(1000001, {
+  //                             context: {
+  //                               townHallLevel: profile.townHallLevel,
+  //                             },
+  //                           }),
+  //                         }}
+  //                         style={styles.leagueIcon}
+  //                         contentFit="contain"
+  //                         cachePolicy="memory-disk"
+  //                       />
+  //                     </View>
+  //                     <Text style={styles.profileSub}>
+  //                       TH{profile.townHallLevel}
+  //                       {typeof profile.trophies === "number"
+  //                         ? ` • ${profile.trophies} 🏆`
+  //                         : ""}
+  //                     </Text>
+
+  //                     {/* EXP Level */}
+  //                     {typeof profile.expLevel === "number" && (
+  //                       <Text style={styles.profileSub}>
+  //                         Lv {profile.expLevel}
+  //                       </Text>
+  //                     )}
+  //                   </View>
+  //                 )}
+  //               </View>
+
+  //               <Ionicons name="chevron-down" size={16} color="#94a3b8" />
+  //             </Pressable>
+  //           </View>
+  //           <View style={styles.sync}>
+  //             <Pressable
+  //               onPress={() => {
+  //                 setSessionSource("app");
+  //                 track("navigation", {
+  //                   from: "home",
+  //                   to: "upload-json",
+  //                   trigger: "sync",
+  //                 });
+  //                 router.push("/upload-json");
+  //               }}
+  //             >
+  //               <Ionicons
+  //                 name="sync-sharp"
+  //                 size={22}
+  //                 color={isStale ? "#fbbf24" : "#fff"}
+  //               />
+  //             </Pressable>
+  //             {lastSync && (
+  //               <Text style={styles.syncText}>
+  //                 Synced {formatTimeAgo(lastSync)} ago
+  //               </Text>
+  //             )}
+  //           </View>
+  //         </View>
+
+  //         {/* Premium Status Card */}
+  //         <View style={styles.statusCardContainer}>
+  //           <View style={styles.statusCard}>
+  //             <View style={styles.statusCardContent}>
+  //               <View style={styles.statusIconContainer}>
+  //                 <Image
+  //                   source={statusIcon}
+  //                   style={styles.statusCardIcon}
+  //                   contentFit="contain"
+  //                   cachePolicy="memory-disk"
+  //                 />
+  //               </View>
+
+  //               <View style={styles.statusInfo}>
+  //                 <Text style={styles.statusCardLabel}>
+  //                   {status.allFree
+  //                     ? "🚨 Builder Idle"
+  //                     : `⏳ Next Upgrade: ${nextBuilderLabel}`}
+  //                 </Text>
+  //                 <Text
+  //                   style={[
+  //                     styles.statusInsight,
+  //                     isUrgent && { color: "#ef4444", fontWeight: "600" },
+  //                   ]}
+  //                 >
+  //                   {insight}
+  //                 </Text>
+  //                 <Text style={styles.statusCardTime}>
+  //                   {status.allFree
+  //                     ? "Ready to build"
+  //                     : formatCountdown(remainingMs)}
+  //                 </Text>
+  //                 <View style={styles.builderIndicators}>
+  //                   {/* Normal Builders */}
+  //                   {Array.from({ length: builderCount }).map((_, i) => {
+  //                     const isBusy = busySlots.has(i);
+
+  //                     return (
+  //                       <View
+  //                         key={`normal-${i}`}
+  //                         style={[
+  //                           styles.builderDot,
+  //                           isBusy
+  //                             ? styles.builderDotBusy
+  //                             : styles.builderDotFree,
+  //                         ]}
+  //                       />
+  //                     );
+  //                   })}
+
+  //                   {/* Goblin Slot */}
+  //                   {isGoblinActive &&
+  //                     (() => {
+  //                       const goblinBusy = builders.some(
+  //                         (u) => u.builderSlot === "G",
+  //                       );
+
+  //                       const goblinCanBeUsed = canUseGoblinBuilder(
+  //                         profile,
+  //                         builders,
+  //                       );
+  //                       return (
+  //                         <View
+  //                           style={[
+  //                             styles.builderDot,
+  //                             goblinBusy
+  //                               ? styles.goblinDotBusy
+  //                               : goblinCanBeUsed
+  //                                 ? styles.goblinDotFree
+  //                                 : styles.goblinDotInactive,
+  //                           ]}
+  //                         />
+  //                       );
+  //                     })()}
+  //                 </View>
+  //               </View>
+  //             </View>
+  //           </View>
+  //         </View>
+  //         {/* Add Upgrade Button */}
+  //         {/* <Pressable
+  //           style={({ pressed }) => [
+  //             styles.addButton,
+  //             pressed && styles.addButtonPressed,
+  //           ]}
+  //           onPress={() => {
+  //             setSessionSource("app");
+  //             track("navigation", {
+  //               from: "home",
+  //               to: "add-upgrade",
+  //               trigger: "add_upgrade_button",
+  //             });
+  //             router.push("/add-upgrade");
+  //           }}
+  //         >
+  //           <Ionicons name="add-circle" size={24} color="#0f172a" />
+  //           <Text style={styles.addButtonText}>Add Upgrade</Text>
+  //         </Pressable> */}
+  //         {/* Active Upgrades Section */}
+  //         {sortedUpgrades.length > 0 && (
+  //           <View style={styles.upgradesSection}>
+  //             <View style={styles.sectionHeader}>
+  //               <Text style={styles.sectionTitle}>Active Upgrades</Text>
+  //               <View style={styles.upgradeBadge}>
+  //                 <Text style={styles.upgradeBadgeText}>
+  //                   {sortedUpgrades.length}
+  //                 </Text>
+  //               </View>
+  //             </View>
+
+  //             {sortedUpgrades.map((u, index) => {
+  //               const remainingMs = Math.max(u.endTime - Date.now(), 0);
+  //               const totalMs = u.endTime - u.startTime;
+  //               const progress = calculateProgress(u.startTime, u.endTime);
+  //               const isGoblin = u.builderSlot === "G";
+  //               const builderLabel =
+  //                 u.builderSlot === "G"
+  //                   ? "G"
+  //                   : typeof u.builderSlot === "number"
+  //                     ? `B${u.builderSlot + 1}`
+  //                     : "?";
+  //               const isCompleted = completedId === u.id;
+  //               return (
+  //                 <Pressable
+  //                   key={u.id}
+  //                   style={[
+  //                     styles.upgradeCard,
+  //                     isCompleted && styles.upgradeCardCompleted,
+  //                     isGoblin && styles.goblinUpgradeCard,
+  //                   ]}
+  //                   onLongPress={() => handleRowLongPress(u)}
+  //                 >
+  //                   <View
+  //                     style={[
+  //                       styles.upgradeContent,
+  //                       isCompleted && styles.upgradeContentCompleted,
+  //                     ]}
+  //                   >
+  //                     {/* Builder Number Badge */}
+  //                     <View
+  //                       style={[
+  //                         styles.builderBadge,
+  //                         isGoblin && styles.goblinBadge,
+  //                       ]}
+  //                     >
+  //                       <Text style={styles.builderBadgeText}>
+  //                         {builderLabel}
+  //                         {isGoblin && (
+  //                           <Image
+  //                             source={require("@/assets/images/clash/goblin-builder.png")}
+  //                             style={{ width: 15, height: 15, marginLeft: 2 }}
+  //                           />
+  //                         )}
+  //                       </Text>
+  //                     </View>
+
+  //                     {/* Main Content */}
+  //                     <View style={styles.upgradeMain}>
+  //                       {/* Left Section - Building Icon & Name */}
+  //                       <View style={styles.upgradeLeft}>
+  //                         <View style={styles.iconContainer}>
+  //                           <Image
+  //                             source={{
+  //                               uri: u.dataId
+  //                                 ? resolveEntityIcon(u.dataId, {
+  //                                     subType: u.subType,
+  //                                     isCrafted: u.isCrafted,
+  //                                     context: {
+  //                                       townHallLevel: profile.townHallLevel,
+  //                                     },
+  //                                   })
+  //                                 : FALLBACK_ICON,
+  //                             }}
+  //                             style={styles.upgradeIcon}
+  //                             contentFit="contain"
+  //                             cachePolicy="memory-disk"
+  //                           />
+  //                         </View>
+
+  //                         <View style={styles.upgradeNameSection}>
+  //                           <Text style={styles.upgradeName}>
+  //                             {u.isCrafted
+  //                               ? `${getCraftedName(u.dataId) ?? "Crafted"}${
+  //                                   getModuleName(u.dataId, u.moduleId)
+  //                                     ? ` (${getModuleName(u.dataId, u.moduleId)})`
+  //                                     : ""
+  //                                 }`
+  //                               : formatBuildingName(u.entity)}
+  //                           </Text>
+
+  //                           {/* Levels Badge */}
+  //                           {u.currentLevel !== undefined &&
+  //                             u.nextLevel !== undefined && (
+  //                               <View style={styles.levelsBadge}>
+  //                                 <Text style={styles.levelsText}>
+  //                                   Lv {u.currentLevel} → Lv {u.nextLevel}
+  //                                 </Text>
+  //                               </View>
+  //                             )}
+  //                         </View>
+  //                       </View>
+
+  //                       {/* Right Section - Time Display */}
+  //                       <View style={styles.upgradeRight}>
+  //                         <Text style={styles.remainingTime}>
+  //                           {formatCountdown(remainingMs)}
+  //                         </Text>
+  //                         <Text style={styles.totalTimeText}>
+  //                           of {formatCountdown(totalMs)}
+  //                         </Text>
+  //                       </View>
+  //                     </View>
+
+  //                     {/* Progress Bar */}
+  //                     <View style={styles.progressTrack}>
+  //                       <View
+  //                         style={[
+  //                           styles.progressBar,
+  //                           {
+  //                             width: `${progress * 100}%`,
+  //                           },
+  //                         ]}
+  //                       />
+  //                     </View>
+  //                   </View>
+  //                 </Pressable>
+  //               );
+  //             })}
+  //           </View>
+  //         )}
+
+  //         {/* Empty State */}
+  //         {sortedUpgrades.length === 0 && (
+  //           <View style={styles.emptyStateContainer}>
+  //             <View style={styles.emptyIconWrapper}>
+  //               <Image
+  //                 source={require("@/assets/images/builder/builder-idle.png")}
+  //                 style={styles.emptyIcon}
+  //                 contentFit="contain"
+  //                 cachePolicy="memory-disk"
+  //               />
+  //             </View>
+
+  //             <Text style={styles.emptyTitle}>No Active Upgrades</Text>
+  //             <Text style={styles.emptySubtitle}>
+  //               Start your first upgrade to begin tracking
+  //             </Text>
+
+  //             <Pressable
+  //               style={styles.emptyButton}
+  //               onPress={() => {
+  //                 setSessionSource("app");
+  //                 router.push("/upload-json");
+  //               }}
+  //             >
+  //               <Text style={styles.emptyButtonText}>Get Started</Text>
+  //             </Pressable>
+  //           </View>
+  //         )}
+
+  //         <LabSection
+  //           labNormal={lab?.normal}
+  //           labGoblin={lab?.goblin}
+  //           // onAddPress={() => {
+  //           //   setSessionSource("app");
+  //           //   router.push("/add-upgrade?type=lab");
+  //           // }}
+  //           onLongPress={handleRowLongPress}
+  //         />
+
+  //         {townHall >= 14 && (
+  //           <PetSection
+  //             pet={pet}
+  //             townHall={townHall}
+  //             // onAddPress={() => {
+  //             //   setSessionSource("app");
+  //             //   router.push("/add-upgrade?type=pet");
+  //             // }}
+  //             onLongPress={handleRowLongPress}
+  //           />
+  //         )}
+
+  //         {/* 🔥 Notes (Coming Soon) */}
+  //         <View style={styles.notesCard}>
+  //           <View style={styles.notesHeader}>
+  //             <Text style={styles.notesTitle}>📝 Strategy Notes</Text>
+  //             <Text style={styles.comingSoonBadge}>Coming Soon</Text>
+  //           </View>
+
+  //           <Text style={styles.notesSubtitle}>
+  //             Plan upgrades, avoid idle builders, and optimize your entire
+  //             village strategy
+  //           </Text>
+
+  //           <View style={styles.notesPreview}>
+  //             <Text style={styles.notesPreviewText}>
+  //               • Upgrade Inferno Tower after TH14 unlock
+  //             </Text>
+
+  //             {villageStatus.freeBuilders > 0 && (
+  //               <Text style={styles.notesPreviewText}>
+  //                 • You have {villageStatus.freeBuilders} idle builder — assign
+  //                 now
+  //               </Text>
+  //             )}
+
+  //             {villageStatus.labIdle && (
+  //               <Text style={styles.notesPreviewText}>
+  //                 • Lab is idle — start research
+  //               </Text>
+  //             )}
+  //             <Text style={styles.notesPreviewText}>
+  //               • Save Dark Elixir for Royal Champion
+  //             </Text>
+  //             <Text style={styles.notesPreviewText}>
+  //               • Keep 1 builder free for walls
+  //             </Text>
+  //           </View>
+
+  //           {/* Feedback */}
+  //           <View style={styles.notesFeedbackRow}>
+  //             <Text style={styles.feedbackText}>Want this feature?</Text>
+
+  //             <View style={styles.feedbackButtons}>
+  //               <Pressable
+  //                 style={[
+  //                   styles.feedbackButton,
+  //                   vote === "like" && styles.feedbackButtonActive,
+  //                 ]}
+  //                 onPress={() => handleVote("notes", "like")}
+  //               >
+  //                 <Ionicons
+  //                   name="thumbs-up"
+  //                   size={16}
+  //                   color={vote === "like" ? "#22c55e" : "#64748b"}
+  //                 />
+  //               </Pressable>
+
+  //               <Pressable
+  //                 style={[
+  //                   styles.feedbackButton,
+  //                   vote === "dislike" && styles.feedbackButtonActive,
+  //                 ]}
+  //                 onPress={() => handleVote("notes", "dislike")}
+  //               >
+  //                 <Ionicons
+  //                   name="thumbs-down"
+  //                   size={16}
+  //                   color={vote === "dislike" ? "#ef4444" : "#64748b"}
+  //                 />
+  //               </Pressable>
+  //             </View>
+  //           </View>
+
+  //           {vote && (
+  //             <Text style={{ color: "#22c55e", fontSize: 11 }}>
+  //               Thanks for your feedback
+  //             </Text>
+  //           )}
+  //           {vote === "like" && (
+  //             <Text style={{ color: "#fbbf24", fontSize: 11 }}>
+  //               🚀 We&apos;ll prioritize this for you
+  //             </Text>
+  //           )}
+  //         </View>
+
+  //         <View style={styles.refreshHint}>
+  //           <Ionicons name="arrow-down" size={16} color="#64748b" />
+  //           <Text style={styles.refreshHintText}>Pull down to refresh</Text>
+  //         </View>
+
+  //         {__DEV__ && sortedUpgrades.length > 0 && (
+  //           <Pressable
+  //             style={styles.devButton}
+  //             onPress={() => {
+  //               const first = sortedUpgrades[0];
+  //               setCompletedId(first.id);
+  //               setTimeout(() => setCompletedId(null), 8000);
+  //             }}
+  //           >
+  //             <Text style={styles.devButtonText}>Test Completion</Text>
+  //           </Pressable>
+  //         )}
+
+  //         {__DEV__ && (
+  //           <Pressable
+  //             style={styles.resetButton}
+  //             onPress={() => {
+  //               setOnboardingIncomplete();
+  //               router.replace("/onboarding");
+  //             }}
+  //           >
+  //             <Text style={styles.resetButtonText}>Reset Onboarding</Text>
+  //           </Pressable>
+  //         )}
+  //       </ScrollView>
+  //     </View>
+  //     {/* Action Modal */}
+  //     <Modal transparent visible={actionModalVisible} animationType="slide">
+  //       <Pressable
+  //         style={styles.modalOverlay}
+  //         onPress={() => setActionModalVisible(false)}
+  //       >
+  //         <View style={styles.modalContent}>
+  //           <View style={styles.modalHandle} />
+
+  //           <Text style={styles.modalTitle}>{selectedUpgrade?.entity}</Text>
+
+  //           <View style={styles.modalDivider} />
+
+  //           {/* <Pressable
+  //             style={({ pressed }) => [
+  //               styles.modalButton,
+  //               pressed && styles.modalButtonPressed,
+  //             ]}
+  //             onPress={() => {
+  //               setActionModalVisible(false);
+  //               router.push({
+  //                 pathname: "/add-upgrade",
+  //                 params: {
+  //                   editId: selectedUpgrade?.id,
+  //                   type: selectedUpgrade?.upgradeType?.toLowerCase(),
+  //                 },
+  //               });
+  //             }}
+  //           >
+  //             <View
+  //               style={[
+  //                 styles.actionIcon,
+  //                 { backgroundColor: "rgba(251, 191, 36, 0.15)" },
+  //               ]}
+  //             >
+  //               <Ionicons name="pencil" size={18} color="#fbbf24" />
+  //             </View>
+  //             <Text style={styles.modalButtonText}>Edit Upgrade</Text>
+  //           </Pressable> */}
+
+  //           <Pressable
+  //             style={({ pressed }) => [
+  //               styles.modalButton,
+  //               pressed && styles.modalButtonPressed,
+  //             ]}
+  //             onPress={async () => {
+  //               if (!selectedUpgrade) return;
+
+  //               // await cancelBuilderNotification(selectedUpgrade.id);
+  //               await deleteUpgrade(selectedUpgrade.id);
+  //               emitWidgetUpdate();
+  //               await resyncNotifications();
+  //               startSmartWidgetScheduler();
+  //               await refreshState();
+  //               setActionModalVisible(false);
+  //             }}
+  //           >
+  //             <View
+  //               style={[
+  //                 styles.actionIcon,
+  //                 { backgroundColor: "rgba(248, 113, 113, 0.15)" },
+  //               ]}
+  //             >
+  //               <Ionicons name="trash" size={18} color="#ef4444" />
+  //             </View>
+
+  //             <Text style={[styles.modalButtonText, styles.modalButtonDelete]}>
+  //               Delete Upgrade
+  //             </Text>
+  //           </Pressable>
+
+  //           <Pressable
+  //             style={({ pressed }) => [
+  //               styles.modalCancel,
+  //               pressed && styles.modalCancelPressed,
+  //             ]}
+  //             onPress={() => setActionModalVisible(false)}
+  //           >
+  //             <Text style={styles.modalCancelText}>Cancel</Text>
+  //           </Pressable>
+  //         </View>
+  //       </Pressable>
+  //     </Modal>
+
+  //     {/* Profile Dropdown Sheet */}
+  //     <ProfileDropdownSheet
+  //       visible={profileSheetVisible}
+  //       onClose={() => {
+  //         setProfileSheetVisible(false);
+  //       }}
+  //       onOpenProfile={() => {
+  //         setProfileSheetVisible(false);
+  //         track("navigation", {
+  //           from: "dropdown",
+  //           to: "profile",
+  //         });
+  //         router.push("/profile");
+  //       }}
+  //       onSync={() => {
+  //         setProfileSheetVisible(false);
+  //         track("navigation", {
+  //           from: "dropdown",
+  //           to: "upload-json",
+  //         });
+  //         router.push("/upload-json");
+  //       }}
+  //       onSetting={() => {
+  //         setProfileSheetVisible(false);
+  //         track("navigation", {
+  //           from: "dropdown",
+  //           to: "settings",
+  //         });
+  //         router.push("/(tabs)/settings");
+  //       }}
+  //     />
+
+  //     {/* Floating Action Button */}
+  //     {/* <Pressable
+  //       style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+  //       onPress={() => {
+  //         track("navigation", {
+  //           from: "home",
+  //           to: "add-upgrade",
+  //           trigger: "fab",
+  //         });
+  //         router.push("/add-upgrade");
+  //       }}
+  //     >
+  //       <View style={styles.fabContent}>
+  //         <Ionicons name="add" size={32} color="#0f172a" />
+  //       </View>
+  //     </Pressable> */}
+  //   </View>
+  // );
   return (
-    <View style={styles.container}>
-      <View style={styles.contentWrapper}>
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor="#fbbf24"
-            />
-          }
+    <SafeAreaView
+      edges={["top"]}
+      style={{
+        flex: 1,
+        backgroundColor: "#0f172a",
+      }}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View
+          style={{
+            flex: 1,
+          }}
         >
-          {showBanner && eventEndsAt && (
-            <GoblinEventBanner
-              eventEndsAt={eventEndsAt}
-              onDismiss={() => {
-                setGoblinBannerDismissedUntil(eventEndsAt);
-              }}
-            />
-          )}
-          {/* Header */}
-          <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
+          <Text style={styles.headerTitle}>Home</Text>
+
+          <Pressable
+            style={styles.profileDropdown}
+            onPress={() => setProfileSheetVisible(true)}
+          >
             <View>
-              <Text style={styles.headerTitle}>Builder Status</Text>
-
-              <Pressable
-                style={styles.profileDropdown}
-                onPress={() => setProfileSheetVisible(true)}
-              >
-                <View style={{ flex: 1 }}>
-                  <View style={styles.profileTopRow}>
-                    <Text style={styles.profileName}>
-                      {profile.playerTag
-                        ? profile.playerName
-                        : "No Profile Synced"}
-                    </Text>
-
-                    {/* Current League Icon */}
-                    {profile.leagueTierIconUrl && (
-                      <Image
-                        source={{ uri: profile.leagueTierIconUrl }}
-                        style={styles.leagueIcon}
-                        contentFit="contain"
-                        cachePolicy="memory-disk"
-                      />
-                    )}
-                    {isPro && (
-                      <View
-                        style={{
-                          backgroundColor: "#fbbf24",
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 6,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            fontWeight: "700",
-                            color: "#0f172a",
-                          }}
-                        >
-                          PRO
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Secondary Line */}
-                  {profile.playerTag && (
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <View style={styles.leagueIcon}>
-                        <Image
-                          source={{
-                            uri: resolveEntityIcon(1000001, {
-                              context: {
-                                townHallLevel: profile.townHallLevel,
-                              },
-                            }),
-                          }}
-                          style={styles.leagueIcon}
-                          contentFit="contain"
-                          cachePolicy="memory-disk"
-                        />
-                      </View>
-                      <Text style={styles.profileSub}>
-                        TH{profile.townHallLevel}
-                        {typeof profile.trophies === "number"
-                          ? ` • ${profile.trophies} 🏆`
-                          : ""}
-                      </Text>
-
-                      {/* EXP Level */}
-                      {typeof profile.expLevel === "number" && (
-                        <Text style={styles.profileSub}>
-                          Lv {profile.expLevel}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                </View>
-
-                <Ionicons name="chevron-down" size={16} color="#94a3b8" />
-              </Pressable>
-            </View>
-            <View style={styles.sync}>
-              <Pressable
-                onPress={() => {
-                  setSessionSource("app");
-                  track("navigation", {
-                    from: "home",
-                    to: "upload-json",
-                    trigger: "sync",
-                  });
-                  router.push("/upload-json");
-                }}
-              >
-                <Ionicons
-                  name="sync-sharp"
-                  size={22}
-                  color={isStale ? "#fbbf24" : "#fff"}
-                />
-              </Pressable>
-              {lastSync && (
-                <Text style={styles.syncText}>
-                  Synced {formatTimeAgo(lastSync)} ago
+              <View style={styles.profileTopRow}>
+                <Text style={styles.profileName}>
+                  {profile.playerTag ? profile.playerName : "No Profile Synced"}
                 </Text>
-              )}
-            </View>
-          </View>
 
-          {/* Premium Status Card */}
-          <View style={styles.statusCardContainer}>
-            <View style={styles.statusCard}>
-              <View style={styles.statusCardContent}>
-                <View style={styles.statusIconContainer}>
+                {/* Current League Icon */}
+                {profile.leagueTierIconUrl && (
                   <Image
-                    source={statusIcon}
-                    style={styles.statusCardIcon}
+                    source={{ uri: profile.leagueTierIconUrl }}
+                    style={styles.leagueIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"
                   />
-                </View>
-
-                <View style={styles.statusInfo}>
-                  <Text style={styles.statusCardLabel}>
-                    {status.allFree
-                      ? "🚨 Builder Idle"
-                      : `⏳ Next Upgrade: ${nextBuilderLabel}`}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.statusInsight,
-                      isUrgent && { color: "#ef4444", fontWeight: "600" },
-                    ]}
+                )}
+                {isPro && (
+                  <View
+                    style={{
+                      backgroundColor: "#fbbf24",
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                    }}
                   >
-                    {insight}
-                  </Text>
-                  <Text style={styles.statusCardTime}>
-                    {status.allFree
-                      ? "Ready to build"
-                      : formatCountdown(remainingMs)}
-                  </Text>
-                  <View style={styles.builderIndicators}>
-                    {/* Normal Builders */}
-                    {Array.from({ length: builderCount }).map((_, i) => {
-                      const isBusy = busySlots.has(i);
-
-                      return (
-                        <View
-                          key={`normal-${i}`}
-                          style={[
-                            styles.builderDot,
-                            isBusy
-                              ? styles.builderDotBusy
-                              : styles.builderDotFree,
-                          ]}
-                        />
-                      );
-                    })}
-
-                    {/* Goblin Slot */}
-                    {isGoblinActive &&
-                      (() => {
-                        const goblinBusy = builders.some(
-                          (u) => u.builderSlot === "G",
-                        );
-
-                        const goblinCanBeUsed = canUseGoblinBuilder(
-                          profile,
-                          builders,
-                        );
-                        return (
-                          <View
-                            style={[
-                              styles.builderDot,
-                              goblinBusy
-                                ? styles.goblinDotBusy
-                                : goblinCanBeUsed
-                                  ? styles.goblinDotFree
-                                  : styles.goblinDotInactive,
-                            ]}
-                          />
-                        );
-                      })()}
+                    <Text
+                      style={{
+                        fontSize: 10,
+                        fontWeight: "700",
+                        color: "#0f172a",
+                      }}
+                    >
+                      PRO
+                    </Text>
                   </View>
+                )}
+              </View>
+
+              {/* Secondary Line */}
+              {profile.playerTag && (
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <View style={styles.leagueIcon}>
+                    <Image
+                      source={{
+                        uri: resolveEntityIcon(1000001, {
+                          context: {
+                            townHallLevel: profile.townHallLevel,
+                          },
+                        }),
+                      }}
+                      style={styles.leagueIcon}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
+                  </View>
+                  <Text style={styles.profileSub}>
+                    TH{profile.townHallLevel}
+                    {typeof profile.trophies === "number"
+                      ? ` • ${profile.trophies} 🏆`
+                      : ""}
+                  </Text>
+
+                  {/* EXP Level */}
+                  {typeof profile.expLevel === "number" && (
+                    <Text style={styles.profileSub}>Lv {profile.expLevel}</Text>
+                  )}
                 </View>
+              )}
+            </View>
+
+            <Ionicons name="chevron-down" size={16} color="#94a3b8" />
+          </Pressable>
+        </View>
+
+        <View style={styles.sync}>
+          <Pressable
+            onPress={() => {
+              setSessionSource("app");
+              track("navigation", {
+                from: "home",
+                to: "upload-json",
+                trigger: "sync",
+              });
+              router.push("/upload-json");
+            }}
+          >
+            <Ionicons
+              name="sync-sharp"
+              size={22}
+              color={isStale ? "#fbbf24" : "#fff"}
+            />
+          </Pressable>
+          {lastSync && (
+            <Text style={styles.syncText}>
+              Synced {formatTimeAgo(lastSync)} ago
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* Premium Status Card */}
+      <View style={styles.statusCardContainer}>
+        <View style={styles.statusCard}>
+          <View style={styles.statusCardContent}>
+            <View style={styles.statusIconContainer}>
+              <Image
+                source={statusIcon}
+                style={styles.statusCardIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusCardLabel}>
+                {status.allFree
+                  ? "🚨 Builder Idle"
+                  : `⏳ Next Upgrade: ${nextBuilderLabel}`}
+              </Text>
+              <Text
+                style={[
+                  styles.statusInsight,
+                  isUrgent && { color: "#ef4444", fontWeight: "700" },
+                ]}
+              >
+                {insight}
+              </Text>
+              <Text style={styles.statusCardTime}>
+                {status.allFree
+                  ? "All core systems available"
+                  : formatCountdown(remainingMs)}
+              </Text>
+              <View style={styles.builderIndicators}>
+                {/* Normal Builders */}
+                {Array.from({ length: builderCount }).map((_, i) => {
+                  const isBusy = busySlots.has(i);
+
+                  return (
+                    <View
+                      key={`normal-${i}`}
+                      style={[
+                        styles.builderDot,
+                        isBusy ? styles.builderDotBusy : styles.builderDotFree,
+                      ]}
+                    />
+                  );
+                })}
+
+                {/* Goblin Slot */}
+                {isGoblinActive &&
+                  (() => {
+                    const goblinBusy = builders.some(
+                      (u) => u.builderSlot === "G",
+                    );
+
+                    const goblinCanBeUsed = canUseGoblinBuilder(
+                      profile,
+                      builders,
+                    );
+                    return (
+                      <View
+                        style={[
+                          styles.builderDot,
+                          goblinBusy
+                            ? styles.goblinDotBusy
+                            : goblinCanBeUsed
+                              ? styles.goblinDotFree
+                              : styles.goblinDotInactive,
+                        ]}
+                      />
+                    );
+                  })()}
               </View>
             </View>
           </View>
-          {/* Add Upgrade Button */}
-          {/* <Pressable
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="#fbbf24"
+          />
+        }
+      >
+        {showBanner && eventEndsAt && (
+          <GoblinEventBanner
+            eventEndsAt={eventEndsAt}
+            onDismiss={() => {
+              setGoblinBannerDismissedUntil(eventEndsAt);
+            }}
+          />
+        )}
+
+        {/* Add Upgrade Button */}
+        {/* <Pressable
             style={({ pressed }) => [
               styles.addButton,
               pressed && styles.addButtonPressed,
@@ -617,305 +1292,304 @@ export default function HomeScreen() {
             <Ionicons name="add-circle" size={24} color="#0f172a" />
             <Text style={styles.addButtonText}>Add Upgrade</Text>
           </Pressable> */}
-          {/* Active Upgrades Section */}
-          {sortedUpgrades.length > 0 && (
-            <View style={styles.upgradesSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Active Upgrades</Text>
-                <View style={styles.upgradeBadge}>
-                  <Text style={styles.upgradeBadgeText}>
-                    {sortedUpgrades.length}
-                  </Text>
-                </View>
+        {/* Active Upgrades Section */}
+        {sortedUpgrades.length > 0 && (
+          <View style={styles.upgradesSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Active Upgrades</Text>
+              <View style={styles.upgradeBadge}>
+                <Text style={styles.upgradeBadgeText}>
+                  {sortedUpgrades.length}
+                </Text>
               </View>
+            </View>
 
-              {sortedUpgrades.map((u, index) => {
-                const remainingMs = Math.max(u.endTime - Date.now(), 0);
-                const totalMs = u.endTime - u.startTime;
-                const progress = calculateProgress(u.startTime, u.endTime);
-                const isGoblin = u.builderSlot === "G";
-                const builderLabel =
-                  u.builderSlot === "G"
-                    ? "G"
-                    : typeof u.builderSlot === "number"
-                      ? `B${u.builderSlot + 1}`
-                      : "?";
-                const isCompleted = completedId === u.id;
-                return (
-                  <Pressable
-                    key={u.id}
+            {sortedUpgrades.map((u, index) => {
+              const remainingMs = Math.max(u.endTime - Date.now(), 0);
+              const totalMs = u.endTime - u.startTime;
+              const progress = calculateProgress(u.startTime, u.endTime);
+              const isGoblin = u.builderSlot === "G";
+              const builderLabel =
+                u.builderSlot === "G"
+                  ? "G"
+                  : typeof u.builderSlot === "number"
+                    ? `B${u.builderSlot + 1}`
+                    : "?";
+              const isCompleted = completedId === u.id;
+              return (
+                <Pressable
+                  key={u.id}
+                  style={[
+                    styles.upgradeCard,
+                    isCompleted && styles.upgradeCardCompleted,
+                    isGoblin && styles.goblinUpgradeCard,
+                  ]}
+                  onLongPress={() => handleRowLongPress(u)}
+                >
+                  <View
                     style={[
-                      styles.upgradeCard,
-                      isCompleted && styles.upgradeCardCompleted,
-                      isGoblin && styles.goblinUpgradeCard,
+                      styles.upgradeContent,
+                      isCompleted && styles.upgradeContentCompleted,
                     ]}
-                    onLongPress={() => handleRowLongPress(u)}
                   >
+                    {/* Builder Number Badge */}
                     <View
                       style={[
-                        styles.upgradeContent,
-                        isCompleted && styles.upgradeContentCompleted,
+                        styles.builderBadge,
+                        isGoblin && styles.goblinBadge,
                       ]}
                     >
-                      {/* Builder Number Badge */}
-                      <View
-                        style={[
-                          styles.builderBadge,
-                          isGoblin && styles.goblinBadge,
-                        ]}
-                      >
-                        <Text style={styles.builderBadgeText}>
-                          {builderLabel}
-                          {isGoblin && (
-                            <Image
-                              source={require("@/assets/images/clash/goblin-builder.png")}
-                              style={{ width: 15, height: 15, marginLeft: 2 }}
-                            />
-                          )}
+                      <Text style={styles.builderBadgeText}>
+                        {builderLabel}
+                        {isGoblin && (
+                          <Image
+                            source={require("@/assets/images/clash/goblin-builder.png")}
+                            style={{ width: 15, height: 15, marginLeft: 2 }}
+                          />
+                        )}
+                      </Text>
+                    </View>
+
+                    {/* Main Content */}
+                    <View style={styles.upgradeMain}>
+                      {/* Left Section - Building Icon & Name */}
+                      <View style={styles.upgradeLeft}>
+                        <View style={styles.iconContainer}>
+                          <Image
+                            source={{
+                              uri: u.dataId
+                                ? resolveEntityIcon(u.dataId, {
+                                    subType: u.subType,
+                                    isCrafted: u.isCrafted,
+                                    context: {
+                                      townHallLevel: profile.townHallLevel,
+                                    },
+                                  })
+                                : FALLBACK_ICON,
+                            }}
+                            style={styles.upgradeIcon}
+                            contentFit="contain"
+                            cachePolicy="memory-disk"
+                          />
+                        </View>
+
+                        <View style={styles.upgradeNameSection}>
+                          <Text style={styles.upgradeName}>
+                            {u.isCrafted
+                              ? `${getCraftedName(u.dataId) ?? "Crafted"}${
+                                  getModuleName(u.dataId, u.moduleId)
+                                    ? ` (${getModuleName(u.dataId, u.moduleId)})`
+                                    : ""
+                                }`
+                              : formatBuildingName(u.entity)}
+                          </Text>
+
+                          {/* Levels Badge */}
+                          {u.currentLevel !== undefined &&
+                            u.nextLevel !== undefined && (
+                              <View style={styles.levelsBadge}>
+                                <Text style={styles.levelsText}>
+                                  Lv {u.currentLevel} → Lv {u.nextLevel}
+                                </Text>
+                              </View>
+                            )}
+                        </View>
+                      </View>
+
+                      {/* Right Section - Time Display */}
+                      <View style={styles.upgradeRight}>
+                        <Text style={styles.remainingTime}>
+                          {formatCountdown(remainingMs)}
+                        </Text>
+                        <Text style={styles.totalTimeText}>
+                          of {formatCountdown(totalMs)}
                         </Text>
                       </View>
-
-                      {/* Main Content */}
-                      <View style={styles.upgradeMain}>
-                        {/* Left Section - Building Icon & Name */}
-                        <View style={styles.upgradeLeft}>
-                          <View style={styles.iconContainer}>
-                            <Image
-                              source={{
-                                uri: u.dataId
-                                  ? resolveEntityIcon(u.dataId, {
-                                      subType: u.subType,
-                                      isCrafted: u.isCrafted,
-                                      context: {
-                                        townHallLevel: profile.townHallLevel,
-                                      },
-                                    })
-                                  : FALLBACK_ICON,
-                              }}
-                              style={styles.upgradeIcon}
-                              contentFit="contain"
-                              cachePolicy="memory-disk"
-                            />
-                          </View>
-
-                          <View style={styles.upgradeNameSection}>
-                            <Text style={styles.upgradeName}>
-                              {u.isCrafted
-                                ? `${getCraftedName(u.dataId) ?? "Crafted"}${
-                                    getModuleName(u.dataId, u.moduleId)
-                                      ? ` (${getModuleName(u.dataId, u.moduleId)})`
-                                      : ""
-                                  }`
-                                : formatBuildingName(u.entity)}
-                            </Text>
-
-                            {/* Levels Badge */}
-                            {u.currentLevel !== undefined &&
-                              u.nextLevel !== undefined && (
-                                <View style={styles.levelsBadge}>
-                                  <Text style={styles.levelsText}>
-                                    Lv {u.currentLevel} → Lv {u.nextLevel}
-                                  </Text>
-                                </View>
-                              )}
-                          </View>
-                        </View>
-
-                        {/* Right Section - Time Display */}
-                        <View style={styles.upgradeRight}>
-                          <Text style={styles.remainingTime}>
-                            {formatCountdown(remainingMs)}
-                          </Text>
-                          <Text style={styles.totalTimeText}>
-                            of {formatCountdown(totalMs)}
-                          </Text>
-                        </View>
-                      </View>
-
-                      {/* Progress Bar */}
-                      <View style={styles.progressTrack}>
-                        <View
-                          style={[
-                            styles.progressBar,
-                            {
-                              width: `${progress * 100}%`,
-                            },
-                          ]}
-                        />
-                      </View>
                     </View>
-                  </Pressable>
-                );
-              })}
+
+                    {/* Progress Bar */}
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressBar,
+                          {
+                            width: `${progress * 100}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Empty State */}
+        {sortedUpgrades.length === 0 && (
+          <View style={styles.emptyStateContainer}>
+            <View style={styles.emptyIconWrapper}>
+              <Image
+                source={require("@/assets/images/builder/builder-idle.png")}
+                style={styles.emptyIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
             </View>
-          )}
 
-          {/* Empty State */}
-          {sortedUpgrades.length === 0 && (
-            <View style={styles.emptyStateContainer}>
-              <View style={styles.emptyIconWrapper}>
-                <Image
-                  source={require("@/assets/images/builder/builder-idle.png")}
-                  style={styles.emptyIcon}
-                  contentFit="contain"
-                  cachePolicy="memory-disk"
-                />
-              </View>
+            <Text style={styles.emptyTitle}>No Active Upgrades</Text>
+            <Text style={styles.emptySubtitle}>
+              Start your first upgrade to begin tracking
+            </Text>
 
-              <Text style={styles.emptyTitle}>No Active Upgrades</Text>
-              <Text style={styles.emptySubtitle}>
-                Start your first upgrade to begin tracking
-              </Text>
+            <Pressable
+              style={styles.emptyButton}
+              onPress={() => {
+                setSessionSource("app");
+                router.push("/upload-json");
+              }}
+            >
+              <Text style={styles.emptyButtonText}>Get Started</Text>
+            </Pressable>
+          </View>
+        )}
 
-              <Pressable
-                style={styles.emptyButton}
-                onPress={() => {
-                  setSessionSource("app");
-                  router.push("/upload-json");
-                }}
-              >
-                <Text style={styles.emptyButtonText}>Get Started</Text>
-              </Pressable>
-            </View>
-          )}
+        <LabSection
+          labNormal={lab?.normal}
+          labGoblin={lab?.goblin}
+          // onAddPress={() => {
+          //   setSessionSource("app");
+          //   router.push("/add-upgrade?type=lab");
+          // }}
+          onLongPress={handleRowLongPress}
+        />
 
-          <LabSection
-            labNormal={lab?.normal}
-            labGoblin={lab?.goblin}
+        {townHall >= 14 && (
+          <PetSection
+            pet={pet}
+            townHall={townHall}
             // onAddPress={() => {
             //   setSessionSource("app");
-            //   router.push("/add-upgrade?type=lab");
+            //   router.push("/add-upgrade?type=pet");
             // }}
             onLongPress={handleRowLongPress}
           />
+        )}
 
-          {townHall >= 14 && (
-            <PetSection
-              pet={pet}
-              townHall={townHall}
-              // onAddPress={() => {
-              //   setSessionSource("app");
-              //   router.push("/add-upgrade?type=pet");
-              // }}
-              onLongPress={handleRowLongPress}
-            />
-          )}
+        {/* 🔥 Notes (Coming Soon) */}
+        <View style={styles.notesCard}>
+          <View style={styles.notesHeader}>
+            <Text style={styles.notesTitle}>📝 Strategy Notes</Text>
+            <Text style={styles.comingSoonBadge}>Coming Soon</Text>
+          </View>
 
-          {/* 🔥 Notes (Coming Soon) */}
-          <View style={styles.notesCard}>
-            <View style={styles.notesHeader}>
-              <Text style={styles.notesTitle}>📝 Strategy Notes</Text>
-              <Text style={styles.comingSoonBadge}>Coming Soon</Text>
-            </View>
+          <Text style={styles.notesSubtitle}>
+            Plan upgrades, avoid idle builders, and optimize your entire village
+            strategy
+          </Text>
 
-            <Text style={styles.notesSubtitle}>
-              Plan upgrades, avoid idle builders, and optimize your entire
-              village strategy
+          <View style={styles.notesPreview}>
+            <Text style={styles.notesPreviewText}>
+              • Upgrade Inferno Tower after TH14 unlock
             </Text>
 
-            <View style={styles.notesPreview}>
+            {villageStatus.freeBuilders > 0 && (
               <Text style={styles.notesPreviewText}>
-                • Upgrade Inferno Tower after TH14 unlock
-              </Text>
-
-              {villageStatus.freeBuilders > 0 && (
-                <Text style={styles.notesPreviewText}>
-                  • You have {villageStatus.freeBuilders} idle builder — assign
-                  now
-                </Text>
-              )}
-
-              {villageStatus.labIdle && (
-                <Text style={styles.notesPreviewText}>
-                  • Lab is idle — start research
-                </Text>
-              )}
-              <Text style={styles.notesPreviewText}>
-                • Save Dark Elixir for Royal Champion
-              </Text>
-              <Text style={styles.notesPreviewText}>
-                • Keep 1 builder free for walls
-              </Text>
-            </View>
-
-            {/* Feedback */}
-            <View style={styles.notesFeedbackRow}>
-              <Text style={styles.feedbackText}>Want this feature?</Text>
-
-              <View style={styles.feedbackButtons}>
-                <Pressable
-                  style={[
-                    styles.feedbackButton,
-                    vote === "like" && styles.feedbackButtonActive,
-                  ]}
-                  onPress={() => handleVote("notes", "like")}
-                >
-                  <Ionicons
-                    name="thumbs-up"
-                    size={16}
-                    color={vote === "like" ? "#22c55e" : "#64748b"}
-                  />
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.feedbackButton,
-                    vote === "dislike" && styles.feedbackButtonActive,
-                  ]}
-                  onPress={() => handleVote("notes", "dislike")}
-                >
-                  <Ionicons
-                    name="thumbs-down"
-                    size={16}
-                    color={vote === "dislike" ? "#ef4444" : "#64748b"}
-                  />
-                </Pressable>
-              </View>
-            </View>
-
-            {vote && (
-              <Text style={{ color: "#22c55e", fontSize: 11 }}>
-                Thanks for your feedback
+                • You have {villageStatus.freeBuilders} idle builder — assign
+                now
               </Text>
             )}
-            {vote === "like" && (
-              <Text style={{ color: "#fbbf24", fontSize: 11 }}>
-                🚀 We&apos;ll prioritize this for you
+
+            {villageStatus.labIdle && (
+              <Text style={styles.notesPreviewText}>
+                • Lab is idle — start research
               </Text>
             )}
+            <Text style={styles.notesPreviewText}>
+              • Save Dark Elixir for Royal Champion
+            </Text>
+            <Text style={styles.notesPreviewText}>
+              • Keep 1 builder free for walls
+            </Text>
           </View>
 
-          <View style={styles.refreshHint}>
-            <Ionicons name="arrow-down" size={16} color="#64748b" />
-            <Text style={styles.refreshHintText}>Pull down to refresh</Text>
+          {/* Feedback */}
+          <View style={styles.notesFeedbackRow}>
+            <Text style={styles.feedbackText}>Want this feature?</Text>
+
+            <View style={styles.feedbackButtons}>
+              <Pressable
+                style={[
+                  styles.feedbackButton,
+                  vote === "like" && styles.feedbackButtonActive,
+                ]}
+                onPress={() => handleVote("notes", "like")}
+              >
+                <Ionicons
+                  name="thumbs-up"
+                  size={16}
+                  color={vote === "like" ? "#22c55e" : "#64748b"}
+                />
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.feedbackButton,
+                  vote === "dislike" && styles.feedbackButtonActive,
+                ]}
+                onPress={() => handleVote("notes", "dislike")}
+              >
+                <Ionicons
+                  name="thumbs-down"
+                  size={16}
+                  color={vote === "dislike" ? "#ef4444" : "#64748b"}
+                />
+              </Pressable>
+            </View>
           </View>
 
-          {__DEV__ && sortedUpgrades.length > 0 && (
-            <Pressable
-              style={styles.devButton}
-              onPress={() => {
-                const first = sortedUpgrades[0];
-                setCompletedId(first.id);
-                setTimeout(() => setCompletedId(null), 8000);
-              }}
-            >
-              <Text style={styles.devButtonText}>Test Completion</Text>
-            </Pressable>
+          {vote && (
+            <Text style={{ color: "#22c55e", fontSize: 11 }}>
+              Thanks for your feedback
+            </Text>
           )}
+          {vote === "like" && (
+            <Text style={{ color: "#fbbf24", fontSize: 11 }}>
+              🚀 We&apos;ll prioritize this for you
+            </Text>
+          )}
+        </View>
 
-          {__DEV__ && (
-            <Pressable
-              style={styles.resetButton}
-              onPress={() => {
-                setOnboardingIncomplete();
-                router.replace("/onboarding");
-              }}
-            >
-              <Text style={styles.resetButtonText}>Reset Onboarding</Text>
-            </Pressable>
-          )}
-        </ScrollView>
-      </View>
+        <View style={styles.refreshHint}>
+          <Ionicons name="arrow-down" size={16} color="#64748b" />
+          <Text style={styles.refreshHintText}>Pull down to refresh</Text>
+        </View>
+
+        {__DEV__ && sortedUpgrades.length > 0 && (
+          <Pressable
+            style={styles.devButton}
+            onPress={() => {
+              const first = sortedUpgrades[0];
+              setCompletedId(first.id);
+              setTimeout(() => setCompletedId(null), 8000);
+            }}
+          >
+            <Text style={styles.devButtonText}>Test Completion</Text>
+          </Pressable>
+        )}
+
+        {__DEV__ && (
+          <Pressable
+            style={styles.resetButton}
+            onPress={() => {
+              setOnboardingIncomplete();
+              router.replace("/onboarding");
+            }}
+          >
+            <Text style={styles.resetButtonText}>Reset Onboarding</Text>
+          </Pressable>
+        )}
+      </ScrollView>
       {/* Action Modal */}
       <Modal transparent visible={actionModalVisible} animationType="slide">
         <Pressable
@@ -929,7 +1603,7 @@ export default function HomeScreen() {
 
             <View style={styles.modalDivider} />
 
-            <Pressable
+            {/* <Pressable
               style={({ pressed }) => [
                 styles.modalButton,
                 pressed && styles.modalButtonPressed,
@@ -954,7 +1628,7 @@ export default function HomeScreen() {
                 <Ionicons name="pencil" size={18} color="#fbbf24" />
               </View>
               <Text style={styles.modalButtonText}>Edit Upgrade</Text>
-            </Pressable>
+            </Pressable> */}
 
             <Pressable
               style={({ pressed }) => [
@@ -1048,7 +1722,7 @@ export default function HomeScreen() {
           <Ionicons name="add" size={32} color="#0f172a" />
         </View>
       </Pressable> */}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1140,33 +1814,35 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    backgroundColor: "#1e293b",
+    backgroundColor: "#0f172a",
     borderBottomWidth: 1,
     borderBottomColor: "#334155",
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 18,
   },
 
   headerTitle: {
-    fontSize: 32,
-    fontWeight: "800",
     color: "#fbbf24",
-    letterSpacing: -0.5,
-    marginBottom: 6,
+    fontSize: 30,
+    fontWeight: "900",
   },
 
   headerSubtitle: {
-    fontSize: 14,
     color: "#94a3b8",
-    fontWeight: "500",
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
   },
 
   profileDropdown: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    alignSelf: "flex-start",
+    gap: 8,
+    marginTop: 8,
   },
 
   profileText: {
@@ -1211,7 +1887,7 @@ const styles = StyleSheet.create({
 
   statusCardContainer: {
     marginHorizontal: 16,
-    marginTop: -16,
+    marginTop: -12,
     marginBottom: 24,
     borderRadius: 20,
     overflow: "hidden",
@@ -1256,14 +1932,14 @@ const styles = StyleSheet.create({
   statusCardLabel: {
     fontSize: 12,
     color: "rgba(15, 23, 42, 0.7)",
-    fontWeight: "600",
+    fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
 
   statusInsight: {
     fontSize: 13,
-    color: "94a3b8",
+    color: "#0f172a",
     fontWeight: "400",
     marginTop: 2,
   },

@@ -49,7 +49,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const ACCOUNT_COLORS = [
   "#fbbf24", // amber
@@ -248,17 +251,31 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView
+      edges={["top"]}
+      style={{
+        flex: 1,
+        backgroundColor: "#0f172a",
+      }}
+    >
+      {/* Header */}
+      {/* <View style={styles.header}>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerSubtitle}>Customize your experience</Text>
+      </View> */}
+
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerSubtitle}>
+          Manage accounts, widgets, notifications, and preferences.
+        </Text>
+      </View>
+
+      {/* <View style={styles.container}> */}
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Customize your experience</Text>
-        </View>
-
         {/* SECTION: Active Account */}
         <Text style={styles.sectionTitle}>Active Account</Text>
 
@@ -995,7 +1012,8 @@ Reduce builders only after some upgrades complete.`}
         onCancel={() => setShowBuilderErrorModal(false)}
         onConfirm={() => setShowBuilderErrorModal(false)}
       />
-    </View>
+      {/* </View> */}
+    </SafeAreaView>
   );
 }
 
@@ -1011,26 +1029,22 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingBottom: 32,
     paddingHorizontal: 20,
-    backgroundColor: "#1e293b",
-    borderBottomWidth: 1,
-    borderBottomColor: "#334155",
-    marginBottom: 24,
+    paddingTop: 8,
+    paddingBottom: 18,
   },
 
   headerTitle: {
-    fontSize: 32,
-    fontWeight: "800",
     color: "#fbbf24",
-    letterSpacing: -0.5,
-    marginBottom: 6,
+    fontSize: 30,
+    fontWeight: "900",
   },
 
   headerSubtitle: {
-    fontSize: 14,
     color: "#94a3b8",
-    fontWeight: "500",
+    marginTop: 6,
+    fontSize: 14,
+    lineHeight: 20,
   },
 
   sectionTitle: {

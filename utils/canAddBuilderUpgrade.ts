@@ -1,8 +1,8 @@
-import { BuilderUpgrade } from "@/types/upgrade";
+import { Upgrade } from "@/types/upgrade";
 import { getBuilderStatus } from "@/utils/builderStatus";
 
 export function canAddBuilderUpgrade(params: {
-  activeUpgrades: BuilderUpgrade[];
+  activeUpgrades: Upgrade[];
   normalBuilderCount: number;
   goblinBuilderUnlocked: boolean;
 }) {

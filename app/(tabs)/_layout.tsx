@@ -13,6 +13,7 @@ export default function TabLayout() {
           borderTopWidth: 1,
           borderTopColor: "#334155",
         },
+
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
@@ -34,6 +35,37 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: "Analytics",
+          tabBarBadge: "Soon",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "stats-chart" : "stats-chart-outline"}
+              color={color}
+              size={24}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="war"
+        options={{
+          title: "War",
+          tabBarBadge: "Soon",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "shield" : "shield-outline"}
+              color={color}
+              size={24}
+            />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="settings"
         options={{

@@ -21,7 +21,7 @@ export type UpgradeEvent = {
   type: "BUILDER" | "LAB" | "PET" | "CRAFTED_EVENT";
   phase?: EventPhase;
   entityId: string;
-  entityName: string;
+  entityName?: string;
   level?: number;
   nextLevel?: number;
 

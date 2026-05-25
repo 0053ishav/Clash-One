@@ -12,7 +12,7 @@ import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
-import { updateWidgetAccess } from "@/utils/widgetPicker";
+// import { updateWidgetAccess } from "@/utils/widgetPicker";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
@@ -64,9 +64,9 @@ export default function RootLayout() {
     runBootstrap();
   }, []);
 
-  useEffect(() => {
-    updateWidgetAccess(isPro);
-  }, [isPro]);
+  // useEffect(() => {
+  //   updateWidgetAccess(isPro);
+  // }, [isPro]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(

@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { getAccountState } from "@/services/accountStateService";
 import { track } from "@/utils/analytics/analytics";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
@@ -24,7 +25,7 @@ export default function ValueScreen() {
 
   const accounts = useAccountStore((s) => s.accounts);
   const activeTag = useAccountStore((s) => s.activeTag);
-  const profile = useAccountStore((s) => s.profile);
+  const { profile } = usePlayerProfile();
 
   const [activeUpgrades, setActiveUpgrades] = useState<any[]>([]);
 
@@ -354,7 +355,7 @@ export default function ValueScreen() {
 
         {/* 🚀 CTA */}
         <Pressable
-          onPress={() => router.replace("/widget-preview")}
+          onPress={() => router.replace("/(tabs)")}
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
         >
           <Text style={styles.ctaText}>Continue</Text>

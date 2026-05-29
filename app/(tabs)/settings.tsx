@@ -42,6 +42,7 @@ import * as Notifications from "expo-notifications";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -894,6 +895,23 @@ export default function SettingsScreen() {
           <Text style={styles.aboutSubtitle}>
             Not affiliated with, endorsed, or sponsored by Supercell.
           </Text>
+          <Pressable
+            onPress={() =>
+              Linking.openURL("https://supercell.com/en/fan-content-policy/")
+            }
+          >
+            <Text
+              style={{
+                color: "#fbbf24",
+                marginTop: 8,
+                fontSize: 13,
+                fontWeight: "600",
+              }}
+            >
+              View Supercell Fan Content Policy
+              <Ionicons name="open-outline" size={20} color="#fbbf24" />
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
 

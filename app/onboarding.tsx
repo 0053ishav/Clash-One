@@ -1,5 +1,4 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { setOnboardingComplete } from "@/storage/appConfig";
 import { setNotificationsEnabled } from "@/storage/notificationConfig";
@@ -27,21 +26,22 @@ const { width } = Dimensions.get("window");
 
 const SLIDES = [
   {
-    title: "How Many Builders Do You Have?",
-    description: "Select your total builders to track upgrades accurately.",
+    title: "Clash Widget",
+    description:
+      "Track builder upgrades, timers, and progress across your accounts.",
     image: require("@/assets/images/builder/builder-idle.png"),
-    icon: "construct",
-    type: "builderConfig",
+    icon: "shield",
   },
   {
-    title: "Track Builders from Your Home Screen",
-    description: "See real-time builder status directly from your widget.",
+    title: "Widgets That Save Time",
+    description: "Check upgrade status directly from your home screen.",
     image: require("@/assets/images/builder/builder-board.png"),
     icon: "grid",
   },
   {
-    title: "Never Waste Builder Time",
-    description: "Get notified instantly when upgrades finish.",
+    title: "Builder Alerts",
+    description:
+      "Receive notifications when upgrades finish and builders become available.",
     image: require("@/assets/images/builder/builder-complete.png"),
     icon: "notifications",
     type: "notification",
@@ -54,7 +54,6 @@ export default function OnboardingScreen() {
   const [index, setIndex] = useState(0);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
-  const { profile, updateProfile } = usePlayerProfile();
   const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   useEffect(() => {
@@ -189,41 +188,6 @@ export default function OnboardingScreen() {
                       : "Enable Notifications"}
                   </Text>
                 </Pressable>
-              )}
-
-              {slide.type === "builderConfig" && (
-                <View style={{ marginTop: 32 }}>
-                  <View style={styles.builderRow}>
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
-                      <Pressable
-                        key={num}
-                        onPress={() => {
-                          updateProfile({ normalBuilderCount: num });
-                        }}
-                        style={[
-                          styles.builderButton,
-                          profile.normalBuilderCount === num &&
-                            styles.builderButtonActive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.builderButtonText,
-                            profile.normalBuilderCount === num &&
-                              styles.builderButtonTextActive,
-                          ]}
-                        >
-                          {num}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  <Text
-                    style={{ marginTop: 12, fontSize: 12, color: "#475569" }}
-                  >
-                    Most active players have 5 builders
-                  </Text>
-                </View>
               )}
             </Animated.View>
           ))}

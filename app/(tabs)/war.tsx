@@ -103,7 +103,7 @@ export default function WarScreen() {
               fontWeight: "800",
             }}
           >
-            ALL FOR ONE vs VIKINGS
+            Clan 1 vs Clan 2
           </Text>
 
           <View

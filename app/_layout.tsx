@@ -5,7 +5,6 @@ import { ensureCraftedLoaded } from "@/services/craftedService";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
-import { usePremiumStore } from "@/stores/premiumStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
@@ -24,8 +23,6 @@ export default function RootLayout() {
     "loading",
   );
   const router = useRouter();
-  const isPro = usePremiumStore((s) => s.isPro);
-
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const loadLastSync = useAccountStore((s) => s.loadLastSync);
   const runBootstrap = useCallback(async () => {

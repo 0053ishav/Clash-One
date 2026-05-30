@@ -1,6 +1,6 @@
 "use no memo";
 
-import { usePremiumStore } from "@/stores/premiumStore";
+import { isChiefOrAbove } from "@/utils/premium";
 import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -23,7 +23,7 @@ export default function WidgetPreviewCard({
   isLocked = false,
   onLockedPress,
 }: Props) {
-  const isPro = usePremiumStore((s) => s.isPro);
+  const isPro = isChiefOrAbove();
   const isActuallyLocked = isLocked && !isPro;
 
   const handlePress = () => {

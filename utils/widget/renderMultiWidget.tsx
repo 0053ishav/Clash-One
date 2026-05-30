@@ -1,21 +1,23 @@
 import { useAccountStore } from "@/stores/accountStore";
-import { usePremiumStore } from "@/stores/premiumStore";
 import { getMultiWidgetDataFree } from "@/widget/getMultiWidgetDataFree";
 import { getMultiWidgetDataPro } from "@/widget/getMultiWidgetDataPro";
 import { MultiAccountWidget } from "@/widget/MultiAccountWidget";
+import { hasUnlimitedWidgetAccounts } from "../premium";
 import { getWidgetCache, setWidgetCache } from "./widgetCache";
 
 export async function renderMultiWidget() {
   try {
     const { accounts } = useAccountStore.getState();
-    const isPro = usePremiumStore.getState().isPro;
+    const unlimitedWidgets = hasUnlimitedWidgetAccounts();
+    console.log("unlimitedWidgets", unlimitedWidgets);
+
     if (!accounts || accounts.length === 0) {
       return (
         <MultiAccountWidget
           accounts={[]}
           totalAccounts={0}
           error={false}
-          isPro={isPro}
+          isPro={unlimitedWidgets}
         />
       );
     }
@@ -40,7 +42,7 @@ export async function renderMultiWidget() {
         // console.log("CACHE VERIFY", fresh);
       }),
     );
-    const data = isPro
+    const data = unlimitedWidgets
       ? await getMultiWidgetDataPro()
       : await getMultiWidgetDataFree();
 
@@ -49,7 +51,7 @@ export async function renderMultiWidget() {
         <MultiAccountWidget
           accounts={[]}
           totalAccounts={accounts.length}
-          isPro={isPro}
+          isPro={unlimitedWidgets}
         />
       );
     }
@@ -58,7 +60,7 @@ export async function renderMultiWidget() {
       <MultiAccountWidget
         accounts={data}
         totalAccounts={accounts.length}
-        isPro={isPro}
+        isPro={unlimitedWidgets}
       />
     );
   } catch (e) {

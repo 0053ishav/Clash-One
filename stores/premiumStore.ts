@@ -1,11 +1,29 @@
 import { create } from "zustand";
 
+export type PremiumTier =
+  | "free"
+  | "chief"
+  | "field_marshal";
+
 type PremiumState = {
-    isPro: boolean;
-    setPro: (value: boolean) => void;
+  tier: PremiumTier;
+
+  isChief: boolean;
+  isFieldMarshal: boolean;
+
+  setTier: (tier: PremiumTier) => void;
 };
 
 export const usePremiumStore = create<PremiumState>((set) => ({
-    isPro: false,
-    setPro: (value) => set({ isPro: value }),
+  tier: "free",
+
+  isChief: false,
+  isFieldMarshal: false,
+
+  setTier: (tier) =>
+    set({
+      tier,
+      isChief: tier === "chief" || tier === "field_marshal",
+      isFieldMarshal: tier === "field_marshal",
+    }),
 }));

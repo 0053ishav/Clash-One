@@ -2,9 +2,9 @@ import { getAccountByTag } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
 import { ENABLE_GROUPING, getNotificationsEnabled, GROUP_WINDOW_MS, MAX_GROUP_BODY_LINES } from "@/storage/notificationConfig";
 import { useCraftedStore } from "@/stores/craftedEventStore";
-import { usePremiumStore } from "@/stores/premiumStore";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { isChiefOrAbove } from "./premium";
 
 /**
  * Unified event type across builder/lab/pet
@@ -98,7 +98,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
     }
     // 1. Cancel existing notifications (critical)
     await cancelAllScheduledNotifications();
-    const isPro = usePremiumStore.getState().isPro;
+  const isPro = isChiefOrAbove();
     // 2. Collect all events
     const allEvents: UpgradeEvent[] = [];
 

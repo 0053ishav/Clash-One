@@ -22,7 +22,6 @@ import {
   updateLocalBuilderCount,
 } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
-import { usePremiumStore } from "@/stores/premiumStore";
 import { FeatureId, Vote } from "@/types/vote";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
@@ -31,8 +30,10 @@ import { scheduleAllNotifications } from "@/utils/notificationEngine";
 import { resyncNotifications } from "@/utils/notificationSync";
 import * as Application from "expo-application";
 
+import { ChiefCard } from "@/components/ChiefCard";
 import { SupportModal } from "@/components/SupportModal";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
+import { isChiefOrAbove } from "@/utils/premium";
 import {
   startSmartWidgetScheduler,
   stopSmartWidgetScheduler,
@@ -135,7 +136,7 @@ export default function SettingsScreen() {
 
   const { profile } = usePlayerProfile();
   const activeAccount = accounts.find((a) => a.tag === activeTag);
-  const isPro = usePremiumStore.getState().isPro;
+  const isPro = isChiefOrAbove();
   const dbBuilderCount = activeAccount?.builderCount ?? 1;
 
   const [localBuilderCount, setLocalBuilderCount] =
@@ -288,6 +289,7 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <ChiefCard />
         {/* SECTION: Active Account */}
         <Text style={styles.sectionTitle}>Active Account</Text>
 

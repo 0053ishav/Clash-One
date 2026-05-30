@@ -2,9 +2,11 @@ import GoblinEventBanner from "@/components/GoblinEventBanner";
 import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
 import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
+import { SupportModal } from "@/components/SupportModal";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
+import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
@@ -83,6 +85,10 @@ export default function HomeScreen() {
   const builderCount = profile?.normalBuilderCount ?? 0;
   const townHall = profile?.townHallLevel ?? 1;
   const [vote, setVoteState] = useState<Vote | null>(null);
+
+  const [showSupport, setShowSupport] = useState(false);
+  const [debugInfo, setDebugInfo] = useState("");
+
   const refreshState = useCallback(async () => {
     if (!activeTag) return;
     const state = await getAccountState(activeTag);
@@ -388,6 +394,15 @@ export default function HomeScreen() {
   const insight =
     insightParts.length > 0 ? insightParts.join(" • ") : "All systems running";
   const isUrgent = villageStatus.freeBuilders > 0;
+
+  const openSupport = async () => {
+    const info = await buildSupportInfo();
+
+    setDebugInfo(info);
+
+    setShowSupport(true);
+  };
+
   // return (
   //   <View style={styles.container}>
   //     <View style={styles.contentWrapper}>
@@ -1054,6 +1069,7 @@ export default function HomeScreen() {
   //     </Pressable> */}
   //   </View>
   // );
+
   return (
     <SafeAreaView
       edges={["top"]}
@@ -1149,23 +1165,34 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.sync}>
-          <Pressable
-            onPress={() => {
-              setSessionSource("app");
-              track("navigation", {
-                from: "home",
-                to: "upload-json",
-                trigger: "sync",
-              });
-              router.push("/upload-json");
-            }}
-          >
-            <Ionicons
-              name="sync-sharp"
-              size={22}
-              color={isStale ? "#fbbf24" : "#fff"}
-            />
-          </Pressable>
+          <View style={styles.actionRow}>
+            <Pressable onPress={openSupport}>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={22}
+                color="#94a3b8"
+              />
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                setSessionSource("app");
+                track("navigation", {
+                  from: "home",
+                  to: "upload-json",
+                  trigger: "sync",
+                });
+                router.push("/upload-json");
+              }}
+            >
+              <Ionicons
+                name="sync-sharp"
+                size={22}
+                color={isStale ? "#fbbf24" : "#fff"}
+              />
+            </Pressable>
+          </View>
+
           {lastSync && (
             <Text style={styles.syncText}>
               Synced {formatTimeAgo(lastSync)} ago
@@ -1477,7 +1504,7 @@ export default function HomeScreen() {
         )}
 
         {/* 🔥 Notes (Coming Soon) */}
-        <View style={styles.notesCard}>
+        {/* <View style={styles.notesCard}>
           <View style={styles.notesHeader}>
             <Text style={styles.notesTitle}>📝 Strategy Notes</Text>
             <Text style={styles.comingSoonBadge}>Coming Soon</Text>
@@ -1513,7 +1540,6 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          {/* Feedback */}
           <View style={styles.notesFeedbackRow}>
             <Text style={styles.feedbackText}>Want this feature?</Text>
 
@@ -1558,7 +1584,7 @@ export default function HomeScreen() {
               🚀 We&apos;ll prioritize this for you
             </Text>
           )}
-        </View>
+        </View> */}
 
         <View style={styles.refreshHint}>
           <Ionicons name="arrow-down" size={16} color="#64748b" />
@@ -1591,7 +1617,12 @@ export default function HomeScreen() {
         )}
       </ScrollView>
       {/* Action Modal */}
-      <Modal transparent visible={actionModalVisible} animationType="slide">
+      <Modal
+        transparent
+        visible={actionModalVisible}
+        animationType="slide"
+        onRequestClose={() => setActionModalVisible(false)}
+      >
         <Pressable
           style={styles.modalOverlay}
           onPress={() => setActionModalVisible(false)}
@@ -1673,6 +1704,12 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      <SupportModal
+        visible={showSupport}
+        onClose={() => setShowSupport(false)}
+        debugInfo={debugInfo}
+      />
 
       {/* Profile Dropdown Sheet */}
       <ProfileDropdownSheet
@@ -1874,8 +1911,14 @@ const styles = StyleSheet.create({
   },
 
   sync: {
-    flexDirection: "column",
+    paddingTop: 8,
     alignItems: "flex-end",
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
   },
 
   syncText: {

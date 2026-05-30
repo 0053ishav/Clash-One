@@ -33,7 +33,8 @@ function buildNotificationId(group: {
   events: UpgradeEvent[];
 }) {
   return group.events
-    .map(e => `${e.playerTag}-${e.type}-${e.entityId}`)
+    // .map(e => `${e.playerTag}-${e.type}-${e.entityId}`)
+    .map(e => e.id)
     .join("|");
 }
 function getChannelId(type: UpgradeEvent["type"]) {
@@ -103,7 +104,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
 
     for (const acc of accounts) {
       const state = await getAccountState(acc.tag);
-      console.log("STATE:", acc.tag, state);
+      // console.log("STATE:", acc.tag, state);
 
       const PRE_ALERT_MS = 10 * 60 * 1000;   // 10 min before
       const IDLE_ALERT_MS = 10 * 60 * 1000;  // 10 min after
@@ -294,6 +295,19 @@ export async function scheduleAllNotifications(accounts: any[]) {
     for (const group of groups) {
       await scheduleGroupNotification(group);
     }
+    const scheduled =
+  await Notifications.getAllScheduledNotificationsAsync();
+
+// console.log(
+//   "Scheduled notifications:",
+//   scheduled.map((n) => ({
+//     id: n.identifier,
+//     title: n.content.title,
+//     body: n.content.body,
+//     data: n.content.data,
+//     trigger: n.trigger,
+//   }))
+// );
   } catch (e) {
     console.error("NotificationEngine error:", e);
   }
@@ -307,7 +321,13 @@ export async function scheduleAllNotifications(accounts: any[]) {
 async function cancelAllScheduledNotifications() {
   const scheduled =
     await Notifications.getAllScheduledNotificationsAsync();
-
+// console.log("cancelling notifications:", scheduled.length, scheduled.map((n) => ({
+//     id: n.identifier,
+//     title: n.content.title,
+//     body: n.content.body,
+//     data: n.content.data,
+//     trigger: n.trigger,
+//   })))
   await Promise.all(
     scheduled.map((n) =>
       Notifications.cancelScheduledNotificationAsync(n.identifier)
@@ -383,8 +403,8 @@ async function scheduleGroupNotification(group: {
 }) {
   const now = Date.now();
 
-  if (group.time <= now) return;
-  console.log("SCHEDULING:", new Date(group.time).toISOString());
+  if (group.time <= now - 30000) return;
+  // console.log("SCHEDULING:", new Date(group.time).toISOString(), group.events.map(e => `${e.playerTag}-${e.type}-${e.entityId}`));
   // SINGLE EVENT
   if (group.events.length === 1) {
     const e = group.events[0];
@@ -444,7 +464,10 @@ async function scheduleGroupNotification(group: {
           date: new Date(e.finishTimestamp),
         },
       });
+const channels =
+  await Notifications.getNotificationChannelsAsync();
 
+// console.log("channels", channels);
       // mark only START as consumed
       if (e.phase === "START") {
         useCraftedStore.setState({

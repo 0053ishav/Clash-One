@@ -1,7 +1,8 @@
 export type Vote = "like" | "dislike";
 
 export type FeatureId =
-  | "notes"
+  | "war_analytics"
   | "progress"
-  | "planner"
-  | "ai";
+  | "upgrade_planner"
+  | "ai"
+  | "notes";

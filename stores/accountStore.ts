@@ -6,7 +6,6 @@ import { getPlayerProfile } from "@/storage/playerProfile";
 import { getWidgetPrefs, saveWidgetPrefs } from "@/storage/widgetPrefs";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord, Upgrade } from "@/types/upgrade";
-import { scheduleAllNotifications } from "@/utils/notificationEngine";
 import { create } from "zustand";
 
 type AccountState = {
@@ -333,11 +332,11 @@ export const useAccountStore = create<AccountState>((set) => ({
       await loadAccounts();
 
       await switchAccount(tag);
-      const accounts = useAccountStore.getState().accounts;
+      // const accounts = useAccountStore.getState().accounts;
 
-      setTimeout(() => {
-        scheduleAllNotifications(accounts);
-      }, 300);
+      // setTimeout(() => {
+      //   scheduleAllNotifications(accounts);
+      // }, 300);
       const now = Date.now();
       setLastJsonSync(tag, now);
       setLastSync(tag, now);

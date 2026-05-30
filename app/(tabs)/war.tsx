@@ -95,17 +95,6 @@ export default function WarScreen() {
           >
             LIVE WAR
           </Text>
-
-          <Text
-            style={{
-              color: "#f8fafc",
-              fontSize: 22,
-              fontWeight: "800",
-            }}
-          >
-            Clan 1 vs Clan 2
-          </Text>
-
           <View
             style={{
               flexDirection: "row",
@@ -116,9 +105,30 @@ export default function WarScreen() {
             <View>
               <Text
                 style={{
+                  color: "#f8fafc",
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                C.R.E.A.M
+              </Text>
+
+              <Text
+                style={{
+                  color: "#64748b",
+                  fontSize: 11,
+                  marginTop: 2,
+                }}
+              >
+                #2JRY8U8L9
+              </Text>
+
+              <Text
+                style={{
                   color: "#fbbf24",
                   fontSize: 34,
                   fontWeight: "900",
+                  marginTop: 8,
                 }}
               >
                 38⭐
@@ -144,9 +154,30 @@ export default function WarScreen() {
             <View style={{ alignItems: "flex-end" }}>
               <Text
                 style={{
+                  color: "#f8fafc",
+                  fontSize: 16,
+                  fontWeight: "700",
+                }}
+              >
+                NO ONE
+              </Text>
+
+              <Text
+                style={{
+                  color: "#64748b",
+                  fontSize: 11,
+                  marginTop: 2,
+                }}
+              >
+                #Y98GYJC2
+              </Text>
+
+              <Text
+                style={{
                   color: "#fbbf24",
                   fontSize: 34,
                   fontWeight: "900",
+                  marginTop: 8,
                 }}
               >
                 37⭐

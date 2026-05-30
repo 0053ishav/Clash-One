@@ -29,7 +29,10 @@ import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { scheduleAllNotifications } from "@/utils/notificationEngine";
 import { resyncNotifications } from "@/utils/notificationSync";
+import * as Application from "expo-application";
 
+import { SupportModal } from "@/components/SupportModal";
+import { buildSupportInfo } from "@/services/supportDebugInfo";
 import {
   startSmartWidgetScheduler,
   stopSmartWidgetScheduler,
@@ -50,10 +53,7 @@ import {
   Text,
   View,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const ACCOUNT_COLORS = [
   "#fbbf24", // amber
@@ -122,7 +122,6 @@ async function insertTestUpgrade({
 }
 
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const accounts = useAccountStore((s) => s.accounts);
@@ -161,6 +160,10 @@ export default function SettingsScreen() {
   const widgetTag = widgetPrefs.selectedAccountTag ?? activeTag;
   const [votes, setVotes] = useState<Record<string, Vote | null>>({});
 
+  const [showSupport, setShowSupport] = useState(false);
+
+  const [debugInfo, setDebugInfo] = useState("");
+
   useEffect(() => {
     track("screen_view", { screen: "settings" });
   }, []);
@@ -169,7 +172,7 @@ export default function SettingsScreen() {
     useCallback(() => {
       const initial: Record<string, Vote | null> = {};
 
-      ["progress", "planner", "ai", "notes"].forEach((id) => {
+      ["progress", "upgrade_planner", "ai", "war_analytics"].forEach((id) => {
         initial[id] = getFeatureVote(id);
       });
 
@@ -249,6 +252,14 @@ export default function SettingsScreen() {
       townhall: profile?.townHallLevel ?? 0,
       builder_count: activeAccount?.builderCount ?? 0,
     });
+  };
+
+  const openSupport = async () => {
+    const info = await buildSupportInfo();
+
+    setDebugInfo(info);
+
+    setShowSupport(true);
   };
 
   return (
@@ -805,30 +816,28 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Roadmap</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>🚀 What&apos;s Coming</Text>
-          <Text style={styles.helperText}>
-            Vote what you want next — we build based on player demand
-          </Text>
+          <Text style={styles.cardLabel}>🚀 Help Shape Clash Widget</Text>
+          <Text style={styles.helperText}>Vote on upcoming features</Text>
           {[
             {
               id: "progress",
               label: "📊 Base Progress Tracking",
-              desc: "Track total village completion",
+              desc: "See village completion and upgrade status",
             },
             {
-              id: "planner",
-              label: "📅 Upgrade Planner",
-              desc: "Plan upgrades smarter",
+              id: "war_analytics",
+              label: "📅 War Analytics",
+              desc: "Track clan performance and attack efficiency",
+            },
+            {
+              id: "upgrade_planner",
+              label: "📝 Upgrade Planner",
+              desc: "Plan upgrades and resources smarter",
             },
             {
               id: "ai",
               label: "🧠 Smart Suggestions",
-              desc: "Auto recommend next upgrades",
-            },
-            {
-              id: "notes",
-              label: "📝 Strategy Notes",
-              desc: "Save plans & upgrade ideas",
+              desc: "Suggested upgrades based on your progress",
             },
           ].map((item) => {
             const vote = votes[item.id];
@@ -867,6 +876,26 @@ export default function SettingsScreen() {
           })}
         </View>
 
+        <Text style={styles.sectionTitle}>Support</Text>
+
+        <View style={styles.card}>
+          <Pressable style={styles.settingRow} onPress={openSupport}>
+            <View style={styles.settingContent}>
+              {/* <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={20}
+                color="#fbbf24"
+              /> */}
+              <Text style={styles.settingLabel}>Help & Feedback</Text>
+              <Text style={styles.helperText}>
+                Questions? Issues? Feature requests? Contact us and view debug
+                info
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#fbbf24" />
+          </Pressable>
+        </View>
+
         {/* SECTION: Legal */}
         <Text style={styles.sectionTitle}>Legal</Text>
 
@@ -888,7 +917,9 @@ export default function SettingsScreen() {
         {/* About */}
         <View style={styles.aboutSection}>
           <Text style={styles.aboutTitle}>Clash Widget</Text>
-          <Text style={styles.aboutVersion}>v1.0</Text>
+          <Text style={styles.aboutVersion}>
+            v{Application.nativeApplicationVersion}
+          </Text>
           <Text style={styles.aboutSubtitle}>
             Unofficial companion app for Clash of Clans.
           </Text>
@@ -953,6 +984,12 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
+
+      <SupportModal
+        visible={showSupport}
+        onClose={() => setShowSupport(false)}
+        debugInfo={debugInfo}
+      />
 
       {/* Reset Account Modal */}
       <ConfirmModal
@@ -1103,6 +1140,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     gap: 12,
   },
+
+  settingLeft: {},
+
+  settingTitle: {},
 
   settingContent: {
     flex: 1,

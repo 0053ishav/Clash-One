@@ -3,7 +3,6 @@ import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { isOnboardingComplete } from "@/storage/appConfig";
-import { storage } from "@/storage/mmkv";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
@@ -40,7 +39,7 @@ export default function RootLayout() {
 
       await syncEntities();
       hydrateEntities();
-      console.log("MMKV ENTITY", storage.getString("entities_guardians"));
+      // console.log("MMKV ENTITY", storage.getString("entities_guardians"));
       initWidgetManager();
       startSmartWidgetScheduler();
       emitWidgetUpdate();

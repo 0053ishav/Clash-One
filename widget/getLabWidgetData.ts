@@ -12,7 +12,7 @@ export async function getLabWidgetData(inputTag?: string) {
 
   if (!tag) {
     return {
-      title: "Laboratory",
+      title: "Lab",
       subtitle: "No account selected",
       progress: 0,
       showProgress: false,
@@ -24,7 +24,7 @@ export async function getLabWidgetData(inputTag?: string) {
 
   if (!account) {
     return {
-      title: "Laboratory",
+      title: "Lab",
       subtitle: "Open app to sync",
       progress: 0,
       showProgress: false,
@@ -40,7 +40,7 @@ export async function getLabWidgetData(inputTag?: string) {
   // 🟢 IDLE
   if (!normal && !goblin) {
     return {
-      title: "Laboratory",
+      title: "Lab",
       subtitle: "Idle",
       progress: 0,
       showProgress: false,

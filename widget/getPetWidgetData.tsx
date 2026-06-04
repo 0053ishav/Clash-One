@@ -40,6 +40,7 @@ export async function getPetWidgetData(inputTag?: string) {
 
   const state = await getAccountState(tag);
   const pet = state.pet;
+  const suggestionEntity = suggestion ? getEntity(suggestion.dataId) : null;
 
   // 🟢 IDLE
   if (!pet) {
@@ -47,8 +48,8 @@ export async function getPetWidgetData(inputTag?: string) {
       title: "Pet",
       subtitle: "Idle",
       suggestion: suggestion
-        ? `Upgrade ${getEntity(suggestion?.dataId).name} • Lv ${suggestion.level}`
-        : "Idle",
+        ? `Upgrade ${suggestionEntity?.name.en} • Lv ${suggestion.level}`
+        : "Maxed",
       progress: 0,
       showProgress: false,
 
@@ -77,7 +78,7 @@ export async function getPetWidgetData(inputTag?: string) {
 
     dataId: pet.dataId,
     suggestion: suggestion
-      ? `Upgrade ${getEntity(suggestion?.dataId).name} • Lv ${suggestion.level}`
+      ? `Upgrade ${suggestionEntity?.name.en} • Lv ${suggestion.level}`
       : "Maxed",
 
     color: account.color,

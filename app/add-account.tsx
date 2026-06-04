@@ -7,6 +7,7 @@ import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -29,7 +30,7 @@ export default function AddAccountScreen() {
 
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
-
+  const [shouldNavigate, setShouldNavigate] = useState(false);
   const refreshWidget = async () => {
     emitWidgetUpdate();
   };
@@ -59,6 +60,7 @@ export default function AddAccountScreen() {
       const result = await importVillageJson(clipboardText);
       if (result.status === "NO_ACTIVE_BUILDERS") {
         await refreshWidget();
+        setShouldNavigate(true);
 
         setTag(result.tag);
         setModalTitle("Village Synced");
@@ -71,6 +73,7 @@ export default function AddAccountScreen() {
 
       if (result.status === "SUCCESS") {
         await refreshWidget();
+        setShouldNavigate(true);
 
         setTag(result.tag);
         if (getNotificationsEnabled()) {
@@ -96,6 +99,8 @@ export default function AddAccountScreen() {
         trigger: "add-account",
       });
     } catch (error: any) {
+      setShouldNavigate(false);
+
       track("account_add_failed", {
         error: error,
         trigger: "add-account",
@@ -140,7 +145,12 @@ export default function AddAccountScreen() {
       <View style={styles.container}>
         {/* 🔹 Icon */}
         <View style={styles.iconWrapper}>
-          <Text style={styles.icon}>🔨</Text>
+          <Image
+            source={require("@/assets/images/clash/hammer.png")}
+            style={styles.headerImage}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+          />
         </View>
 
         {/* 🔹 Title */}
@@ -208,6 +218,7 @@ export default function AddAccountScreen() {
         }}
         onConfirm={() => {
           setModalVisible(false);
+          if (!shouldNavigate) return;
           router.replace({
             pathname: "/value",
             params: { tag },
@@ -231,18 +242,22 @@ const styles = StyleSheet.create({
   },
 
   iconWrapper: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: "rgba(251,191,36,0.15)",
+    width: 120,
+    height: 120,
+    borderRadius: 30,
+    backgroundColor: "rgba(251,191,36,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(251,191,36,0.25)",
     justifyContent: "center",
     alignItems: "center",
     alignSelf: "center",
     marginBottom: 24,
   },
 
-  icon: {
-    fontSize: 36,
+  headerImage: {
+    width: 100,
+    height: 100,
+    transform: [{ rotate: "270deg" }],
   },
 
   title: {

@@ -55,11 +55,19 @@ export default function ValueScreen() {
     })();
   }, [effectiveTag]);
 
+  // useEffect(() => {
+  //   if (!account) {
+  //     router.replace("/(tabs)");
+  //   }
+  // }, [account]);
+
+  const isLoadingAccounts = useAccountStore((s) => s.isLoadingAccounts);
+
   useEffect(() => {
-    if (!account) {
+    if (!isLoadingAccounts && effectiveTag && !account) {
       router.replace("/(tabs)");
     }
-  }, [account]);
+  }, [account, effectiveTag, isLoadingAccounts]);
 
   const { status, remainingMs, busyCount, nextUpgrade } = useMemo(() => {
     if (!account) {

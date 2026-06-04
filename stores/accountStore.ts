@@ -332,11 +332,6 @@ export const useAccountStore = create<AccountState>((set) => ({
       await loadAccounts();
 
       await switchAccount(tag);
-      // const accounts = useAccountStore.getState().accounts;
-
-      // setTimeout(() => {
-      //   scheduleAllNotifications(accounts);
-      // }, 300);
       const now = Date.now();
       setLastJsonSync(tag, now);
       setLastSync(tag, now);

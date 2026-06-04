@@ -144,9 +144,9 @@ export default function UploadJsonScreen() {
               <Ionicons name="chevron-back" size={24} color="#fbbf24" />
             </Pressable>
             <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Import Player Data</Text>
+              <Text style={styles.headerTitle}>Sync Village Data</Text>
               <Text style={styles.headerSubtitle}>
-                Sync active builders from game
+                Keep builder, lab, and pet progress up to date{" "}
               </Text>
             </View>
           </View>
@@ -241,6 +241,23 @@ export default function UploadJsonScreen() {
               Clash Widget is an unofficial fan-made companion app and is not
               affiliated with, endorsed, sponsored, or approved by Supercell.
             </Text>
+            <Pressable
+              onPress={() =>
+                Linking.openURL("https://supercell.com/en/fan-content-policy/")
+              }
+            >
+              <Text
+                style={{
+                  color: "#fbbf24",
+                  marginTop: 8,
+                  fontSize: 13,
+                  fontWeight: "600",
+                }}
+              >
+                Fan Content Policy
+                <Ionicons name="open-outline" size={14} color="#fbbf24" />
+              </Text>
+            </Pressable>
           </View>
         </ScrollView>
       </View>
@@ -327,7 +344,6 @@ const styles = StyleSheet.create({
   },
 
   securityCard: {
-    backgroundColor: "rgba(34, 197, 94, 0.1)",
     borderWidth: 1.5,
     borderColor: "rgba(34, 197, 94, 0.2)",
   },
@@ -355,12 +371,12 @@ const styles = StyleSheet.create({
   securityTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#22c55e",
+    color: "#f1f5f9",
   },
 
   securityDescription: {
     fontSize: 12,
-    color: "#86efac",
+    color: "#94a3b8",
     lineHeight: 18,
   },
 

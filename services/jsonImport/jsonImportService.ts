@@ -1,4 +1,4 @@
-import { addAccount, getAccountByTag, replaceEntities, replaceUpgrades, updateAccount, updateBuilderCount } from "@/services/accountService";
+import { addAccount, getAccountByTag, updateAccount } from "@/services/accountService";
 import { fetchPlayerFromApi } from "@/services/clashApi";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
@@ -339,7 +339,11 @@ export async function importVillageJson(
   const busyBuildersFromJson = validUpgrades.filter((u) => {
     const entity = getEntity(u.data);
 
-    if (!entity) return false;
+
+    if (!entity) {
+      console.warn("Missing entity:", u.data);
+      return false;
+    }
 
     const type = resolveUpgradeType(entity.type);
 
@@ -373,7 +377,7 @@ export async function importVillageJson(
       apiData?.name ?? "Chief",
       "#fbbf24",
       apiData?.townHallLevel ?? 1,
-      totalBuilders
+      6
     );
   } else {
     await updateAccount(
@@ -382,11 +386,9 @@ export async function importVillageJson(
       existing.color,
       apiData?.townHallLevel ?? existing.townhall
     );
-    await updateBuilderCount(parsed.tag, totalBuilders);
   }
 
   await switchAccountStore(parsed.tag);
-
   if (apiData) {
     const synced = syncProfileFromApi(parsed.tag, apiData);
     useAccountStore.getState().setProfile(parsed.tag, synced);
@@ -394,9 +396,16 @@ export async function importVillageJson(
 
   await new Promise((resolve) => setTimeout(resolve, 50));
 
-  if (!validUpgrades.length || !activeBuilderTasks.length) {
-    await replaceUpgrades(parsed.tag, []);
-    await replaceEntities(parsed.tag, entities);
+  if (
+    validUpgrades.length === 0 &&
+    validLabTasks.length === 0
+  ) {
+    await importJsonData(
+      parsed.tag,
+      [],
+      entities,
+    );
+
     setLastSync(parsed.tag, now);
     setLastJsonSync(parsed.tag, now);
     return { status: "NO_ACTIVE_BUILDERS", tag: parsed.tag };
@@ -422,8 +431,13 @@ export async function importVillageJson(
     // 🔥 force override for crafted
     if (item.isCrafted) {
       entity = {
-        name: "Crafted Defense",
-        type: "BUILDING" as EntityType,
+        id: 1000097,
+        slug: "crafted-defense",
+        village: "home",
+        type: "building" as EntityType,
+        name: {
+          en: "Crafted Defense"
+        },
       };
     }
 
@@ -455,7 +469,7 @@ export async function importVillageJson(
       accountTag: parsed.tag,
 
       dataId: item.data,
-      entity: entity.name,
+      entity: entity.name.en,
 
       type: normalizedType,
       upgradeType,
@@ -500,7 +514,7 @@ export async function importVillageJson(
       accountTag: parsed.tag,
 
       dataId: lab.data,
-      entity: entity.name,
+      entity: entity.name.en,
 
       type: normalizeEntityType(entity.type),
       upgradeType: "LAB",

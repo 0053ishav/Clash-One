@@ -9,8 +9,6 @@ export async function renderMultiWidget() {
   try {
     const { accounts } = useAccountStore.getState();
     const unlimitedWidgets = hasUnlimitedWidgetAccounts();
-    console.log("unlimitedWidgets", unlimitedWidgets);
-
     if (!accounts || accounts.length === 0) {
       return (
         <MultiAccountWidget

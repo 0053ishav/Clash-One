@@ -36,7 +36,6 @@ export default function RootLayout() {
 
       await syncEntities();
       hydrateEntities();
-      // console.log("MMKV ENTITY", storage.getString("entities_guardians"));
       initWidgetManager();
       startSmartWidgetScheduler();
       emitWidgetUpdate();

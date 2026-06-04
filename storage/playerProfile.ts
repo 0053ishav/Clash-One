@@ -184,6 +184,11 @@ export function syncProfileFromApi(
 
   const profile =
     getPlayerProfile(tag);
+    console.log(
+  "Builder Count Profile:",
+  profile.normalBuilderCount
+);
+
   const merged = {
     ...profile,
 

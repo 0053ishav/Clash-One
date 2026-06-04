@@ -1,4 +1,4 @@
-import { EntityType } from "./entity";
+import { EntityType, SubType, Village } from "./entity";
 
 export interface EntityLevel {
   level: number;
@@ -17,13 +17,15 @@ export interface EntityData {
 
   type: EntityType;
 
-  village: string;
+  village: Village;
 
-  subType?: string;
+  subType?: SubType;
 
   resource?: string;
 
   icon?: string;
+
+  tags?: string[];
 
   name: {
     en: string;

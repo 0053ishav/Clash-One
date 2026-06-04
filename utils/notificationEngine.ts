@@ -63,7 +63,7 @@ export async function configureNotifications() {
     });
 
     await Notifications.setNotificationChannelAsync("lab", {
-      name: "Laboratory Alerts",
+      name: "Lab Alerts",
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 200, 200, 200],
       lightColor: "#06b6d4",
@@ -274,10 +274,26 @@ export async function scheduleAllNotifications(accounts: any[]) {
         }
       }
     }
-
+// console.log(
+//   "ALL EVENTS",
+//   allEvents.map(e => ({
+//     id: e.id,
+//     entity: e.entityName,
+//     type: e.type,
+//     finish: e.finishTimestamp,
+//   }))
+// );
     // 3. Deduplicate events
     const uniqueEvents = dedupeEvents(allEvents);
-
+// console.log(
+//   "UNIQUE EVENTS",
+//   uniqueEvents.map(e => ({
+//     id: e.id,
+//     entity: e.entityName,
+//     type: e.type,
+//     finish: e.finishTimestamp,
+//   }))
+// );
     // 4. Sort globally
     uniqueEvents.sort(
       (a, b) => a.finishTimestamp - b.finishTimestamp

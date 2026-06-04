@@ -13,5 +13,6 @@ export type EntityType =
     | "townhall"
     | "lab"
     | "crafted"
-    | "Custom";
-export type SubType= "TOWNHALL" | "DEFENSE" | "RESOURCE" | "HERO_ALT";
+    | "custom"
+    | "unknown";
+export type SubType= "TOWNHALL" | "DEFENSE" | "RESOURCE" | "HERO_ALT" | "SUPER_TROOP" | "OTHER";

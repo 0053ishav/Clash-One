@@ -1,22 +1,23 @@
 {
   "expo": {
-    "name": "Clash Widget",
-    "slug": "clash-widget",
+    "name": "Clash One",
+    "slug": "clash-one",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "clashwidget",
+    "scheme": "clashone",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0e1c3e",
         "foregroundImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.strnge.clashwidget"
+      "package": "com.strngelabs.clashone"
     },
     "web": {
       "output": "static",
@@ -46,49 +47,60 @@
           "widgets": [
             {
               "name": "BuilderStatusWidget",
-              "label": "Builder Tracker",
+              "label": "Builder Status",
               "description": "Track your next free builder with live countdown and progress.",
               "minWidth": "110dp",
               "minHeight": "40dp",
               "targetCellWidth": 2,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "previewImage": "./assets/images/widget/builderStatusWidget.png",
+              "resizeMode": "horizontal",
               "updatePeriodMillis": 1800000
             },
             {
               "name": "MultiAccountWidget",
-              "label": "All Accounts Tracker",
+              "label": "All Accounts",
               "description": "View all your accounts and see which upgrade finishes first.",
               "minWidth": "250dp",
               "minHeight": "40dp",
               "targetCellWidth": 4,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/images/widget/builder.png",
               "updatePeriodMillis": 1800000
             },
             {
               "name": "LabWidget",
-              "label": "Laboratory Tracker",
+              "label": "Laboratory",
               "description": "Track your current research and remaining time.",
               "minWidth": "110dp",
               "minHeight": "40dp",
               "targetCellWidth": 2,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/images/widget/lab.png",
               "updatePeriodMillis": 1800000
             },
             {
               "name": "PetWidget",
-              "label": "Pet Tracker",
+              "label": "Pets",
               "description": "Track your pet upgrades and remaining time.",
               "minWidth": "110dp",
               "minHeight": "40dp",
               "targetCellWidth": 2,
               "targetCellHeight": 1,
-              "previewImage": "./assets/images/icon.png",
+              "resizeMode": "horizontal",
+              "previewImage": "./assets/images/widget/pet.png",
               "updatePeriodMillis": 1800000
             }
           ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon-hammer.png",
+          "color": "#0e1c3e"
         }
       ],
       "expo-sqlite",

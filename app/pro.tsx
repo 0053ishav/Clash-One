@@ -73,10 +73,10 @@ export default function ProScreen() {
         onPress={handleChief}
       />
 
-      {/* FIELD MARSHAL */}
+      {/* War Lord */}
       <PlanCard
         badge="COMING SOON"
-        title="FIELD MARSHAL"
+        title="War Lord"
         price="Future Subscription"
         subtitle="Clan leadership & war intelligence"
         features={[

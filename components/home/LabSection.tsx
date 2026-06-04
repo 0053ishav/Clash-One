@@ -113,10 +113,6 @@ function LabCard({
   const remainingMs = Math.max(lab.endTime - now, 0);
   const totalMs = lab.endTime - lab.startTime;
 
-  // const entityType = lab.dataId
-  //   ? getEntityTypeByDataId(lab.dataId, lab.isCrafted)
-  //   : undefined;
-
   const iconUri = lab.dataId != null ? resolveEntityIcon(lab.dataId) : null;
 
   return (
@@ -134,16 +130,6 @@ function LabCard({
         {/* ICON */}
         <View style={[styles.iconContainer, styles.labIconContainer]}>
           <Image
-            // source={
-            //   lab.dataId && entityType
-            //     ? getIconByEntityType(
-            //         lab.dataId,
-            //         entityType,
-            //         undefined,
-            //         lab.isCrafted,
-            //       )
-            //     : require("@/assets/images/builder/builder-working.png")
-            // }
             source={
               iconUri
                 ? { uri: iconUri }
@@ -160,20 +146,31 @@ function LabCard({
               {lab.entity}
             </Text>
 
-            <Text
+            <View
               style={[
                 styles.slotLabel,
                 isGoblin ? styles.slotLabelGoblin : styles.slotLabelNormal,
               ]}
             >
-              {isGoblin ? "Goblin" : "Lab"}
+              <Text
+                style={[
+                  styles.slotLabelText,
+                  isGoblin
+                    ? styles.slotLabelTextGoblin
+                    : styles.slotLabelTextNormal,
+                ]}
+              >
+                {isGoblin ? "Goblin" : "Lab"}
+              </Text>
+
               {isGoblin && (
                 <Image
                   source={require("@/assets/images/clash/goblin-builder.png")}
-                  style={{ width: 15, height: 15, marginLeft: 2 }}
+                  style={styles.slotLabelIcon}
+                  contentFit="contain"
                 />
               )}
-            </Text>
+            </View>
           </View>
 
           {/* LEVEL */}
@@ -345,22 +342,39 @@ const styles = StyleSheet.create({
   },
 
   slotLabel: {
-    fontSize: 11,
-    fontWeight: "600",
+    flexDirection: "row",
+    alignItems: "center",
+
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
-    overflow: "hidden",
+  },
+
+  slotLabelText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  slotLabelTextNormal: {
+    color: "#22d3ee",
+  },
+
+  slotLabelTextGoblin: {
+    color: "#fb923c",
   },
 
   slotLabelNormal: {
-    color: "#22d3ee",
     backgroundColor: "rgba(34, 211, 238, 0.12)",
   },
 
   slotLabelGoblin: {
-    color: "#fb923c",
     backgroundColor: "rgba(251, 146, 60, 0.15)",
+  },
+
+  slotLabelIcon: {
+    width: 13,
+    height: 13,
+    marginLeft: 3,
   },
 
   levelBadge: {

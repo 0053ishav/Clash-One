@@ -14,7 +14,7 @@ export async function renderLabWidget() {
     if (!accounts || accounts.length === 0) {
       return (
         <LabStatusWidget
-          title="Laboratory"
+          title="Lab"
           subtitle="Loading..."
           progress={0}
           showProgress={false}
@@ -31,7 +31,7 @@ export async function renderLabWidget() {
     if (!tag) {
       return (
         <LabStatusWidget
-          title="Laboratory"
+          title="Lab"
           subtitle="No account"
           progress={0}
           showProgress={false}
@@ -45,7 +45,7 @@ export async function renderLabWidget() {
       // ❌ avoid recursion
       return (
         <LabStatusWidget
-          title="Laboratory"
+          title="Lab"
           subtitle="Invalid account"
           progress={0}
           showProgress={false}
@@ -71,7 +71,7 @@ export async function renderLabWidget() {
 
     return (
       <LabStatusWidget
-        title={data.title ?? "Laboratory"}
+        title={data.title ?? "Lab"}
         subtitle={data.subtitle ?? "Idle"}
         icon={icon}
         progress={data.progress ?? 0}
@@ -88,7 +88,7 @@ export async function renderLabWidget() {
 
     return (
       <LabStatusWidget
-        title="Laboratory"
+        title="Lab"
         subtitle="Open app to sync"
         progress={0}
         showProgress={false}

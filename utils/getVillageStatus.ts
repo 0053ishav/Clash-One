@@ -1,4 +1,5 @@
 import { Upgrade } from "@/types/upgrade";
+import { isWorkForHireActive } from "./goblin";
 
 export function getVillageStatus({
   townHall,
@@ -18,24 +19,51 @@ export function getVillageStatus({
   const normalBusyBuilders = builders.filter(
     (b) => b.builderSlot !== "G"
   ).length;
+
+  const goblinBuilderBusy = builders.some(
+    (b) => b.builderSlot === "G"
+  );
+
   const freeBuilders = builderCount - normalBusyBuilders;
 
   const hasPetHouse = townHall >= 14;
   const petIdle = hasPetHouse && !pet;
 
-  const isNormalBusy = !!labNormal && !labNormal.isCompleted;
-  const isGoblinBusy = !!labGoblin && !labGoblin.isCompleted;
 
-  const labIdle = !isNormalBusy || !isGoblinBusy;
+  const isNormalLabBusy =
+    !!labNormal && !labNormal.isCompleted;
+
+  const isGoblinLabBusy =
+    !!labGoblin && !labGoblin.isCompleted;
+
+  const labIdle = !isNormalLabBusy;
+
+  const goblinLabIdle =
+    isWorkForHireActive() &&
+    !labIdle &&
+    !isGoblinLabBusy;
+
+  const goblinBuilderIdle =
+    isWorkForHireActive() &&
+    freeBuilders <= 0 &&
+    !goblinBuilderBusy;
 
   return {
     freeBuilders,
     allBuildersBusy: freeBuilders <= 0,
 
     petIdle,
+
     labIdle,
+    goblinLabIdle,
+
+    goblinBuilderIdle,
 
     hasAnyIdle:
-      freeBuilders > 0 || petIdle || labIdle,
+      freeBuilders > 0 ||
+      petIdle ||
+      labIdle ||
+      goblinLabIdle ||
+      goblinBuilderIdle,
   };
 }

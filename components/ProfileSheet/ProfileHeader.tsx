@@ -30,12 +30,12 @@ export default function ProfileHeader({
   const hasHelpers = helpers.length > 0;
   const hasGuardians = guardians.length > 0;
 
-  console.log("🧠 PROFILE HEADER", {
-    tag: profile.playerTag,
-    guardians: guardians.length,
-    guardiansDataId: guardians.map((g) => g.dataId),
-    icon: resolveEntityIcon(107000008),
-  });
+  // console.log("🧠 PROFILE HEADER", {
+  //   tag: profile.playerTag,
+  //   guardians: guardians.length,
+  //   guardiansDataId: guardians.map((g) => g.dataId),
+  //   icon: resolveEntityIcon(107000008),
+  // });
 
   return (
     <View style={styles.container}>

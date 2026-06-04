@@ -2,7 +2,6 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { getDB } from "@/db/database";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import {
-  getAccounts,
   updateAccountColor,
   updateBuilderCount,
 } from "@/services/accountService";
@@ -26,12 +25,12 @@ import { FeatureId, Vote } from "@/types/vote";
 import { track } from "@/utils/analytics/analytics";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
-import { scheduleAllNotifications } from "@/utils/notificationEngine";
 import { resyncNotifications } from "@/utils/notificationSync";
 import * as Application from "expo-application";
 
 import { ChiefCard } from "@/components/ChiefCard";
 import { SupportModal } from "@/components/SupportModal";
+import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { isChiefOrAbove } from "@/utils/premium";
 import {
@@ -46,6 +45,7 @@ import * as Notifications from "expo-notifications";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -108,7 +108,7 @@ async function insertTestUpgrade({
       entityType, // ✅ FIXED
       type, // upgradeType
 
-      type === "BUILDER" ? "0" : null,
+      type === "BUILDER" ? "99" : null,
       type === "BUILDER" ? "NORMAL" : null,
 
       type === "LAB" ? "NORMAL" : null, // ✅ CRITICAL
@@ -119,6 +119,10 @@ async function insertTestUpgrade({
       0,
       "DEV",
     ],
+  );
+  return db.getAllSync(
+    `SELECT * FROM upgrades WHERE account_player_tag = ? ORDER BY start_time DESC LIMIT 1`,
+    [tag],
   );
 }
 
@@ -142,7 +146,8 @@ export default function SettingsScreen() {
   const [localBuilderCount, setLocalBuilderCount] =
     useState<number>(dbBuilderCount);
 
-  const [notificationsEnabled, setLocalNotificationsEnabled] = useState(false);
+  const [localNotificationsEnabled, setLocalNotificationsEnabled] =
+    useState(false);
   const [showResetAccountModal, setShowResetAccountModal] = useState(false);
   const [showClearUpgradesModal, setShowClearUpgradesModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -191,8 +196,11 @@ export default function SettingsScreen() {
     if (!acc) return;
 
     setLocalBuilderCount(acc.builderCount);
-    setLocalNotificationsEnabled(getNotificationsEnabled());
   }, [accounts, activeTag]);
+
+  useEffect(() => {
+    setLocalNotificationsEnabled(getNotificationsEnabled());
+  }, []);
 
   const handleBuilderSelect = async (count: number) => {
     if (!activeTag || !activeAccount) return;
@@ -663,7 +671,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Switch
-              value={notificationsEnabled}
+              value={localNotificationsEnabled}
               onValueChange={async (value) => {
                 track("notifications_toggled", {
                   enabled: value,
@@ -671,18 +679,21 @@ export default function SettingsScreen() {
                 });
 
                 if (value) {
-                  const { status } =
-                    await Notifications.requestPermissionsAsync();
-                  if (status === "granted") {
-                    setNotificationsEnabled(true);
-                    setLocalNotificationsEnabled(true);
-
-                    const accounts = await getAccounts();
-
-                    setTimeout(() => {
-                      scheduleAllNotifications(accounts);
-                    }, 300);
+                  const granted = await requestNotificationPermissions();
+                  if (!granted) {
+                    setNotificationsEnabled(false);
+                    setLocalNotificationsEnabled(false);
+                    Alert.alert(
+                      "Notifications Disabled",
+                      "Please allow notifications in system settings.",
+                    );
+                    return;
                   }
+
+                  setNotificationsEnabled(true);
+                  setLocalNotificationsEnabled(true);
+
+                  await resyncNotifications();
                 } else {
                   setNotificationsEnabled(false);
                   setLocalNotificationsEnabled(false);
@@ -690,7 +701,7 @@ export default function SettingsScreen() {
                 }
               }}
               trackColor={{ false: "#334155", true: "#fbbf24" }}
-              thumbColor={notificationsEnabled ? "#0f172a" : "#cbd5e1"}
+              thumbColor={localNotificationsEnabled ? "#0f172a" : "#cbd5e1"}
             />
           </View>
         </View>
@@ -698,24 +709,21 @@ export default function SettingsScreen() {
         {/* SECTION: Notification Testing (DEV) */}
         {__DEV__ && (
           <>
-            <Text style={styles.sectionTitle}>Dev – Notification Test</Text>
+            <Text style={styles.sectionTitle}>Dev - Notification Test</Text>
             <View style={styles.card}>
               <Pressable
                 style={styles.testButton}
                 onPress={async () => {
                   if (!activeTag) return;
 
-                  await insertTestUpgrade({
+                  const result = await insertTestUpgrade({
                     tag: activeTag,
                     type: "BUILDER",
                     delayMs: 5000,
                   });
+                  console.log("resultbuilder: ", result);
 
-                  const accounts = await getAccounts();
-
-                  setTimeout(() => {
-                    scheduleAllNotifications(accounts);
-                  }, 300);
+                  await resyncNotifications();
                 }}
               >
                 <Ionicons name="hammer" size={18} color="#fff" />
@@ -726,17 +734,14 @@ export default function SettingsScreen() {
                 onPress={async () => {
                   if (!activeTag) return;
 
-                  await insertTestUpgrade({
+                  const result = await insertTestUpgrade({
                     tag: activeTag,
                     type: "LAB",
                     delayMs: 8000,
                   });
+                  console.log("resultlab: ", result);
 
-                  const accounts = await getAccounts();
-
-                  setTimeout(() => {
-                    scheduleAllNotifications(accounts);
-                  }, 300);
+                  await resyncNotifications();
                 }}
               >
                 <Ionicons name="flask" size={18} color="#fff" />
@@ -747,17 +752,14 @@ export default function SettingsScreen() {
                 onPress={async () => {
                   if (!activeTag) return;
 
-                  await insertTestUpgrade({
+                  const result = await insertTestUpgrade({
                     tag: activeTag,
                     type: "PET",
                     delayMs: 12000,
                   });
+                  console.log("resultpet: ", result);
 
-                  const accounts = await getAccounts();
-
-                  setTimeout(() => {
-                    scheduleAllNotifications(accounts);
-                  }, 300);
+                  await resyncNotifications();
                 }}
               >
                 <Ionicons name="paw" size={18} color="#fff" />
@@ -792,9 +794,9 @@ export default function SettingsScreen() {
             }}
           >
             <View style={styles.settingContent}>
-              <Text style={styles.settingLabel}>Import Player JSON</Text>
+              <Text style={styles.settingLabel}>Sync Village Data</Text>
               <Text style={styles.helperText}>
-                Optional. For semi-automatic tracking
+                Keep builder, lab, and pet progress up to date
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#fbbf24" />

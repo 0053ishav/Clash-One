@@ -5,13 +5,13 @@ import * as Clipboard from "expo-clipboard";
 import * as Crypto from "expo-crypto";
 import { useState } from "react";
 import {
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -219,7 +219,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   borderTopColor: "#1e293b",
                 }}
               >
-                <Text style={styles.aboutTitle}>Clash Widget</Text>
+                <Text style={styles.aboutTitle}>Clash One</Text>
 
                 <Text style={styles.aboutVersion}>
                   v{Application.nativeApplicationVersion}
@@ -270,7 +270,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
       <ConfirmModal
         visible={showSuccessModal}
         title="Feedback Sent"
-        message="Thanks for helping improve Clash Widget. Your feedback has been sent successfully."
+        message="Thanks for helping improve Clash One. Your feedback has been sent successfully."
         confirmText="Done"
         cancelText=""
         onConfirm={() => {

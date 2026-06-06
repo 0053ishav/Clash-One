@@ -77,11 +77,11 @@ export default function PrivacyScreen() {
               <Text style={styles.sectionTitle}>Your Privacy</Text>
             </View>
             <Text style={styles.sectionText}>
-              Clash Widget is designed to help players track upgrades and
-              builder activity. The app stores most gameplay data locally on
-              your device. Some third-party services such as advertising
-              providers may collect limited technical information in accordance
-              with their own privacy policies.
+              Clash One is designed to help players track upgrades and builder
+              activity. The app stores most gameplay data locally on your
+              device. Some third-party services such as advertising providers
+              may collect limited technical information in accordance with their
+              own privacy policies.
             </Text>
           </View>
 
@@ -216,7 +216,7 @@ export default function PrivacyScreen() {
             </View>
 
             <Text style={styles.sectionText}>
-              Clash Widget may display advertisements provided by Google AdMob.
+              Clash one may display advertisements provided by Google AdMob.
               Advertising partners may collect device identifiers, approximate
               location, and usage information to provide and measure ads. Please
               review Google&apos;s privacy policy for more information about how
@@ -282,7 +282,7 @@ export default function PrivacyScreen() {
               style={styles.linkButton}
               onPress={() =>
                 Linking.openURL(
-                  "mailto:legal@clashwidget.online?subject=Clash Widget Support",
+                  "mailto:legal@clashwidget.online?subject=Clash One Support",
                 )
               }
             >

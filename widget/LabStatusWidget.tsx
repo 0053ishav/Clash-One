@@ -257,6 +257,7 @@ export function LabStatusWidget(props: {
 
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
       style={{
         width: "match_parent",
         height: "match_parent",

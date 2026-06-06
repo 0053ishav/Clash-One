@@ -14,7 +14,7 @@ export default function ProScreen() {
     console.log("RevenueCat Lifetime Purchase");
   };
 
-  const handleFieldMarshal = () => {
+  const handleCommander = () => {
     console.log("Coming Soon");
   };
 
@@ -31,7 +31,7 @@ export default function ProScreen() {
       </Text>
 
       {/* FREE */}
-      <PlanCard
+      {/* <PlanCard
         badge="CURRENT PLAN"
         title="FREE"
         price="₹0"
@@ -48,10 +48,26 @@ export default function ProScreen() {
         ]}
         buttonLabel="Current Plan"
         disabled
+      /> */}
+
+      <PlanCard
+        badge="CURRENT PLAN"
+        title="FREE"
+        price="₹0"
+        subtitle="Track all your Clash villages"
+        features={[
+          "Upgrade Tracking",
+          "Widgets",
+          "Notifications",
+          "Multi-Account Support",
+          "Ads Supported",
+        ]}
+        buttonLabel="Current Plan"
+        disabled
       />
 
       {/* CHIEF */}
-      <PlanCard
+      {/* <PlanCard
         badge="LIFETIME"
         title="CHIEF"
         price="₹199"
@@ -71,12 +87,27 @@ export default function ProScreen() {
         ]}
         buttonLabel="Unlock Chief"
         onPress={handleChief}
+      /> */}
+      <PlanCard
+        badge="LIFETIME"
+        title="CHIEF"
+        price="₹199"
+        subtitle="Personal progression & planning"
+        highlight
+        features={[
+          "Remove Ads",
+          "Unlimited Widget Accounts",
+          "Support Independent Development",
+          "Early Supporter Badge",
+        ]}
+        buttonLabel="Unlock Chief"
+        onPress={handleChief}
       />
 
-      {/* War Lord */}
-      <PlanCard
+      {/* Commander */}
+      {/* <PlanCard
         badge="COMING SOON"
-        title="War Lord"
+        title="Commander"
         price="Future Subscription"
         subtitle="Clan leadership & war intelligence"
         features={[
@@ -91,8 +122,8 @@ export default function ProScreen() {
         ]}
         buttonLabel="Coming Soon"
         disabled
-        marshal
-      />
+        commander
+      /> */}
 
       <Pressable onPress={() => router.back()}>
         <Text style={styles.secondary}>Continue without upgrading</Text>
@@ -110,7 +141,7 @@ type PlanCardProps = {
   buttonLabel: string;
   disabled?: boolean;
   highlight?: boolean;
-  marshal?: boolean;
+  commander?: boolean;
   onPress?: () => void;
 };
 
@@ -123,7 +154,7 @@ function PlanCard({
   buttonLabel,
   disabled,
   highlight,
-  marshal,
+  commander,
   onPress,
 }: PlanCardProps) {
   return (
@@ -131,7 +162,7 @@ function PlanCard({
       style={[
         styles.card,
         highlight && styles.highlightCard,
-        marshal && styles.marshalCard,
+        commander && styles.commanderCard,
       ]}
     >
       <View style={styles.badge}>
@@ -213,7 +244,7 @@ const styles = StyleSheet.create({
     borderColor: "#fbbf24",
   },
 
-  marshalCard: {
+  commanderCard: {
     borderColor: "#38bdf8",
   },
 

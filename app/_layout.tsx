@@ -2,6 +2,7 @@ import { initDatabase } from "@/db/initDatabase";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
+import { initRevenueCat } from "@/services/revenueCat/revenueCat";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
@@ -10,7 +11,6 @@ import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
-// import { updateWidgetAccess } from "@/utils/widgetPicker";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
@@ -28,6 +28,7 @@ export default function RootLayout() {
   const runBootstrap = useCallback(async () => {
     try {
       await initDatabase();
+      await initRevenueCat();
       await loadAccounts();
       loadLastSync();
       await loadActiveAccount();
@@ -58,10 +59,6 @@ export default function RootLayout() {
   useEffect(() => {
     runBootstrap();
   }, []);
-
-  // useEffect(() => {
-  //   updateWidgetAccess(isPro);
-  // }, [isPro]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(

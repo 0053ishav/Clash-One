@@ -19,6 +19,7 @@ import {
   setFeatureVote,
 } from "@/storage/notesStorage";
 import { useAccountStore } from "@/stores/accountStore";
+import { usePremiumStore } from "@/stores/premiumStore";
 import { Upgrade } from "@/types/upgrade";
 import { FeatureId, Vote } from "@/types/vote";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
@@ -39,7 +40,6 @@ import {
   resolveEntityIcon,
 } from "@/utils/icons/resolveEntityIcon";
 import { resyncNotifications } from "@/utils/notificationSync";
-import { isChiefOrAbove } from "@/utils/premium";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { Ionicons } from "@expo/vector-icons";
@@ -60,7 +60,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const isPro = isChiefOrAbove();
+  const isPremium = usePremiumStore((s) => s.isPremium);
   type AccountState = Awaited<ReturnType<typeof getAccountState>>;
   const [accountState, setAccountState] = useState<AccountState | null>(null);
   const [selectedUpgrade, setSelectedUpgrade] = useState<Upgrade | null>(null);
@@ -431,7 +431,7 @@ export default function HomeScreen() {
                     cachePolicy="memory-disk"
                   />
                 )}
-                {isPro && (
+                {isPremium && (
                   <View
                     style={{
                       backgroundColor: "#fbbf24",

@@ -26,7 +26,7 @@ const { width } = Dimensions.get("window");
 
 const SLIDES = [
   {
-    title: "Clash Widget",
+    title: "Clash One",
     description:
       "Track builder upgrades, timers, and progress across your accounts.",
     image: require("@/assets/images/builder/builder-idle.png"),

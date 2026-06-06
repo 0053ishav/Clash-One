@@ -253,6 +253,7 @@ export function PetStatusWidget(props: {
 
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
       style={{
         width: "match_parent",
         height: "match_parent",

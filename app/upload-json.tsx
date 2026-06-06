@@ -238,7 +238,7 @@ export default function UploadJsonScreen() {
           <View style={styles.disclaimerSection}>
             <Text style={styles.disclaimerTitle}>Disclaimer</Text>
             <Text style={styles.disclaimerText}>
-              Clash Widget is an unofficial fan-made companion app and is not
+              Clash One is an unofficial fan-made companion app and is not
               affiliated with, endorsed, sponsored, or approved by Supercell.
             </Text>
             <Pressable

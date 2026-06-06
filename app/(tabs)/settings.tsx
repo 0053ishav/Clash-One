@@ -32,7 +32,7 @@ import { ChiefCard } from "@/components/ChiefCard";
 import { SupportModal } from "@/components/SupportModal";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
-import { isChiefOrAbove } from "@/utils/premium";
+import { usePremiumStore } from "@/stores/premiumStore";
 import {
   startSmartWidgetScheduler,
   stopSmartWidgetScheduler,
@@ -140,7 +140,7 @@ export default function SettingsScreen() {
 
   const { profile } = usePlayerProfile();
   const activeAccount = accounts.find((a) => a.tag === activeTag);
-  const isPro = isChiefOrAbove();
+  const isPremium = usePremiumStore((s) => s.isPremium);
   const dbBuilderCount = activeAccount?.builderCount ?? 1;
 
   const [localBuilderCount, setLocalBuilderCount] =
@@ -326,7 +326,7 @@ export default function SettingsScreen() {
                     {profile.expLevel ? ` • Lv ${profile.expLevel}` : ""}
                   </Text>
                 </View>
-                {isPro && (
+                {isPremium && (
                   <View
                     style={{
                       backgroundColor: "#fbbf24",
@@ -820,7 +820,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Roadmap</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>🚀 Help Shape Clash Widget</Text>
+          <Text style={styles.cardLabel}>🚀 Help Shape Clash One</Text>
           <Text style={styles.helperText}>Vote on upcoming features</Text>
           {[
             {
@@ -920,7 +920,7 @@ export default function SettingsScreen() {
 
         {/* About */}
         <View style={styles.aboutSection}>
-          <Text style={styles.aboutTitle}>Clash Widget</Text>
+          <Text style={styles.aboutTitle}>Clash One</Text>
           <Text style={styles.aboutVersion}>
             v{Application.nativeApplicationVersion}
           </Text>

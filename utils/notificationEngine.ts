@@ -2,9 +2,9 @@ import { getAccountByTag } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
 import { ENABLE_GROUPING, getNotificationsEnabled, GROUP_WINDOW_MS, MAX_GROUP_BODY_LINES } from "@/storage/notificationConfig";
 import { useCraftedStore } from "@/stores/craftedEventStore";
+import { usePremiumStore } from "@/stores/premiumStore";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { isChiefOrAbove } from "./premium";
 
 /**
  * Unified event type across builder/lab/pet
@@ -98,7 +98,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
     }
     // 1. Cancel existing notifications (critical)
     await cancelAllScheduledNotifications();
-  const isPro = isChiefOrAbove();
+    const isPremium = usePremiumStore.getState().isPremium;
     // 2. Collect all events
     const allEvents: UpgradeEvent[] = [];
 
@@ -120,7 +120,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
           accountColor: acc.color,
 
           type: "BUILDER",
-          entityId: b.builderSlot !== undefined ? String(b.builderSlot) : `fallback-${b.id}`, 
+          entityId: b.builderSlot !== undefined ? String(b.builderSlot) : `fallback-${b.id}`,
           entityName: b.entity,
           level: b.currentLevel,
           nextLevel: b.nextLevel,
@@ -128,7 +128,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
           finishTimestamp: b.endTime,
         });
 
-        if (isPro) {
+        if (isPremium) {
           const preTime = b.endTime - PRE_ALERT_MS;
           const idleTime = b.endTime + IDLE_ALERT_MS;
 
@@ -274,26 +274,26 @@ export async function scheduleAllNotifications(accounts: any[]) {
         }
       }
     }
-// console.log(
-//   "ALL EVENTS",
-//   allEvents.map(e => ({
-//     id: e.id,
-//     entity: e.entityName,
-//     type: e.type,
-//     finish: e.finishTimestamp,
-//   }))
-// );
+    // console.log(
+    //   "ALL EVENTS",
+    //   allEvents.map(e => ({
+    //     id: e.id,
+    //     entity: e.entityName,
+    //     type: e.type,
+    //     finish: e.finishTimestamp,
+    //   }))
+    // );
     // 3. Deduplicate events
     const uniqueEvents = dedupeEvents(allEvents);
-// console.log(
-//   "UNIQUE EVENTS",
-//   uniqueEvents.map(e => ({
-//     id: e.id,
-//     entity: e.entityName,
-//     type: e.type,
-//     finish: e.finishTimestamp,
-//   }))
-// );
+    // console.log(
+    //   "UNIQUE EVENTS",
+    //   uniqueEvents.map(e => ({
+    //     id: e.id,
+    //     entity: e.entityName,
+    //     type: e.type,
+    //     finish: e.finishTimestamp,
+    //   }))
+    // );
     // 4. Sort globally
     uniqueEvents.sort(
       (a, b) => a.finishTimestamp - b.finishTimestamp
@@ -312,18 +312,18 @@ export async function scheduleAllNotifications(accounts: any[]) {
       await scheduleGroupNotification(group);
     }
     const scheduled =
-  await Notifications.getAllScheduledNotificationsAsync();
+      await Notifications.getAllScheduledNotificationsAsync();
 
-// console.log(
-//   "Scheduled notifications:",
-//   scheduled.map((n) => ({
-//     id: n.identifier,
-//     title: n.content.title,
-//     body: n.content.body,
-//     data: n.content.data,
-//     trigger: n.trigger,
-//   }))
-// );
+    // console.log(
+    //   "Scheduled notifications:",
+    //   scheduled.map((n) => ({
+    //     id: n.identifier,
+    //     title: n.content.title,
+    //     body: n.content.body,
+    //     data: n.content.data,
+    //     trigger: n.trigger,
+    //   }))
+    // );
   } catch (e) {
     console.error("NotificationEngine error:", e);
   }
@@ -337,13 +337,13 @@ export async function scheduleAllNotifications(accounts: any[]) {
 async function cancelAllScheduledNotifications() {
   const scheduled =
     await Notifications.getAllScheduledNotificationsAsync();
-// console.log("cancelling notifications:", scheduled.length, scheduled.map((n) => ({
-//     id: n.identifier,
-//     title: n.content.title,
-//     body: n.content.body,
-//     data: n.content.data,
-//     trigger: n.trigger,
-//   })))
+  // console.log("cancelling notifications:", scheduled.length, scheduled.map((n) => ({
+  //     id: n.identifier,
+  //     title: n.content.title,
+  //     body: n.content.body,
+  //     data: n.content.data,
+  //     trigger: n.trigger,
+  //   })))
   await Promise.all(
     scheduled.map((n) =>
       Notifications.cancelScheduledNotificationAsync(n.identifier)
@@ -438,7 +438,7 @@ async function scheduleGroupNotification(group: {
 
       let title = "";
       let body = "";
-      
+
 
       switch (e.phase) {
         case "START":
@@ -480,10 +480,10 @@ async function scheduleGroupNotification(group: {
           date: new Date(e.finishTimestamp),
         },
       });
-const channels =
-  await Notifications.getNotificationChannelsAsync();
+      const channels =
+        await Notifications.getNotificationChannelsAsync();
 
-// console.log("channels", channels);
+      // console.log("channels", channels);
       // mark only START as consumed
       if (e.phase === "START") {
         useCraftedStore.setState({

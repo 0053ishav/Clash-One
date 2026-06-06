@@ -27,7 +27,7 @@ const density = PixelRatio.get();
 
   return `
 ------------------------
-Clash Widget Debug Info
+Clash One Debug Info
 ------------------------
 
 App Version: ${Application.nativeApplicationVersion ?? "Unknown"}

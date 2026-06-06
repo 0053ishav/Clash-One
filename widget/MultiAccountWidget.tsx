@@ -14,7 +14,7 @@ type Props = {
   accounts: MultiWidgetItem[];
   totalAccounts?: number;
   error?: boolean;
-  isPro?: boolean;
+  isPremium?: boolean;
 };
 
 // ---------- URGENCY ----------
@@ -45,7 +45,7 @@ function renderNoAccounts(): React.ReactNode {
   return (
     <FlexWidget
       clickAction="OPEN_URI"
-      clickActionData={{ uri: "clashwidget://add-account?source=widget" }}
+      clickActionData={{ uri: "clashone://add-account?source=widget" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -369,7 +369,7 @@ function renderUpsellCard(totalAccounts?: number): React.ReactNode {
   return (
     <FlexWidget
       clickAction="OPEN_URI"
-      clickActionData={{ uri: "clashwidget://pro?source=widget&upsell=true" }}
+      clickActionData={{ uri: "clashone://pro?source=widget&upsell=true" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -439,7 +439,7 @@ function renderAddAccountCard(totalAccounts?: number): React.ReactNode {
   return (
     <FlexWidget
       clickAction="OPEN_URI"
-      clickActionData={{ uri: "clashwidget://add-account?source=widget" }}
+      clickActionData={{ uri: "clashone://add-account?source=widget" }}
       style={{
         width: "match_parent",
         height: "match_parent",
@@ -531,6 +531,7 @@ function renderCard(item: MultiWidgetItem): React.ReactNode {
   const icon = data.icon;
   return (
     <FlexWidget
+      clickAction="OPEN_APP"
       key={tag}
       style={{
         width: "match_parent",
@@ -833,7 +834,7 @@ export function MultiAccountWidget({
   accounts,
   totalAccounts,
   error,
-  isPro,
+  isPremium,
 }: Props) {
   if (error) return renderError();
 
@@ -844,7 +845,7 @@ export function MultiAccountWidget({
   if (accounts.length === 0) return renderNoCache(totalAccounts);
 
   console.log("UPSELL CHECK:", {
-    isPro,
+    isPremium,
     totalAccounts,
     accountsLength: accounts.length,
   });
@@ -853,7 +854,7 @@ export function MultiAccountWidget({
 
   let visibleCount = 0;
 
-  if (isPro) {
+  if (isPremium) {
     visibleCount = Math.min(3, accounts.length);
   } else {
     visibleCount = total >= 3 ? 2 : Math.min(2, accounts.length);
@@ -861,7 +862,7 @@ export function MultiAccountWidget({
 
   const visibleAccounts = accounts.slice(0, visibleCount);
 
-  const shouldShowUpsell = !isPro && total >= 3;
+  const shouldShowUpsell = !isPremium && total >= 3;
 
   const shouldShowAddAccount = total === 1;
 

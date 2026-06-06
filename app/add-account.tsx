@@ -154,7 +154,7 @@ export default function AddAccountScreen() {
         </View>
 
         {/* 🔹 Title */}
-        <Text style={styles.title}>Add Your Account</Text>
+        <Text style={styles.title}>Add Your Village</Text>
 
         {/* 🔹 Description */}
         <Text style={styles.description}>

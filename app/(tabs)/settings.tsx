@@ -462,11 +462,11 @@ export default function SettingsScreen() {
         </View>
 
         {/* SECTION: All Accounts */}
-        <Text style={styles.sectionTitle}>All Accounts</Text>
+        <Text style={styles.sectionTitle}>All Villages</Text>
 
         <View style={styles.card}>
           {accounts.length === 0 && (
-            <Text style={styles.emptyAccountsText}>No accounts added yet</Text>
+            <Text style={styles.emptyAccountsText}>No villages added yet</Text>
           )}
 
           {accounts.map((acc, index) => {
@@ -616,7 +616,7 @@ export default function SettingsScreen() {
             <View style={styles.addAccountIcon}>
               <Ionicons name="add" size={18} color="#fbbf24" />
             </View>
-            <Text style={styles.addAccountText}>Add Account</Text>
+            <Text style={styles.addAccountText}>Add Village</Text>
             <Ionicons name="chevron-forward" size={16} color="#fbbf24" />
           </Pressable>
         </View>
@@ -624,7 +624,7 @@ export default function SettingsScreen() {
         {/* Widget Account hint */}
         <Text style={styles.widgetHint}>
           <Ionicons name="phone-portrait-outline" size={11} color="#475569" />
-          {"  "}Tap the widget icon on any account to pin it to your home screen
+          Tap the widget icon on any village to pin it to your home screen
           widget
         </Text>
 
@@ -1029,7 +1029,7 @@ export default function SettingsScreen() {
       <ConfirmModal
         visible={showClearUpgradesModal}
         title="Clear All Upgrades?"
-        message="This will remove all tracked upgrades but keep your account."
+        message="This will remove all tracked upgrades but keep your village."
         confirmText="Clear"
         destructive
         onCancel={() => setShowClearUpgradesModal(false)}
@@ -1045,7 +1045,7 @@ export default function SettingsScreen() {
       <ConfirmModal
         visible={!!accountToDelete}
         title={`Remove ${accountToDelete?.name}?`}
-        message="This account will be removed. Your upgrade data for this account will also be deleted."
+        message="This village will be removed. Your upgrade data for this village will also be deleted."
         confirmText="Remove"
         destructive
         onCancel={() => setAccountToDelete(null)}

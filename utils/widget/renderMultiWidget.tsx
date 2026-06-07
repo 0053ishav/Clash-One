@@ -1,5 +1,5 @@
-import { useAccountStore } from "@/stores/accountStore";
-import { usePremiumStore } from "@/stores/premiumStore";
+import { getAccounts } from "@/services/accountService";
+import { syncPremium } from "@/services/revenueCat/syncPremium";
 import { getMultiWidgetDataFree } from "@/widget/getMultiWidgetDataFree";
 import { getMultiWidgetDataPro } from "@/widget/getMultiWidgetDataPro";
 import { MultiAccountWidget } from "@/widget/MultiAccountWidget";
@@ -7,8 +7,13 @@ import { getWidgetCache, setWidgetCache } from "./widgetCache";
 
 export async function renderMultiWidget() {
   try {
-    const { accounts } = useAccountStore.getState();
-    const isPremium = usePremiumStore.getState().isPremium;
+    // const { accounts } = useAccountStore.getState();
+    // const isPremium = usePremiumStore.getState().isPremium;
+
+    const accounts = await getAccounts();
+
+    const isPremium = await syncPremium(); // ensures we have the latest premium status before rendering the widget
+
     if (!accounts || accounts.length === 0) {
       return (
         <MultiAccountWidget

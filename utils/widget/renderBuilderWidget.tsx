@@ -1,4 +1,6 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { getWidgetCache, setWidgetCache } from "@/utils/widget/widgetCache";
 import { isWidgetCacheStale } from "@/utils/widget/widgetFreshness";
@@ -8,13 +10,33 @@ import { DEFAULT_BUILDER_WIDGET } from "./defaultWidgetData";
 
 export async function renderBuilderWidget() {
   try {
-    const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+    // const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+
+    const accounts = await getAccounts();
+
+    const activeTag = getActiveAccount();
+
+    const widgetPrefs = getWidgetPrefs();
 
     const selectedTag = widgetPrefs.selectedAccountTag;
 
     const fallbackTag = accounts[0]?.tag;
 
     if (!accounts || accounts.length === 0) {
+      const cache = getWidgetCache(activeTag ?? "", "builder");
+
+      if (cache) {
+        return (
+          <BuilderStatusWidget
+            title={cache.title}
+            subtitle={cache.subtitle}
+            progress={cache.progress}
+            showProgress={cache.showProgress}
+            builderCountText={cache.builderCountText}
+          />
+        );
+      }
+
       return <BuilderStatusWidget {...DEFAULT_BUILDER_WIDGET} />;
     }
 

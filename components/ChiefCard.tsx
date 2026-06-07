@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 export function ChiefCard() {
   const router = useRouter();
 
-  const { isChief } = usePremiumStore();
+  const isPremium = usePremiumStore((state) => state.isPremium);
 
   return (
     <View style={styles.card}>
@@ -14,12 +14,12 @@ export function ChiefCard() {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>
-            {isChief ? "Chief Member" : "Become Chief"}
+            {isPremium ? "Chief Member" : "Become Chief"}
           </Text>
 
           <Text style={styles.subtitle}>
-            {isChief
-              ? "Lifetime access active"
+            {isPremium
+              ? "Thank you for supporting Clash Widget"
               : "Remove ads and unlock unlimited widget accounts"}
           </Text>
         </View>
@@ -30,18 +30,20 @@ export function ChiefCard() {
 
         <Text style={styles.feature}>✓ Unlimited Widget Accounts</Text>
 
-        <Text style={styles.feature}>✓ Future Chief Features</Text>
+        <Text style={styles.feature}>✓ Support Independent Development</Text>
+
+        {isPremium && <Text style={styles.feature}>✓ Early Supporter</Text>}
       </View>
 
-      <Pressable
-        disabled={isChief}
-        onPress={() => router.push("/pro")}
-        style={[styles.button, isChief && styles.activeButton]}
-      >
-        <Text style={[styles.buttonText, isChief && styles.activeText]}>
-          {isChief ? "Active" : "₹199 Lifetime"}
-        </Text>
-      </Pressable>
+      {!isPremium ? (
+        <Pressable onPress={() => router.push("/pro")} style={styles.button}>
+          <Text style={styles.buttonText}>₹199 Lifetime</Text>
+        </Pressable>
+      ) : (
+        <View style={styles.activeBadge}>
+          <Text style={styles.activeBadgeText}>👑 Lifetime Access Active</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -50,15 +52,23 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 20,
     marginBottom: 4,
+
     backgroundColor: "#1e293b",
+
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#fbbf24",
+
     padding: 16,
+
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+
     elevation: 6,
   },
 
@@ -96,22 +106,40 @@ const styles = StyleSheet.create({
 
   button: {
     backgroundColor: "#fbbf24",
-    marginTop: 16,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
 
-  activeButton: {
-    backgroundColor: "#334155",
+    marginTop: 16,
+
+    paddingVertical: 12,
+
+    borderRadius: 10,
+
+    alignItems: "center",
   },
 
   buttonText: {
     color: "#0f172a",
     fontWeight: "800",
+    fontSize: 15,
   },
 
-  activeText: {
-    color: "#94a3b8",
+  activeBadge: {
+    marginTop: 16,
+
+    backgroundColor: "rgba(251,191,36,0.12)",
+
+    borderWidth: 1,
+    borderColor: "#fbbf24",
+
+    borderRadius: 10,
+
+    paddingVertical: 12,
+
+    alignItems: "center",
+  },
+
+  activeBadgeText: {
+    color: "#fbbf24",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });

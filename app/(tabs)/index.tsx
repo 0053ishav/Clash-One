@@ -450,7 +450,7 @@ export default function HomeScreen() {
                         color: "#0f172a",
                       }}
                     >
-                      PRO
+                      Chief
                     </Text>
                   </View>
                 )}

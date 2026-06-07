@@ -1,4 +1,6 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { PetStatusWidget } from "@/widget/PetStatusWidget";
@@ -6,8 +8,13 @@ import { getPetWidgetData } from "@/widget/getPetWidgetData";
 
 export async function renderPetWidget() {
   try {
-    const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+    // const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
 
+    const accounts = await getAccounts();
+
+    const activeTag = getActiveAccount();
+
+    const widgetPrefs = getWidgetPrefs();
     const selectedTag = widgetPrefs.selectedAccountTag;
     const fallbackTag = accounts[0]?.tag;
 

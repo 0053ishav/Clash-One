@@ -1,10 +1,12 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
 import { MultiWidgetItem } from "@/types/widgetTypes";
 import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { getAllWidgetCaches } from "@/utils/widget/widgetCache";
 
 export async function getMultiWidgetDataPro(): Promise<MultiWidgetItem[]> {
-  const { accounts } = useAccountStore.getState();
+  // const { accounts } = useAccountStore.getState();
+  const accounts = await getAccounts();
+
   const tags = accounts.map((a) => a.tag);
 
   const cachedList = getAllWidgetCaches(tags, "builder") as MultiWidgetItem[];

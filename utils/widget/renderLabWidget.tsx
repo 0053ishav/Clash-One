@@ -1,4 +1,6 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { resolveWidgetEntityIcon } from "@/utils/icons/resolveWidgetEntityIcon";
 import { setWidgetCache } from "@/utils/widget/widgetCache";
 import { LabStatusWidget } from "@/widget/LabStatusWidget";
@@ -6,8 +8,13 @@ import { getLabWidgetData } from "@/widget/getLabWidgetData";
 
 export async function renderLabWidget() {
   try {
-    const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+    // const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
 
+    const accounts = await getAccounts();
+
+    const activeTag = getActiveAccount();
+
+    const widgetPrefs = getWidgetPrefs();
     const selectedTag = widgetPrefs.selectedAccountTag;
     const fallbackTag = accounts[0]?.tag;
 

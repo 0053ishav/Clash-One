@@ -1,5 +1,8 @@
+import { getAccounts } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
-import { useAccountStore } from "@/stores/accountStore";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getLastJsonSync } from "@/storage/jsonSyncStorage";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { getBuilderStatus } from "@/utils/builderStatus";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { getCraftedResolver } from "@/utils/craftedResolver";
@@ -9,8 +12,14 @@ import { isWorkForHireActive } from "@/utils/goblin";
 import { DEFAULT_BUILDER_WIDGET } from "@/utils/widget/defaultWidgetData";
 
 export async function getBuilderWidgetData(inputTag?: string) {
-  const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
-    useAccountStore.getState();
+  // const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
+  //   useAccountStore.getState();
+
+  const accounts = await getAccounts();
+
+  const activeTag = getActiveAccount();
+
+  const widgetPrefs = getWidgetPrefs();
 
   const { getCraftedName, getModuleName } = getCraftedResolver();
 
@@ -26,7 +35,7 @@ export async function getBuilderWidgetData(inputTag?: string) {
     };
   }
 
-  const updatedAt = lastJsonSyncMap[tag] ?? null;
+  const updatedAt = tag ? getLastJsonSync(tag) : undefined;
 
   const account = accounts.find((a) => a.tag === tag);
 

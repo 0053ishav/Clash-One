@@ -31,6 +31,7 @@ import * as Application from "expo-application";
 import { ChiefCard } from "@/components/ChiefCard";
 import { SupportModal } from "@/components/SupportModal";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
+import { restorePurchases } from "@/services/revenueCat/purchase";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { usePremiumStore } from "@/stores/premiumStore";
 import {
@@ -342,7 +343,7 @@ export default function SettingsScreen() {
                         color: "#0f172a",
                       }}
                     >
-                      PRO
+                      Chief
                     </Text>
                   </View>
                 )}
@@ -897,6 +898,38 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#fbbf24" />
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionTitle}>Chief</Text>
+
+        <View style={styles.card}>
+          <Pressable
+            style={styles.settingRow}
+            onPress={async () => {
+              const restored = await restorePurchases();
+
+              if (restored) {
+                usePremiumStore.getState().setPremium(true);
+
+                Alert.alert("Restored", "Chief access restored successfully.");
+              } else {
+                Alert.alert(
+                  "No Purchase Found",
+                  "No previous Chief purchase was found.",
+                );
+              }
+            }}
+          >
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Restore Purchases</Text>
+
+              <Text style={styles.helperText}>
+                Restore a previous Chief purchase on this device.
+              </Text>
+            </View>
+
+            <Ionicons name="refresh-outline" size={20} color="#fbbf24" />
           </Pressable>
         </View>
 

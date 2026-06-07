@@ -1,12 +1,21 @@
+import { getAccounts } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
-import { useAccountStore } from "@/stores/accountStore";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getLastJsonSync } from "@/storage/jsonSyncStorage";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 
 export async function getLabWidgetData(inputTag?: string) {
-  const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
-    useAccountStore.getState();
+  // const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
+  //   useAccountStore.getState();
+
+    const accounts = await getAccounts();
+  
+    const activeTag = getActiveAccount();
+  
+    const widgetPrefs = getWidgetPrefs();
 
   const tag = inputTag ?? widgetPrefs.selectedAccountTag ?? activeTag;
 
@@ -20,7 +29,9 @@ export async function getLabWidgetData(inputTag?: string) {
   }
 
   const account = accounts.find((a) => a.tag === tag);
-  const updatedAt = lastJsonSyncMap[tag] ?? null;
+  // const updatedAt = lastJsonSyncMap[tag] ?? null;
+    const updatedAt = tag ? getLastJsonSync(tag) : undefined;
+  
 
   if (!account) {
     return {

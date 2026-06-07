@@ -1,134 +1,180 @@
+import {
+  purchasePremium,
+  restorePurchases,
+} from "@/services/revenueCat/purchase";
+import { usePremiumStore } from "@/stores/premiumStore";
 import { track } from "@/utils/analytics/analytics";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function ProScreen() {
   const router = useRouter();
+  const [purchasing, setPurchasing] = useState(false);
+  const [showThankYou, setShowThankYou] = useState(false);
+  const isPremium = usePremiumStore((s) => s.isPremium);
 
   useEffect(() => {
     track("screen_view", { screen: "pro" });
   }, []);
 
-  const handleChief = () => {
-    console.log("RevenueCat Lifetime Purchase");
-  };
+  const handleChief = async () => {
+    if (purchasing) return;
 
-  const handleCommander = () => {
-    console.log("Coming Soon");
+    try {
+      setPurchasing(true);
+
+      const premium = await purchasePremium();
+
+      if (premium) {
+        usePremiumStore.getState().setPremium(true);
+
+        setShowThankYou(true);
+
+        track("purchase_success", {
+          product: "chief_lifetime",
+        });
+      }
+    } catch (e) {
+      console.log(e);
+
+      Alert.alert("Purchase Failed", "Please try again.");
+    } finally {
+      setPurchasing(false);
+    }
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={styles.title}>Choose Your Path</Text>
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Become a Chief</Text>
 
-      <Text style={styles.subtitle}>
-        Track villages for free. Upgrade when you need more power.
-      </Text>
+        <Text style={styles.subtitle}>
+          Track villages for free. Upgrade when you need more power.
+        </Text>
 
-      {/* FREE */}
-      {/* <PlanCard
-        badge="CURRENT PLAN"
-        title="FREE"
-        price="₹0"
-        subtitle="Everything needed to track your villages"
-        features={[
-          "Builder Tracking",
-          "Lab Tracking",
-          "Hero Tracking",
-          "Pet Tracking",
-          "Notifications",
-          "Multi-Account Support",
-          "Limited Widget Accounts",
-          "Ads Supported",
-        ]}
-        buttonLabel="Current Plan"
-        disabled
-      /> */}
+        <PlanCard
+          badge="CURRENT PLAN"
+          title="FREE"
+          price="₹0"
+          subtitle="Track all your Clash villages"
+          features={[
+            "Upgrade Tracking",
+            "Widgets",
+            "Notifications",
+            "Multi-Account Support",
+            "Ads Supported",
+          ]}
+          buttonLabel="Current Plan"
+          disabled
+        />
 
-      <PlanCard
-        badge="CURRENT PLAN"
-        title="FREE"
-        price="₹0"
-        subtitle="Track all your Clash villages"
-        features={[
-          "Upgrade Tracking",
-          "Widgets",
-          "Notifications",
-          "Multi-Account Support",
-          "Ads Supported",
-        ]}
-        buttonLabel="Current Plan"
-        disabled
-      />
+        <PlanCard
+          badge={isPremium ? "ACTIVE" : "LIFETIME"}
+          title="CHIEF"
+          price={isPremium ? "Owned" : "₹199"}
+          subtitle={
+            isPremium
+              ? "Lifetime access unlocked"
+              : "Personal progression & planning"
+          }
+          highlight
+          loading={purchasing}
+          disabled={isPremium}
+          features={
+            isPremium
+              ? [
+                  "Ads Removed",
+                  "Unlimited Widget Accounts",
+                  "Early Supporter Badge",
+                  "Future Chief Features Included",
+                ]
+              : [
+                  "Remove Ads",
+                  "Unlimited Widget Accounts",
+                  "Support Independent Development",
+                  "Early Supporter Badge",
+                ]
+          }
+          buttonLabel={
+            isPremium
+              ? "Chief Active"
+              : purchasing
+                ? "Purchasing..."
+                : "Unlock Chief"
+          }
+          onPress={handleChief}
+        />
 
-      {/* CHIEF */}
-      {/* <PlanCard
-        badge="LIFETIME"
-        title="CHIEF"
-        price="₹199"
-        subtitle="Personal progression & planning"
-        highlight
-        features={[
-          "Remove Ads",
-          "Unlimited Widget Accounts",
-          "COMING SOON",
-          "📊 Base Progress Tracking",
-          "📝 Upgrade Planner",
-          "🧠 Smart Suggestions",
-          "📈 Weekly Progress Reports",
-          "⚡ Builder Optimization",
-          "🔮 Upgrade Forecasting",
-          "👥 Multi-Account Intelligence",
-        ]}
-        buttonLabel="Unlock Chief"
-        onPress={handleChief}
-      /> */}
-      <PlanCard
-        badge="LIFETIME"
-        title="CHIEF"
-        price="₹199"
-        subtitle="Personal progression & planning"
-        highlight
-        features={[
-          "Remove Ads",
-          "Unlimited Widget Accounts",
-          "Support Independent Development",
-          "Early Supporter Badge",
-        ]}
-        buttonLabel="Unlock Chief"
-        onPress={handleChief}
-      />
+        <Pressable onPress={() => router.back()}>
+          <Text style={styles.secondary}>Continue without upgrading</Text>
+        </Pressable>
 
-      {/* Commander */}
-      {/* <PlanCard
-        badge="COMING SOON"
-        title="Commander"
-        price="Future Subscription"
-        subtitle="Clan leadership & war intelligence"
-        features={[
-          "⚔️ War Analytics",
-          "🗺️ War Map Intelligence",
-          "📢 Leader Coordination Tools",
-          "🏆 CWL Tracking",
-          "🔔 Real-Time War Alerts",
-          "📊 Clan Performance Analytics",
-          "📈 Attack Efficiency Tracking",
-          "🎯 Attack Reminders",
-        ]}
-        buttonLabel="Coming Soon"
-        disabled
-        commander
-      /> */}
+        <Pressable
+          onPress={async () => {
+            const restored = await restorePurchases();
 
-      <Pressable onPress={() => router.back()}>
-        <Text style={styles.secondary}>Continue without upgrading</Text>
-      </Pressable>
-    </ScrollView>
+            if (restored) {
+              usePremiumStore.getState().setPremium(true);
+
+              Alert.alert("Restored", "Chief access restored successfully.");
+            } else {
+              Alert.alert(
+                "No Purchase Found",
+                "No previous Chief purchase was found.",
+              );
+            }
+          }}
+        >
+          <Text
+            style={{
+              textAlign: "center",
+              color: "#94a3b8",
+              marginTop: 12,
+            }}
+          >
+            Restore Purchases
+          </Text>
+        </Pressable>
+      </ScrollView>
+      <Modal visible={showThankYou} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalEmoji}>👑</Text>
+
+            <Text style={styles.modalTitle}>Welcome, Chief!</Text>
+
+            <Text style={styles.modalText}>
+              Thank you for supporting Clash One. Your purchase helps fund
+              future development.
+            </Text>
+
+            <Pressable
+              style={styles.modalButton}
+              onPress={() => {
+                setShowThankYou(false);
+                router.back();
+              }}
+            >
+              <Text style={styles.modalButtonText}>Continue</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -137,11 +183,11 @@ type PlanCardProps = {
   title: string;
   price: string;
   subtitle: string;
+  loading?: boolean;
   features: string[];
   buttonLabel: string;
   disabled?: boolean;
   highlight?: boolean;
-  commander?: boolean;
   onPress?: () => void;
 };
 
@@ -150,21 +196,15 @@ function PlanCard({
   title,
   price,
   subtitle,
+  loading,
   features,
   buttonLabel,
   disabled,
   highlight,
-  commander,
   onPress,
 }: PlanCardProps) {
   return (
-    <View
-      style={[
-        styles.card,
-        highlight && styles.highlightCard,
-        commander && styles.commanderCard,
-      ]}
-    >
+    <View style={[styles.card, highlight && styles.highlightCard]}>
       <View style={styles.badge}>
         <Text style={styles.badgeText}>{badge}</Text>
       </View>
@@ -190,15 +230,23 @@ function PlanCard({
       </View>
 
       <Pressable
-        style={[styles.button, disabled && styles.disabledButton]}
-        disabled={disabled}
+        style={[
+          styles.button,
+          disabled && styles.disabledButton,
+          loading && styles.loadingButton,
+        ]}
+        disabled={disabled || loading}
         onPress={onPress}
       >
-        <Text
-          style={[styles.buttonText, disabled && styles.disabledButtonText]}
-        >
-          {buttonLabel}
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#0f172a" />
+        ) : (
+          <Text
+            style={[styles.buttonText, disabled && styles.disabledButtonText]}
+          >
+            {buttonLabel}
+          </Text>
+        )}
       </Pressable>
     </View>
   );
@@ -242,10 +290,6 @@ const styles = StyleSheet.create({
 
   highlightCard: {
     borderColor: "#fbbf24",
-  },
-
-  commanderCard: {
-    borderColor: "#38bdf8",
   },
 
   badge: {
@@ -324,5 +368,55 @@ const styles = StyleSheet.create({
     color: "#64748b",
     marginTop: 10,
     marginBottom: 30,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalCard: {
+    width: "85%",
+    backgroundColor: "#1e293b",
+    borderRadius: 20,
+    padding: 24,
+    alignItems: "center",
+  },
+
+  modalEmoji: {
+    fontSize: 50,
+  },
+
+  modalTitle: {
+    color: "#fbbf24",
+    fontSize: 24,
+    fontWeight: "800",
+    marginTop: 12,
+  },
+
+  modalText: {
+    color: "#cbd5e1",
+    textAlign: "center",
+    marginTop: 12,
+    lineHeight: 22,
+  },
+
+  modalButton: {
+    marginTop: 20,
+    backgroundColor: "#fbbf24",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+
+  modalButtonText: {
+    color: "#0f172a",
+    fontWeight: "800",
+  },
+
+  loadingButton: {
+    opacity: 0.8,
   },
 });

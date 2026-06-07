@@ -66,8 +66,21 @@ export default function TabLayout() {
             ),
           }}
         />
+        {/* <Tabs.Screen
+          name="upload-json"
+          options={{
+            title: "Import",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? "cloud-upload" : "cloud-upload-outline"}
+                color={color}
+                size={24}
+              />
+            ),
+          }}
+        /> */}
 
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="analytics"
           options={{
             title: "Analytics",
@@ -78,7 +91,7 @@ export default function TabLayout() {
                 size={24}
               />
             ),
-          }}
+          }}s
         />
 
         <Tabs.Screen
@@ -93,7 +106,7 @@ export default function TabLayout() {
               />
             ),
           }}
-        />
+        /> */}
 
         <Tabs.Screen
           name="settings"

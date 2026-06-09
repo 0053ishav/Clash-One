@@ -5,6 +5,7 @@ import { useCraftedStore } from "@/stores/craftedEventStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { log } from "./logger";
 
 /**
  * Unified event type across builder/lab/pet
@@ -54,6 +55,7 @@ function getChannelId(type: UpgradeEvent["type"]) {
 
 export async function configureNotifications() {
   if (Platform.OS === "android") {
+ 
     await Notifications.setNotificationChannelAsync("builder", {
       name: "Builder Alerts",
       importance: Notifications.AndroidImportance.HIGH,
@@ -64,7 +66,7 @@ export async function configureNotifications() {
 
     await Notifications.setNotificationChannelAsync("lab", {
       name: "Lab Alerts",
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 200, 200, 200],
       lightColor: "#06b6d4",
       sound: "default",
@@ -72,7 +74,7 @@ export async function configureNotifications() {
 
     await Notifications.setNotificationChannelAsync("pet", {
       name: "Pet Alerts",
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 150, 150, 150],
       lightColor: "#8b5cf6",
       sound: "default",
@@ -85,6 +87,18 @@ export async function configureNotifications() {
       lightColor: "#ff3b30",
       sound: "default",
     });
+
+          const channels = await Notifications.getNotificationChannelsAsync();
+
+          
+    log(
+      "🔔 created CHANNELS",
+      channels.map(c => ({
+        id: c.id,
+        name: c.name,
+        importance: c.importance,
+      }))
+    );
   }
 }
 /**
@@ -104,7 +118,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
 
     for (const acc of accounts) {
       const state = await getAccountState(acc.tag);
-      // console.log("STATE:", acc.tag, state);
+      // log("STATE:", acc.tag, state);
 
       const PRE_ALERT_MS = 10 * 60 * 1000;   // 10 min before
       const IDLE_ALERT_MS = 10 * 60 * 1000;  // 10 min after
@@ -274,7 +288,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
         }
       }
     }
-    // console.log(
+    // log(
     //   "ALL EVENTS",
     //   allEvents.map(e => ({
     //     id: e.id,
@@ -285,7 +299,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
     // );
     // 3. Deduplicate events
     const uniqueEvents = dedupeEvents(allEvents);
-    // console.log(
+    // log(
     //   "UNIQUE EVENTS",
     //   uniqueEvents.map(e => ({
     //     id: e.id,
@@ -314,16 +328,10 @@ export async function scheduleAllNotifications(accounts: any[]) {
     const scheduled =
       await Notifications.getAllScheduledNotificationsAsync();
 
-    // console.log(
-    //   "Scheduled notifications:",
-    //   scheduled.map((n) => ({
-    //     id: n.identifier,
-    //     title: n.content.title,
-    //     body: n.content.body,
-    //     data: n.content.data,
-    //     trigger: n.trigger,
-    //   }))
-    // );
+ log(
+  "📦 AFTER SCHEDULE",
+  scheduled
+);
   } catch (e) {
     console.error("NotificationEngine error:", e);
   }
@@ -337,13 +345,16 @@ export async function scheduleAllNotifications(accounts: any[]) {
 async function cancelAllScheduledNotifications() {
   const scheduled =
     await Notifications.getAllScheduledNotificationsAsync();
-  // console.log("cancelling notifications:", scheduled.length, scheduled.map((n) => ({
-  //     id: n.identifier,
-  //     title: n.content.title,
-  //     body: n.content.body,
-  //     data: n.content.data,
-  //     trigger: n.trigger,
-  //   })))
+log(
+  "🗑️ CANCELLING",
+  scheduled.map(n => ({
+    id: n.identifier,
+    fireAt:
+      "value" in (n.trigger as any)
+        ? new Date((n.trigger as any).value).toISOString()
+        : null,
+  }))
+);
   await Promise.all(
     scheduled.map((n) =>
       Notifications.cancelScheduledNotificationAsync(n.identifier)
@@ -420,7 +431,11 @@ async function scheduleGroupNotification(group: {
   const now = Date.now();
 
   if (group.time <= now - 30000) return;
-  // console.log("SCHEDULING:", new Date(group.time).toISOString(), group.events.map(e => `${e.playerTag}-${e.type}-${e.entityId}`));
+  
+  log("SCHEDULING:", 
+    new Date(group.time).toISOString(), 
+    group.time - Date.now(),
+    group.events.map(e => `${e.playerTag}-${e.type}-${e.entityId}`));
   // SINGLE EVENT
   if (group.events.length === 1) {
     const e = group.events[0];
@@ -483,7 +498,7 @@ async function scheduleGroupNotification(group: {
       const channels =
         await Notifications.getNotificationChannelsAsync();
 
-      // console.log("channels", channels);
+      log("channels", channels);
       // mark only START as consumed
       if (e.phase === "START") {
         useCraftedStore.setState({
@@ -513,7 +528,22 @@ async function scheduleGroupNotification(group: {
       body = `${e.accountName} • ${e.entityName}${e.nextLevel ? ` → Lv ${e.nextLevel}` : ""}\nStart next upgrade`;
     }
 
-    await Notifications.scheduleNotificationAsync({
+    log(
+  "📅 SCHEDULE",
+  {
+    id,
+    title,
+    channel:
+      Platform.OS === "android"
+        ? getChannelId(e.type)
+        : "ios",
+    fireInMinutes: Math.round(
+      (group.time - Date.now()) / 60000
+    ),
+    fireAt: new Date(group.time).toISOString(),
+  }
+);
+   const notificationId =  await Notifications.scheduleNotificationAsync({
       identifier: id,
       content: {
         title,
@@ -534,6 +564,11 @@ async function scheduleGroupNotification(group: {
       },
     });
 
+    log(
+  "✅ SCHEDULED",
+  notificationId,
+  title
+);
     return;
   }
 
@@ -603,7 +638,15 @@ async function scheduleGroupNotification(group: {
         : counts.LAB > 0
           ? "LAB"
           : "PET";
-
+log(
+  "📦 GROUPED",
+  title,
+  group.events.map(e => ({
+    id: e.id,
+    type: e.type,
+    entity: e.entityName,
+  }))
+);
   await Notifications.scheduleNotificationAsync({
     identifier: id,
     content: {

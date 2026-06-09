@@ -11,14 +11,7 @@ export async function getMultiWidgetDataPro(): Promise<MultiWidgetItem[]> {
 
   const cachedList = getAllWidgetCaches(tags, "builder") as MultiWidgetItem[];
 
-  console.log("MULTI CACHE:", cachedList.length);
   const valid = cachedList.filter((x) => x.data);
-  console.log("MULTI VALID:", valid.length);
-
-  console.log(
-    "🧩 MULTI ITEM",
-    valid.map((a) => a.data),
-  );
 
   const sorted = [...valid].sort((a, b) => {
     const aFree = a.data.subtitle === "All builders free";
@@ -29,7 +22,6 @@ export async function getMultiWidgetDataPro(): Promise<MultiWidgetItem[]> {
 
     return (a.data.remainingMs ?? Infinity) - (b.data.remainingMs ?? Infinity);
   });
-  console.log("MULTI SORTED:", sorted.length);
   const primary = sorted[0];
   if (!primary) {
     return [];

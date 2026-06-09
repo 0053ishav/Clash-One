@@ -1,4 +1,6 @@
-import { useAccountStore } from "@/stores/accountStore";
+import { getAccounts } from "@/services/accountService";
+import { getActiveAccount } from "@/storage/activeAccount";
+import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
 import { renderMultiWidget } from "@/utils/widget/renderMultiWidget";
 import { getWidgetCache } from "@/utils/widget/widgetCache";
@@ -8,24 +10,37 @@ import { BuilderStatusWidget } from "./BuilderStatusWidget";
 import { LabStatusWidget } from "./LabStatusWidget";
 import { PetStatusWidget } from "./PetStatusWidget";
 
-function resolveTag() {
-  const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
+async function resolveTag() {
+  const accounts = await getAccounts();
+
+  const activeTag = getActiveAccount();
+
+  const widgetPrefs = getWidgetPrefs();
 
   const selected = widgetPrefs.selectedAccountTag;
 
-  if (accounts.some((a) => a.tag === selected)) return selected;
-  if (accounts.some((a) => a.tag === activeTag)) return activeTag;
+  if (accounts.some((a) => a.tag === selected)) {
+    return selected;
+  }
+
+  if (accounts.some((a) => a.tag === activeTag)) {
+    return activeTag;
+  }
 
   return accounts[0]?.tag;
 }
+
 function getWidgetType(widgetName?: string): "builder" | "lab" | "pet" | null {
   switch (widgetName) {
     case "BuilderStatusWidget":
       return "builder";
+
     case "LabWidget":
       return "lab";
+
     case "PetWidget":
       return "pet";
+
     default:
       return null;
   }
@@ -39,25 +54,11 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     ) {
       return;
     }
+
     const widgetName = props.widgetInfo?.widgetName;
 
     if (widgetName === "MultiAccountWidget") {
-      const widget = await renderMultiWidget();
-      props.renderWidget(widget);
-      return;
-    }
-
-    const tag = resolveTag();
-
-    if (!tag) {
-      props.renderWidget(
-        <BuilderStatusWidget
-          title="No account"
-          subtitle="Setup required"
-          progress={0}
-          showProgress={false}
-        />,
-      );
+      props.renderWidget(await renderMultiWidget());
       return;
     }
 
@@ -68,13 +69,41 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
       return;
     }
 
+    const tag = await resolveTag();
+
+    // No account configured
+    if (!tag) {
+      if (type === "builder") {
+        props.renderWidget(await renderBuilderWidget());
+      }
+
+      if (type === "lab") {
+        const { renderLabWidget } =
+          await import("@/utils/widget/renderLabWidget");
+
+        props.renderWidget(await renderLabWidget());
+      }
+
+      if (type === "pet") {
+        const { renderPetWidget } =
+          await import("@/utils/widget/renderPetWidget");
+
+        props.renderWidget(await renderPetWidget());
+      }
+
+      return;
+    }
+
     const cached = getWidgetCache(tag, type);
 
+    // Render cache immediately
     if (cached && !isWidgetCacheStale(cached, type)) {
       if (type === "builder") {
         props.renderWidget(<BuilderStatusWidget {...cached} />);
 
         renderBuilderWidget().then(props.renderWidget);
+
+        return;
       }
 
       if (type === "lab") {
@@ -84,6 +113,8 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
         props.renderWidget(<LabStatusWidget {...cached} />);
 
         renderLabWidget().then(props.renderWidget);
+
+        return;
       }
 
       if (type === "pet") {
@@ -93,23 +124,30 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
         props.renderWidget(<PetStatusWidget {...cached} />);
 
         renderPetWidget().then(props.renderWidget);
-      }
-    } else {
-      if (type === "builder") {
-        props.renderWidget(await renderBuilderWidget());
-      }
 
-      if (type === "lab") {
-        const { renderLabWidget } =
-          await import("@/utils/widget/renderLabWidget");
-        props.renderWidget(await renderLabWidget());
+        return;
       }
+    }
 
-      if (type === "pet") {
-        const { renderPetWidget } =
-          await import("@/utils/widget/renderPetWidget");
-        props.renderWidget(await renderPetWidget());
-      }
+    // Fresh render
+    if (type === "builder") {
+      props.renderWidget(await renderBuilderWidget());
+      return;
+    }
+
+    if (type === "lab") {
+      const { renderLabWidget } =
+        await import("@/utils/widget/renderLabWidget");
+
+      props.renderWidget(await renderLabWidget());
+      return;
+    }
+
+    if (type === "pet") {
+      const { renderPetWidget } =
+        await import("@/utils/widget/renderPetWidget");
+
+      props.renderWidget(await renderPetWidget());
     }
   } catch (err) {
     console.log("Widget handler error:", err);

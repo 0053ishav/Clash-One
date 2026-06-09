@@ -7,6 +7,7 @@ import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
+import { log } from "@/utils/logger";
 import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
@@ -61,10 +62,29 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    const received = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        log("📬 RECEIVED", {
+          id: notification.request.identifier,
+          title: notification.request.content.title,
+          body: notification.request.content.body,
+          data: notification.request.content.data,
+        });
+      },
+    );
+
+    return () => received.remove();
+  }, []);
+
+  useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
-
+        log("👆 OPENED", {
+          id: response.notification.request.identifier,
+          title: response.notification.request.content.title,
+          data: response.notification.request.content.data,
+        });
         setSessionSource("notification");
 
         track("notification_open", {

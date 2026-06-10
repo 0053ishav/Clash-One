@@ -8,6 +8,7 @@ import { EntityType } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
+import { projectHelperTimer } from "@/utils/helpers/projectHelperTimer";
 import { resyncNotifications } from "@/utils/notificationSync";
 import { randomUUID } from "expo-crypto";
 
@@ -20,6 +21,8 @@ type RawExport = {
     lvl: number;
     timer?: number;
     extra?: boolean;
+    helper_timer?: number;
+    helper_recurrent?: boolean;
 
     types?: {
       data: number;
@@ -27,19 +30,65 @@ type RawExport = {
         data: number;
         lvl: number;
         timer?: number;
+        helper_timer?: number;
+        helper_recurrent?: boolean;
       }[];
     }[];
   }[];
 
-  traps?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
-  heroes?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
+  traps?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+    extra?: boolean,
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  }[];
+  heroes?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+    extra?: boolean,
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  }[];
+
   pets?: { data: number; lvl: number; timer?: number }[];
-  guardians?: { data: number; lvl: number; timer?: number }[];
+
+  guardians?: {
+    data: number;
+    lvl: number;
+    timer?: number,
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  }[];
+
   helpers?: { data: number; lvl: number; helper_cooldown?: number }[];
 
-  units?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
-  spells?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
-  siege_machines?: { data: number; lvl: number; timer?: number; extra?: boolean }[];
+  units?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+    extra?: boolean,
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  }[];
+  spells?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+    extra?: boolean,
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  }[];
+  siege_machines?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+    extra?: boolean,
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  }[];
 };
 
 type ActiveTask = {
@@ -47,6 +96,12 @@ type ActiveTask = {
   lvl: number;
   timer: number;
   extra?: boolean;
+
+  helper_timer?: number;
+  helper_recurrent?: boolean;
+
+  hasHelper?: boolean;
+  helperAppliedSeconds?: number;
 
   isCrafted?: boolean;
   moduleId?: number;
@@ -162,6 +217,14 @@ export async function importVillageJson(
     cooldown?: number;
   }[] = [];
 
+  const helperMap = new Map<
+    number,
+    {
+      level: number;
+      cooldown: number;
+    }
+  >();
+
   for (const h of parsed.helpers ?? []) {
     entities.push({
       id: randomUUID(),
@@ -169,6 +232,10 @@ export async function importVillageJson(
       type: "helper",
       level: h.lvl,
       cooldown: h.helper_cooldown,
+    });
+    helperMap.set(h.data, {
+      level: h.lvl,
+      cooldown: h.helper_cooldown ?? 0,
     });
   }
 
@@ -201,6 +268,12 @@ export async function importVillageJson(
         lvl: b.lvl,
         timer: b.timer!,
         extra: b.extra,
+
+        helper_timer: b.helper_timer,
+        helper_recurrent: b.helper_recurrent,
+        hasHelper:
+          b.helper_timer != null ||
+          b.helper_recurrent === true
       })) ?? []),
 
     ...(parsed.traps
@@ -210,6 +283,12 @@ export async function importVillageJson(
         lvl: t.lvl,
         timer: t.timer!,
         extra: t.extra,
+
+        helper_timer: t.helper_timer,
+        helper_recurrent: t.helper_recurrent,
+        hasHelper:
+          t.helper_timer != null ||
+          t.helper_recurrent === true
       })) ?? []),
 
     ...(parsed.heroes
@@ -219,6 +298,12 @@ export async function importVillageJson(
         lvl: h.lvl,
         timer: h.timer!,
         extra: h.extra,
+
+        helper_timer: h.helper_timer,
+        helper_recurrent: h.helper_recurrent,
+        hasHelper:
+          h.helper_timer != null ||
+          h.helper_recurrent === true
       })) ?? []),
 
     ...(parsed.pets
@@ -235,6 +320,12 @@ export async function importVillageJson(
         data: g.data,
         lvl: g.lvl,
         timer: g.timer!,
+
+        helper_timer: g.helper_timer,
+        helper_recurrent: g.helper_recurrent,
+        hasHelper:
+          g.helper_timer != null ||
+          g.helper_recurrent === true
       })) ?? []),
   );
 
@@ -253,6 +344,12 @@ export async function importVillageJson(
 
             isCrafted: true,
             moduleId: module.data,
+
+            helper_timer: module.helper_timer,
+            helper_recurrent: module.helper_recurrent,
+            hasHelper:
+              module.helper_timer != null ||
+              module.helper_recurrent === true
           });
         }
       }
@@ -277,6 +374,12 @@ export async function importVillageJson(
       lvl: lab.lvl,
       timer: lab.timer!,
       extra: lab.extra,
+
+      helper_timer: lab.helper_timer,
+      helper_recurrent: lab.helper_recurrent,
+      hasHelper:
+        lab.helper_timer != null ||
+        lab.helper_recurrent === true
     })
   }
 
@@ -289,7 +392,8 @@ export async function importVillageJson(
     remainingNow: number;
     lvl: number;
     isGoblin: boolean;
-
+    hasHelper?: boolean;
+    helperAppliedSeconds?: number;
     isCrafted?: boolean;
     moduleId?: number;
   }[] = [];
@@ -297,7 +401,35 @@ export async function importVillageJson(
   let skippedExpired = 0;
 
   for (const item of activeBuilderTasks) {
-    const remainingMsAtExport = item.timer * 1000;
+    // const remainingMsAtExport = item.timer * 1000;
+
+    let projectedTimer = item.timer;
+    let helperAppliedSeconds = 0;
+
+    const apprentice = helperMap.get(93000000);
+
+    if (
+      apprentice &&
+      item.helper_timer != null &&
+      item.helper_timer > 0
+    ) {
+      projectedTimer = projectHelperTimer({
+        timer: item.timer,
+
+        helperTimer: item.helper_timer,
+        helperCooldown: apprentice.cooldown,
+        helperLevel: apprentice.level,
+        helperRecurrent: item.helper_recurrent === true,
+
+      })
+    }
+    helperAppliedSeconds =
+      Math.max(
+        0,
+        item.timer - projectedTimer
+      );
+ 
+    const remainingMsAtExport = projectedTimer * 1000;
     const realEndTime = exportTimestampMs + remainingMsAtExport;
     const remainingNow = Math.max(0, realEndTime - now);
 
@@ -312,6 +444,8 @@ export async function importVillageJson(
       lvl: item.lvl,
       isGoblin: item.extra === true,
 
+      hasHelper: item.hasHelper,
+      helperAppliedSeconds,
       isCrafted: item.isCrafted,
       moduleId: item.moduleId,
     });
@@ -320,7 +454,36 @@ export async function importVillageJson(
   const validLabTasks: ActiveTask[] = [];
 
   for (const lab of activeLabTasks) {
-    const remainingMsAtExport = lab.timer * 1000;
+    // const remainingMsAtExport = lab.timer * 1000;
+
+    let projectedTimer = lab.timer;
+    let helperAppliedSeconds = 0;
+    const assistant = helperMap.get(93000001);
+
+    if (
+      assistant &&
+      lab.helper_timer != null &&
+      lab.helper_timer > 0
+    ) {
+      projectedTimer = projectHelperTimer({
+        timer: lab.timer,
+
+        helperTimer: lab.helper_timer,
+        helperCooldown: assistant.cooldown,
+
+        helperLevel: assistant.level,
+
+        helperRecurrent:
+          lab.helper_recurrent === true,
+      });
+    }
+    helperAppliedSeconds =
+      Math.max(
+        0,
+        lab.timer - projectedTimer
+      );
+    const remainingMsAtExport =
+      projectedTimer * 1000;
     const realEndTime = exportTimestampMs + remainingMsAtExport;
     const remainingNow = Math.max(0, realEndTime - now);
 
@@ -329,6 +492,8 @@ export async function importVillageJson(
     validLabTasks.push({
       ...lab,
       timer: remainingNow / 1000,
+      helperAppliedSeconds,
+      hasHelper: lab.hasHelper,
     });
   }
 
@@ -463,7 +628,6 @@ export async function importVillageJson(
       }
     }
 
-
     newUpgrades.push({
       id: randomUUID(),
       accountTag: parsed.tag,
@@ -473,6 +637,11 @@ export async function importVillageJson(
 
       type: normalizedType,
       upgradeType,
+
+      hasHelper: item.hasHelper,
+
+      helperAppliedSeconds:
+        item.helperAppliedSeconds,
 
       startTime,
       durationMinutes,
@@ -519,6 +688,11 @@ export async function importVillageJson(
       type: normalizeEntityType(entity.type),
       upgradeType: "LAB",
 
+      hasHelper: lab.hasHelper,
+
+      helperAppliedSeconds:
+        lab.helperAppliedSeconds,
+
       startTime,
       durationMinutes,
       endTime,
@@ -553,7 +727,6 @@ export async function importVillageJson(
     });
   }
   setLastJsonSync(parsed.tag, now);
-
   await resyncNotifications();
 
   const builderCountOnly = newUpgrades.filter(

@@ -651,7 +651,18 @@ export default function HomeScreen() {
         {sortedUpgrades.length > 0 && (
           <View style={styles.upgradesSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Active Upgrades</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{}}>
+                  <Image
+                    source={require("@/assets/images/clash/hammer.png")}
+                    style={{ width: 40, height: 40 }}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+
+                <Text style={styles.sectionTitle}>Active Upgrades</Text>
+              </View>
               <View style={styles.upgradeBadge}>
                 <Text style={styles.upgradeBadgeText}>
                   {sortedUpgrades.length}
@@ -750,6 +761,27 @@ export default function HomeScreen() {
                                 </Text>
                               </View>
                             )}
+                          {u.hasHelper && (
+                            <View style={styles.helperRow}>
+                              <Image
+                                source={{
+                                  uri: resolveEntityIcon(93000000),
+                                }}
+                                style={styles.helperIcon}
+                                contentFit="contain"
+                                cachePolicy="memory-disk"
+                              />
+
+                              {!!u.helperAppliedSeconds && (
+                                <Text style={styles.helperSaved}>
+                                  -
+                                  {formatCountdown(
+                                    u.helperAppliedSeconds * 1000,
+                                  )}
+                                </Text>
+                              )}
+                            </View>
+                          )}
                         </View>
                       </View>
 
@@ -1379,7 +1411,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    gap: 8,
+  },
+
+  emoji: {
+    fontSize: 14,
   },
 
   sectionTitle: {
@@ -1533,6 +1569,30 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: "#0ea5e9",
+  },
+
+  helperRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+
+  helperIcon: {
+    width: 14,
+    height: 14,
+  },
+
+  helperText: {
+    marginLeft: 4,
+    fontSize: 11,
+    color: "#fbbf24",
+    fontWeight: "600",
+  },
+
+  helperSaved: {
+    marginLeft: 4,
+    fontSize: 10,
+    color: "#94a3b8",
   },
 
   upgradeRight: {

@@ -351,6 +351,16 @@ export const useAccountStore = create<AccountState>((set) => ({
     level: e.level,
   })),
 );
+      console.log(
+  "📦 Upgrades CREATED",
+  tag,
+  upgrades.map((e) => ({
+    type: e.type,
+    dataId: e.dataId,
+    hasHelper: e.hasHelper,
+    helperAppliedSeconds: e.helperAppliedSeconds,
+  })),
+);
     } catch (e) {
       console.error("importJsonData error:", e);
     } finally {

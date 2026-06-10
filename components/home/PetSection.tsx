@@ -75,56 +75,66 @@ export function PetSection({
           delayLongPress={300}
         >
           <View style={styles.cardContent}>
-            {/* Pet Icon */}
-            <View style={[styles.iconContainer, styles.petIconContainer]}>
-              <Image
-                source={
-                  petIconUri
-                    ? { uri: petIconUri }
-                    : require("@/assets/images/builder/builder-working.png")
-                }
-                style={styles.petIcon}
-                contentFit="contain"
-                cachePolicy="memory-disk"
-              />
+            {/* PET BADGE */}
+            <View style={styles.petBadge}>
+              <Text style={styles.petBadgeText}>PET</Text>
             </View>
 
-            {/* Info Section */}
-            <View style={styles.infoSection}>
-              <View style={styles.topRow}>
-                <Text style={styles.itemName} numberOfLines={1}>
-                  {activePet.entity}
-                </Text>
-                {activePet.currentLevel !== undefined &&
-                  activePet.nextLevel !== undefined && (
-                    <View style={[styles.levelBadge, styles.petLevelBadge]}>
-                      <Text style={styles.levelText}>
-                        Lv {activePet.currentLevel} → {activePet.nextLevel}
-                      </Text>
-                    </View>
-                  )}
+            <View style={styles.upgradeMain}>
+              {/* LEFT */}
+              <View style={styles.upgradeLeft}>
+                <View style={[styles.iconContainer, styles.petIconContainer]}>
+                  <Image
+                    source={
+                      petIconUri
+                        ? { uri: petIconUri }
+                        : require("@/assets/images/builder/builder-working.png")
+                    }
+                    style={styles.petIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+                </View>
+
+                <View style={styles.upgradeNameSection}>
+                  <Text style={styles.itemName} numberOfLines={1}>
+                    {activePet.entity}
+                  </Text>
+
+                  {activePet.currentLevel !== undefined &&
+                    activePet.nextLevel !== undefined && (
+                      <View style={[styles.levelBadge, styles.petLevelBadge]}>
+                        <Text style={styles.levelText}>
+                          Lv {activePet.currentLevel} → Lv {activePet.nextLevel}
+                        </Text>
+                      </View>
+                    )}
+                </View>
               </View>
 
-              {/* Time Display */}
-              <View style={styles.timeRow}>
+              {/* RIGHT */}
+              <View style={styles.upgradeRight}>
                 <Text style={[styles.remainingTime, styles.petTime]}>
                   {formatCountdown(remainingMs)}
                 </Text>
+
                 <Text style={styles.totalTime}>
                   of {formatCountdown(totalMs)}
                 </Text>
               </View>
+            </View>
 
-              {/* Progress Bar */}
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressBar,
-                    styles.petProgressBar,
-                    { width: `${progress * 100}%` },
-                  ]}
-                />
-              </View>
+            {/* PROGRESS */}
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressBar,
+                  styles.petProgressBar,
+                  {
+                    width: `${progress * 100}%`,
+                  },
+                ]}
+              />
             </View>
           </View>
         </Pressable>
@@ -218,7 +228,7 @@ const styles = StyleSheet.create({
 
   card: {
     borderRadius: 16,
-    overflow: "hidden",
+    overflow: "visible",
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -226,6 +236,55 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 
+  cardContent: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+
+  petBadge: {
+    backgroundColor: "#8b5cf6",
+    position: "absolute",
+    top: -8,
+    right: 0,
+
+    flexDirection: "row",
+    alignItems: "center",
+
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+
+  petBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+
+  upgradeMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  upgradeLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+
+  upgradeNameSection: {
+    flex: 1,
+    gap: 6,
+  },
+
+  upgradeRight: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
   petCard: {
     backgroundColor: "#1e293b",
     borderWidth: 1,
@@ -240,12 +299,6 @@ const styles = StyleSheet.create({
 
   cardPressed: {
     opacity: 0.9,
-  },
-
-  cardContent: {
-    flexDirection: "row",
-    padding: 16,
-    gap: 14,
   },
 
   iconContainer: {
@@ -274,18 +327,6 @@ const styles = StyleSheet.create({
     height: 40,
   },
 
-  infoSection: {
-    flex: 1,
-    gap: 8,
-  },
-
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-
   itemName: {
     fontSize: 15,
     fontWeight: "700",
@@ -294,29 +335,23 @@ const styles = StyleSheet.create({
   },
 
   levelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
+    alignSelf: "flex-start",
   },
 
   petLevelBadge: {
     backgroundColor: "rgba(139, 92, 246, 0.2)",
   },
 
-  labLevelBadge: {
-    backgroundColor: "rgba(6, 182, 212, 0.2)",
-  },
-
   levelText: {
     fontSize: 11,
     fontWeight: "600",
     color: "#a78bfa",
-  },
-
-  timeRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 6,
   },
 
   remainingTime: {

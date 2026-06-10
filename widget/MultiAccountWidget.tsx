@@ -843,13 +843,6 @@ export function MultiAccountWidget({
 
   // Accounts exist but no cached data yet
   if (accounts.length === 0) return renderNoCache(totalAccounts);
-
-  console.log("UPSELL CHECK:", {
-    isPremium,
-    totalAccounts,
-    accountsLength: accounts.length,
-  });
-
   const total = totalAccounts ?? 0;
 
   let visibleCount = 0;

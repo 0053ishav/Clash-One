@@ -19,40 +19,6 @@ export async function initDatabase() {
     );
   `);
 
-  // await db.execAsync(`
-  //   CREATE TABLE IF NOT EXISTS builders (
-  //     id TEXT PRIMARY KEY,
-
-  //     account_player_tag TEXT NOT NULL,
-
-  //     data_id INTEGER,
-  //     entity TEXT,
-
-  //     builder_slot TEXT,
-  //     builder_type TEXT,
-
-  //     building_level INTEGER,
-  //     next_level INTEGER,
-
-  //     start_time INTEGER,
-  //     duration_minutes INTEGER,
-  //     finish_timestamp INTEGER,
-
-  //     is_completed INTEGER DEFAULT 0,
-  //     source TEXT,
-
-  //     is_crafted INTEGER DEFAULT 0,
-  //     module_id INTEGER,
-
-  //     FOREIGN KEY(account_player_tag)
-  //     REFERENCES accounts(player_tag)
-  //     ON DELETE CASCADE,
-
-  //     UNIQUE(account_player_tag, builder_slot)
-  //   );
-  // `);
-
-
   await db.execAsync(`
     CREATE TABLE IF NOT EXISTS upgrades (
       id TEXT PRIMARY KEY,
@@ -76,6 +42,9 @@ export async function initDatabase() {
       start_time INTEGER,
       duration_minutes INTEGER,
       finish_timestamp INTEGER,
+
+      has_helper INTEGER DEFAULT 0,
+      helper_applied_seconds INTEGER DEFAULT 0,
 
       is_completed INTEGER DEFAULT 0,
       source TEXT,

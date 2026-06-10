@@ -13,6 +13,9 @@ export type Upgrade = {
   moduleId?: number;
   isCrafted?: boolean;
 
+  hasHelper?: boolean;
+  helperAppliedSeconds?: number;
+
   type: "BUILDING" | "HERO" | "PET" | "GUARDIAN" | "LAB";
   subType?: SubType;
   upgradeType: "BUILDER" | "LAB" | "PET";

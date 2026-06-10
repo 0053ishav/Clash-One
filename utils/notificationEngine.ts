@@ -5,7 +5,6 @@ import { useCraftedStore } from "@/stores/craftedEventStore";
 import { usePremiumStore } from "@/stores/premiumStore";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { log } from "./logger";
 
 /**
  * Unified event type across builder/lab/pet
@@ -91,14 +90,14 @@ export async function configureNotifications() {
           const channels = await Notifications.getNotificationChannelsAsync();
 
           
-    log(
-      "🔔 created CHANNELS",
-      channels.map(c => ({
-        id: c.id,
-        name: c.name,
-        importance: c.importance,
-      }))
-    );
+    // log(
+    //   "🔔 created CHANNELS",
+    //   channels.map(c => ({
+    //     id: c.id,
+    //     name: c.name,
+    //     importance: c.importance,
+    //   }))
+    // );
   }
 }
 /**
@@ -328,10 +327,10 @@ export async function scheduleAllNotifications(accounts: any[]) {
     const scheduled =
       await Notifications.getAllScheduledNotificationsAsync();
 
- log(
-  "📦 AFTER SCHEDULE",
-  scheduled
-);
+//  log(
+//   "📦 AFTER SCHEDULE",
+//   scheduled
+// );
   } catch (e) {
     console.error("NotificationEngine error:", e);
   }
@@ -345,16 +344,16 @@ export async function scheduleAllNotifications(accounts: any[]) {
 async function cancelAllScheduledNotifications() {
   const scheduled =
     await Notifications.getAllScheduledNotificationsAsync();
-log(
-  "🗑️ CANCELLING",
-  scheduled.map(n => ({
-    id: n.identifier,
-    fireAt:
-      "value" in (n.trigger as any)
-        ? new Date((n.trigger as any).value).toISOString()
-        : null,
-  }))
-);
+// log(
+//   "🗑️ CANCELLING",
+//   scheduled.map(n => ({
+//     id: n.identifier,
+//     fireAt:
+//       "value" in (n.trigger as any)
+//         ? new Date((n.trigger as any).value).toISOString()
+//         : null,
+//   }))
+// );
   await Promise.all(
     scheduled.map((n) =>
       Notifications.cancelScheduledNotificationAsync(n.identifier)
@@ -432,10 +431,10 @@ async function scheduleGroupNotification(group: {
 
   if (group.time <= now - 30000) return;
   
-  log("SCHEDULING:", 
-    new Date(group.time).toISOString(), 
-    group.time - Date.now(),
-    group.events.map(e => `${e.playerTag}-${e.type}-${e.entityId}`));
+  // log("SCHEDULING:", 
+  //   new Date(group.time).toISOString(), 
+  //   group.time - Date.now(),
+  //   group.events.map(e => `${e.playerTag}-${e.type}-${e.entityId}`));
   // SINGLE EVENT
   if (group.events.length === 1) {
     const e = group.events[0];
@@ -498,7 +497,7 @@ async function scheduleGroupNotification(group: {
       const channels =
         await Notifications.getNotificationChannelsAsync();
 
-      log("channels", channels);
+      // log("channels", channels);
       // mark only START as consumed
       if (e.phase === "START") {
         useCraftedStore.setState({
@@ -528,21 +527,21 @@ async function scheduleGroupNotification(group: {
       body = `${e.accountName} • ${e.entityName}${e.nextLevel ? ` → Lv ${e.nextLevel}` : ""}\nStart next upgrade`;
     }
 
-    log(
-  "📅 SCHEDULE",
-  {
-    id,
-    title,
-    channel:
-      Platform.OS === "android"
-        ? getChannelId(e.type)
-        : "ios",
-    fireInMinutes: Math.round(
-      (group.time - Date.now()) / 60000
-    ),
-    fireAt: new Date(group.time).toISOString(),
-  }
-);
+//     log(
+//   "📅 SCHEDULE",
+//   {
+//     id,
+//     title,
+//     channel:
+//       Platform.OS === "android"
+//         ? getChannelId(e.type)
+//         : "ios",
+//     fireInMinutes: Math.round(
+//       (group.time - Date.now()) / 60000
+//     ),
+//     fireAt: new Date(group.time).toISOString(),
+//   }
+// );
    const notificationId =  await Notifications.scheduleNotificationAsync({
       identifier: id,
       content: {
@@ -564,11 +563,11 @@ async function scheduleGroupNotification(group: {
       },
     });
 
-    log(
-  "✅ SCHEDULED",
-  notificationId,
-  title
-);
+//     log(
+//   "✅ SCHEDULED",
+//   notificationId,
+//   title
+// );
     return;
   }
 
@@ -638,15 +637,15 @@ async function scheduleGroupNotification(group: {
         : counts.LAB > 0
           ? "LAB"
           : "PET";
-log(
-  "📦 GROUPED",
-  title,
-  group.events.map(e => ({
-    id: e.id,
-    type: e.type,
-    entity: e.entityName,
-  }))
-);
+// log(
+//   "📦 GROUPED",
+//   title,
+//   group.events.map(e => ({
+//     id: e.id,
+//     type: e.type,
+//     entity: e.entityName,
+//   }))
+// );
   await Notifications.scheduleNotificationAsync({
     identifier: id,
     content: {

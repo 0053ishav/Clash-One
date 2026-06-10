@@ -5,7 +5,6 @@ import { getUpgrades } from "./upgradeService";
 export async function getAccountState(tag: string) {
   const upgrades = await getUpgrades(tag);
   const entities = await getEntities(tag);
-
   const now = Date.now();
 
   const activeUpgrades = upgrades.filter(

@@ -101,6 +101,7 @@ type ActiveTask = {
   helper_recurrent?: boolean;
 
   hasHelper?: boolean;
+  recurrentHelper?: boolean;
   helperAppliedSeconds?: number;
 
   isCrafted?: boolean;
@@ -393,6 +394,7 @@ export async function importVillageJson(
     lvl: number;
     isGoblin: boolean;
     hasHelper?: boolean;
+    recurrentHelper?: boolean;
     helperAppliedSeconds?: number;
     isCrafted?: boolean;
     moduleId?: number;
@@ -445,6 +447,7 @@ export async function importVillageJson(
       isGoblin: item.extra === true,
 
       hasHelper: item.hasHelper,
+      recurrentHelper: item.helper_recurrent === true,
       helperAppliedSeconds,
       isCrafted: item.isCrafted,
       moduleId: item.moduleId,
@@ -492,6 +495,7 @@ export async function importVillageJson(
     validLabTasks.push({
       ...lab,
       timer: remainingNow / 1000,
+      recurrentHelper: lab.helper_recurrent === true,
       helperAppliedSeconds,
       hasHelper: lab.hasHelper,
     });
@@ -639,6 +643,7 @@ export async function importVillageJson(
       upgradeType,
 
       hasHelper: item.hasHelper,
+      recurrentHelper: item.recurrentHelper,
 
       helperAppliedSeconds:
         item.helperAppliedSeconds,
@@ -689,7 +694,7 @@ export async function importVillageJson(
       upgradeType: "LAB",
 
       hasHelper: lab.hasHelper,
-
+      recurrentHelper: lab.recurrentHelper,
       helperAppliedSeconds:
         lab.helperAppliedSeconds,
 

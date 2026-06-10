@@ -19,7 +19,7 @@ export function ChiefCard() {
 
           <Text style={styles.subtitle}>
             {isPremium
-              ? "Thank you for supporting Clash Widget"
+              ? "Thank you for supporting Clash One"
               : "Remove ads and unlock unlimited widget accounts"}
           </Text>
         </View>

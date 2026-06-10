@@ -152,13 +152,14 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
     duration_minutes,
     finish_timestamp,
     has_helper,
+    recurrent_helper,
     helper_applied_seconds,
     is_completed,
     source,
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           u.id,
           tag,
@@ -181,6 +182,7 @@ export async function replaceUpgrades(tag: string, upgrades: Upgrade[]) {
           u.durationMinutes,
           u.endTime,
           u.hasHelper ? 1 : 0,
+          u.recurrentHelper ? 1 : 0,
           u.helperAppliedSeconds ?? 0,
           u.isCompleted ? 1 : 0,
           u.source ?? null,

@@ -47,6 +47,7 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
 
     
     hasHelper: r.has_helper === 1,
+    recurrentHelper: r.recurrent_helper === 1,
     helperAppliedSeconds: Number(r.helper_applied_seconds ?? 0),
 
     currentLevel: r.current_level ?? undefined,
@@ -106,6 +107,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     endTime: r.finish_timestamp,
 
     hasHelper: r.has_helper === 1,
+    recurrentHelper: r.recurrent_helper ===1,
     helperAppliedSeconds: Number(r.helper_applied_seconds ?? 0),
     currentLevel: r.current_level ?? undefined,
     nextLevel: r.next_level ?? undefined,
@@ -183,13 +185,14 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     duration_minutes,
     finish_timestamp,
     has_helper,
+    recurrent_helper,
     helper_applied_seconds,
     is_completed,
     source,
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
@@ -213,6 +216,7 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
       upgrade.endTime,
 
       upgrade.hasHelper ? 1 : 0,
+      upgrade.recurrentHelper ? 1 : 0,
       upgrade.helperAppliedSeconds ?? 0,
 
       upgrade.isCompleted ? 1 : 0,

@@ -14,6 +14,7 @@ export type Upgrade = {
   isCrafted?: boolean;
 
   hasHelper?: boolean;
+  recurrentHelper?: boolean;
   helperAppliedSeconds?: number;
 
   type: "BUILDING" | "HERO" | "PET" | "GUARDIAN" | "LAB";

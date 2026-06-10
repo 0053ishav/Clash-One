@@ -1,8 +1,13 @@
+import { requestGalleryPermission } from "@/services/images/imagePicker";
+import { convertImagesToBase64 } from "@/services/images/supportAttachmentService";
 import { track } from "@/utils/analytics/analytics";
+import { log } from "@/utils/logger";
 import { Ionicons } from "@expo/vector-icons";
 import * as Application from "expo-application";
 import * as Clipboard from "expo-clipboard";
 import * as Crypto from "expo-crypto";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
   Modal,
@@ -26,7 +31,7 @@ const CATEGORIES = [
   "Feature Request",
   "Widget Issue",
   "Notification Issue",
-  "Account Import",
+  "Village Import",
   "General Feedback",
 ];
 
@@ -40,8 +45,10 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [attachments, setAttachments] = useState<string[]>([]);
 
   const sendEmail = async () => {
+    if (sending) return;
     try {
       setSending(true);
 
@@ -53,6 +60,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
         app_version: Application.nativeApplicationVersion,
       });
 
+      const screenshots = await convertImagesToBase64(attachments);
       const response = await fetch("https://support.clashwidget.online", {
         method: "POST",
         headers: {
@@ -63,26 +71,45 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
           category,
           message,
           debugInfo,
+          screenshots,
         }),
       });
       const data = await response.json();
-
       if (!response.ok || !data.success) {
         throw new Error("Failed");
       }
 
       setMessage("");
-
+      setAttachments([]);
       setShowSuccessModal(true);
     } catch (error) {
-      console.log(error);
-
+      log(error);
       setShowErrorModal(true);
     } finally {
       setSending(false);
     }
   };
 
+  const pickImages = async () => {
+    const granted = await requestGalleryPermission();
+
+    if (!granted) {
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: 3,
+      quality: 0.7,
+    });
+
+    if (result.canceled) return;
+
+    setAttachments((prev) =>
+      [...prev, ...result.assets.map((asset) => asset.uri)].slice(0, 3),
+    );
+  };
   return (
     <>
       <Modal
@@ -182,6 +209,56 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                     : "Ready to send"}
                 </Text>
               )}
+
+              <Text style={styles.label}>Screenshots (Optional)</Text>
+
+              <Pressable
+                style={styles.attachButton}
+                onPress={pickImages}
+                disabled={attachments.length >= 3}
+              >
+                <Ionicons name="image-outline" size={18} color="#fbbf24" />
+
+                <Text style={styles.attachText}>
+                  {attachments.length >= 3
+                    ? "Maximum 3 screenshots"
+                    : "Add Screenshots"}
+                </Text>
+              </Pressable>
+
+              <Text style={styles.attachmentCount}>
+                {attachments.length}/3 screenshots selected
+              </Text>
+
+              {attachments.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={{ marginTop: 12 }}
+                >
+                  {attachments.map((uri) => (
+                    <View key={uri} style={styles.attachmentPreview}>
+                      <Image
+                        source={{ uri }}
+                        style={styles.attachmentImage}
+                        contentFit="cover"
+                      />
+
+                      <Pressable
+                        style={styles.removeAttachmentButton}
+                        onPress={() =>
+                          setAttachments((prev) =>
+                            prev.filter((item) => item !== uri),
+                          )
+                        }
+                      >
+                        <Ionicons name="close" size={12} color="#fff" />
+                      </Pressable>
+                    </View>
+                  ))}
+                </ScrollView>
+              )}
+
               <View style={styles.guidelines}>
                 <Text style={styles.guidelineTitle}>Helpful Information</Text>
 
@@ -334,6 +411,66 @@ const styles = StyleSheet.create({
     color: "#cbd5e1",
     marginBottom: 8,
     marginTop: 16,
+  },
+
+  attachButton: {
+    marginTop: 4,
+
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+
+    gap: 8,
+
+    paddingVertical: 12,
+    borderRadius: 12,
+
+    borderWidth: 1,
+    borderColor: "#334155",
+
+    backgroundColor: "#1e293b",
+  },
+
+  attachText: {
+    color: "#fbbf24",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  attachmentCount: {
+    marginTop: 8,
+    color: "#94a3b8",
+    fontSize: 12,
+    textAlign: "center",
+  },
+
+  attachmentPreview: {
+    position: "relative",
+    marginRight: 12,
+    overflow: "visible",
+    paddingTop: 8,
+    paddingRight: 8,
+  },
+
+  attachmentImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+  },
+
+  removeAttachmentButton: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    borderWidth: 2,
+    borderColor: "#0f172a",
   },
 
   chip: {

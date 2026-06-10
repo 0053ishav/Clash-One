@@ -183,6 +183,12 @@ function LabCard({
                       - {formatCountdown(lab.helperAppliedSeconds * 1000)}
                     </Text>
                   )}
+
+                  {lab.recurrentHelper && (
+                    <View style={styles.recurrentBadge}>
+                      <Ionicons name="repeat" size={10} color="#fbbf24" />
+                    </View>
+                  )}
                 </View>
               )}
             </View>
@@ -434,6 +440,12 @@ const styles = StyleSheet.create({
   helperIcon: {
     width: 14,
     height: 14,
+  },
+
+  recurrentBadge: {
+    marginLeft: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   helperText: {

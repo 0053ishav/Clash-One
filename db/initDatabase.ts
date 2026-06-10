@@ -44,6 +44,7 @@ export async function initDatabase() {
       finish_timestamp INTEGER,
 
       has_helper INTEGER DEFAULT 0,
+      recurrent_helper INTEGER DEFAULT 0,
       helper_applied_seconds INTEGER DEFAULT 0,
 
       is_completed INTEGER DEFAULT 0,

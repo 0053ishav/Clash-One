@@ -1,11 +1,13 @@
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { useAccountStore } from "@/stores/accountStore";
+import { usePremiumStore } from "@/stores/premiumStore";
 import { posthog } from "@/utils/analytics/posthog";
 import * as Application from "expo-application";
 import * as Device from "expo-device";
 import * as Localization from "expo-localization";
 import * as Notifications from "expo-notifications";
 import { Dimensions, PixelRatio, Platform } from "react-native";
+import Purchases from "react-native-purchases";
 
 export async function buildSupportInfo() {
   const state = useAccountStore.getState();
@@ -24,6 +26,86 @@ const density = PixelRatio.get();
       : null;
 
   const posthogId = posthog.getDistinctId();
+  const isPremium = usePremiumStore.getState().isPremium;
+
+  let revenueCatInfo = `
+RevenueCat:
+Unavailable
+`;
+
+try {
+  const configured = Purchases.isConfigured();
+
+  const customerInfo = await configured
+    ? await Purchases.getCustomerInfo()
+    : null;
+
+  const offerings = await configured
+    ? await Purchases.getOfferings()
+    : null;
+
+  const activeEntitlements = customerInfo
+    ? Object.keys(customerInfo.entitlements.active)
+    : [];
+
+  const activeSubscriptions = customerInfo
+    ? customerInfo.activeSubscriptions
+    : [];
+
+  revenueCatInfo = `
+------------------------
+RevenueCat
+------------------------
+
+Configured: ${await configured ? "Yes" : "No"}
+
+RC User ID:
+${customerInfo?.originalAppUserId ?? "Unknown"}
+
+Chief Entitlement:
+${customerInfo?.entitlements.active["chief"] ? "Active" : "Inactive"}
+
+Active Entitlements:
+${activeEntitlements.length > 0
+      ? activeEntitlements.join(", ")
+      : "None"}
+
+Active Subscriptions:
+${activeSubscriptions.length > 0
+      ? activeSubscriptions.join(", ")
+      : "None"}
+
+Original Purchase Date:
+${customerInfo?.originalPurchaseDate ?? "Never"}
+
+First Seen:
+${customerInfo?.firstSeen ?? "Unknown"}
+
+Latest Expiration:
+${customerInfo?.latestExpirationDate ?? "N/A"}
+
+Management URL:
+${customerInfo?.managementURL ?? "N/A"}
+
+Current Offering:
+${offerings?.current?.identifier ?? "None"}
+
+Available Packages:
+${offerings?.current?.availablePackages
+      ?.map((p) => p.identifier)
+      .join(", ") || "None"}
+
+`;
+} catch (e: any) {
+  revenueCatInfo = `
+------------------------
+RevenueCat
+------------------------
+
+Error:
+${e?.message ?? "Unknown"}
+`;
+}
 
   return `
 ------------------------
@@ -65,7 +147,7 @@ Pixel Density: ${density}
 Active Profile Exists:
 ${activeProfile ? "Yes" : "No"}
 Active Account: ${state.activeTag
-      ? state.activeTag.slice(0, 6) : "None"
+      ? state.activeTag : "None"
     }
 
 Accounts Count: ${Object.keys(state.profilesByTag ?? {}).length}
@@ -99,7 +181,10 @@ ${state.activeTag && state.lastJsonSyncMap?.[state.activeTag]
       : "Never"
     }
 
+Has Premium: ${isPremium}
 PostHog ID: ${posthogId}
+
+${revenueCatInfo}
 
 Timestamp: ${new Date().toISOString()}
 `;

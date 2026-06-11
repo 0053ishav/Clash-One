@@ -1,4 +1,5 @@
 import {
+  getChiefPrice,
   purchasePremium,
   restorePurchases,
 } from "@/services/revenueCat/purchase";
@@ -21,10 +22,27 @@ export default function ProScreen() {
   const router = useRouter();
   const [purchasing, setPurchasing] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [price, setPrice] = useState("");
+
   const isPremium = usePremiumStore((s) => s.isPremium);
 
   useEffect(() => {
     track("screen_view", { screen: "pro" });
+  }, []);
+
+  useEffect(() => {
+    const loadPrice = async () => {
+      try {
+        const pkg = await getChiefPrice();
+        if (pkg) {
+          setPrice(pkg);
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    loadPrice();
   }, []);
 
   const handleChief = async () => {
@@ -83,9 +101,9 @@ export default function ProScreen() {
         />
 
         <PlanCard
-          badge={isPremium ? "ACTIVE" : "LIFETIME"}
+          badge={isPremium ? "ACTIVE" : "EARLY SUPPORTER"}
           title="CHIEF"
-          price={isPremium ? "Owned" : "₹199"}
+          price={isPremium ? "Owned" : price || "..."}
           subtitle={
             isPremium
               ? "Lifetime access unlocked"

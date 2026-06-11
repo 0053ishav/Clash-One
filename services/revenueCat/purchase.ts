@@ -58,3 +58,12 @@ export async function restorePurchases() {
 function hasPremium(customerInfo: any) {
   return !!customerInfo.entitlements.active["chief"];
 }
+
+export async function getChiefPrice() {
+  const offerings = await Purchases.getOfferings();
+
+  const pkg = offerings.current?.availablePackages.find(
+    (p) => p.identifier === "$rc_lifetime"
+  );
+  return pkg?.product.priceString ?? "";
+}

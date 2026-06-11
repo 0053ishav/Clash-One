@@ -1,10 +1,11 @@
 import { PlayerFull } from "@/types/playerFull";
 import { Ionicons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function ProgressSection({ data }: { data: PlayerFull }) {
   const hasAchievements = data.achievements && data.achievements.length > 0;
-
+  const router = useRouter();
   if (!hasAchievements) return null;
 
   return (
@@ -17,9 +18,41 @@ export default function ProgressSection({ data }: { data: PlayerFull }) {
       {/* Achievements */}
       {hasAchievements && (
         <View style={styles.subSection}>
-          <Text style={styles.subtitle}>
-            Achievements ({data.achievements?.length})
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text style={styles.subtitle}>
+              Achievements ({data.achievements?.length})
+            </Text>
+
+            <Pressable
+              onPress={() => router.push("/achievements")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                paddingVertical: 4,
+                paddingHorizontal: 8,
+                borderRadius: 6,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#fbbf24",
+                  fontWeight: "700",
+                  fontSize: 12,
+                }}
+              >
+                View All
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
+            </Pressable>
+          </View>
+
           <View style={styles.achievementsList}>
             {data.achievements?.slice(0, 5).map((achievement, i) => (
               <AchievementItem

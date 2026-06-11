@@ -2,6 +2,7 @@ import { initDatabase } from "@/db/initDatabase";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
+import { syncPremiumStatus } from "@/services/revenueCat/premium";
 import { initRevenueCat } from "@/services/revenueCat/revenueCat";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
@@ -30,6 +31,7 @@ export default function RootLayout() {
     try {
       await initDatabase();
       await initRevenueCat();
+      await syncPremiumStatus();
       await loadAccounts();
       loadLastSync();
       await loadActiveAccount();

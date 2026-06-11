@@ -43,7 +43,7 @@ export default function EntitySection({
             ]}
           >
             <Text style={styles.viewAllText}>View All</Text>
-            <Ionicons name="chevron-forward" size={14} color="#94a3b8" />
+            <Ionicons name="chevron-forward" size={14} color="#fbbf24" />
           </Pressable>
         )}
       </View>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
 
   viewAllText: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#94a3b8",
+    fontWeight: "700",
+    color: "#fbbf24",
   },
 });

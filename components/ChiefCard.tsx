@@ -35,15 +35,11 @@ export function ChiefCard() {
         {isPremium && <Text style={styles.feature}>✓ Early Supporter</Text>}
       </View>
 
-      {!isPremium ? (
-        <Pressable onPress={() => router.push("/pro")} style={styles.button}>
-          <Text style={styles.buttonText}>₹199 Lifetime</Text>
-        </Pressable>
-      ) : (
-        <View style={styles.activeBadge}>
-          <Text style={styles.activeBadgeText}>👑 Lifetime Access Active</Text>
-        </View>
-      )}
+      <Pressable onPress={() => router.push("/pro")} style={styles.button}>
+        <Text style={styles.buttonText}>
+          {!isPremium ? "₹199 Lifetime" : "👑 Lifetime Access Active"}
+        </Text>
+      </Pressable>
     </View>
   );
 }

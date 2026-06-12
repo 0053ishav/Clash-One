@@ -247,30 +247,37 @@ export default function HomeScreen() {
     );
   }
   if (!profile) {
-    router.replace("/add-account");
+    // router.replace("/add-account");
 
-    return null;
-    // return (
-    //   <View style={[styles.container, styles.loadingOverlay]}>
-    //     <View style={styles.loadingContent}>
-    //       <View style={styles.imageWrapper}>
-    //         <Image
-    //           source={require("@/assets/images/builder/builder-idle.png")}
-    //           style={styles.builderImage}
-    //           contentFit="contain"
-    //           cachePolicy="memory-disk"
-    //         />
-    //       </View>
-    //       <Text style={styles.loadingTitle}>Loading Village</Text>
-    //       <Text style={styles.loadingMessage}>Loading your profile...</Text>
-    //       <View style={styles.dotsContainer}>
-    //         {[0, 1, 2].map((i) => (
-    //           <View key={i} style={styles.dot} />
-    //         ))}
-    //       </View>
-    //     </View>
-    //   </View>
-    // );
+    // return null;
+    return (
+      <View style={[styles.container, styles.loadingOverlay]}>
+        <View style={styles.loadingContent}>
+          <View style={styles.imageWrapper}>
+            <Image
+              source={require("@/assets/images/builder/builder-idle.png")}
+              style={styles.builderImage}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+          </View>
+          <Text style={styles.loadingTitle}>No Village Connected</Text>
+          <Pressable
+            onPress={() => router.replace("/add-account")}
+            style={{
+              height: 52,
+              backgroundColor: "#fbbf24",
+              borderRadius: 16,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 14,
+            }}
+          >
+            <Text style={styles.addButtonText}>Connect</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
   }
 
   const isGoblinActive = config.goblinBuilderEnabled && isWorkForHireActive();

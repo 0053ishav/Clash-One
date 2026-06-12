@@ -25,7 +25,6 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
     !siegeMachines?.length
   )
     return null;
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>

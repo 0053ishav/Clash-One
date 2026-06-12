@@ -24,9 +24,16 @@ export default function RootLayout() {
   const [bootState, setBootState] = useState<"loading" | "ready" | "error">(
     "loading",
   );
+
+  const pathname = usePathname();
+  const complete = isOnboardingComplete();
+
+  const isOnboardingRoute = pathname === "/onboarding";
+
   const router = useRouter();
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const loadLastSync = useAccountStore((s) => s.loadLastSync);
+
   const runBootstrap = useCallback(async () => {
     try {
       await initDatabase();
@@ -131,11 +138,6 @@ export default function RootLayout() {
       sub.remove();
     };
   }, []);
-
-  const pathname = usePathname();
-  const complete = isOnboardingComplete();
-
-  const isOnboardingRoute = pathname === "/onboarding";
 
   if (bootState === "loading") {
     return (

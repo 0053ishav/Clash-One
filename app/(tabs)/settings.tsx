@@ -299,8 +299,8 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ChiefCard />
-        {/* SECTION: Active Account */}
-        <Text style={styles.sectionTitle}>Active Account</Text>
+        {/* SECTION: Active Village */}
+        <Text style={styles.sectionTitle}>Active Village</Text>
 
         <View style={styles.card}>
           {profile?.playerTag ? (
@@ -447,7 +447,7 @@ export default function SettingsScreen() {
             <View style={styles.noAccountRow}>
               <Ionicons name="person-outline" size={20} color="#475569" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>No Account Connected</Text>
+                <Text style={styles.settingLabel}>No Village Connected</Text>
                 <Text style={styles.helperText}>
                   Import village JSON to get started
                 </Text>
@@ -462,7 +462,7 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* SECTION: All Accounts */}
+        {/* SECTION: All Villages */}
         <Text style={styles.sectionTitle}>All Villages</Text>
 
         <View style={styles.card}>

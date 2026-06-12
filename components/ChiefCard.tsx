@@ -37,7 +37,7 @@ export function ChiefCard() {
 
       <Pressable onPress={() => router.push("/pro")} style={styles.button}>
         <Text style={styles.buttonText}>
-          {!isPremium ? "₹199 Lifetime" : "👑 Lifetime Access Active"}
+          {!isPremium ? "Support" : "👑 Lifetime Support Active"}
         </Text>
       </Pressable>
     </View>

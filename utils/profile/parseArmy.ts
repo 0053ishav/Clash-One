@@ -29,7 +29,13 @@ export function parseArmy(data: any) {
 
   const mappedTroops =
     data.troops?.map(attachId) ?? [];
+const mappedHeroes = 
+  data.heroes?.map(attachId) ?? []
 
+  const validHeroes =
+    mappedHeroes.filter(
+      (t: any) => t.dataId !== -1,
+    );
   const validTroops =
     mappedTroops.filter(
       (t: any) => t.dataId !== -1,
@@ -78,7 +84,7 @@ export function parseArmy(data: any) {
       }) ?? [];
 
   const heroes =
-    validTroops
+    validHeroes
       .filter((h: any) => {
         const entity = getEntity(h.dataId);
 

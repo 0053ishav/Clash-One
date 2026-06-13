@@ -110,6 +110,14 @@
         {
           "androidAppId": "ca-app-pub-9105764742528026~9244034429"
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "clash-one",
+          "organization": "strnge-labs"
+        }
       ]
     ],
     "experiments": {

@@ -10,7 +10,9 @@ import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
 import { projectHelperTimer } from "@/utils/helpers/projectHelperTimer";
 import { resyncNotifications } from "@/utils/notificationSync";
+import * as Sentry from "@sentry/react-native";
 import { randomUUID } from "expo-crypto";
+
 
 type RawExport = {
   tag: string;
@@ -725,6 +727,8 @@ export async function importVillageJson(
     });
 
   } catch (e) {
+      Sentry.captureException(e);
+
     track("json_pipeline", {
       step: "import",
       status: "failed",

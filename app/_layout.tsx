@@ -1,4 +1,6 @@
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { initDatabase } from "@/db/initDatabase";
+import { useInAppUpdates } from "@/hooks/useInAppUpdate";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
@@ -13,20 +15,43 @@ import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
+import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-export default function RootLayout() {
+Sentry.init({
+  dsn: "https://d2e012e1209309eb649f09114ae454a6@o4511557895258112.ingest.us.sentry.io/4511557898272768",
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [
+    Sentry.mobileReplayIntegration(),
+    Sentry.feedbackIntegration(),
+  ],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
+
+export default Sentry.wrap(function RootLayout() {
   const loadActiveAccount = useAccountStore((s) => s.loadActiveAccount);
   const [bootState, setBootState] = useState<"loading" | "ready" | "error">(
     "loading",
   );
 
   const pathname = usePathname();
-  const complete = isOnboardingComplete();
+  const [complete] = useState(isOnboardingComplete());
 
   const isOnboardingRoute = pathname === "/onboarding";
 
@@ -46,7 +71,7 @@ export default function RootLayout() {
       await configureNotifications();
 
       await syncEntities();
-      hydrateEntities();
+      await hydrateEntities();
       initWidgetManager();
       startSmartWidgetScheduler();
       emitWidgetUpdate();
@@ -62,6 +87,11 @@ export default function RootLayout() {
       setBootState("ready");
     } catch (e) {
       console.error("Bootstrap Failed: ", e);
+      Sentry.captureException(e);
+
+      track("bootstrap_failed", {
+        error: e instanceof Error ? e.message : "unknown",
+      });
       setBootState("error");
     }
   }, []);
@@ -69,6 +99,13 @@ export default function RootLayout() {
   useEffect(() => {
     runBootstrap();
   }, []);
+
+  const {
+    updateModalVisible,
+    setUpdateModalVisible,
+    storeVersion,
+    startUpdate,
+  } = useInAppUpdates(bootState === "ready");
 
   useEffect(() => {
     const received = Notifications.addNotificationReceivedListener(
@@ -228,9 +265,36 @@ export default function RootLayout() {
         {/* <Stack.Screen name="add-upgrade" options={{ headerShown: false }} /> */}
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       </Stack>
+      <ConfirmModal
+        visible={updateModalVisible}
+        title="New Version Available"
+        message={`A newer version of Clash One is available.
+
+Version: ${storeVersion ?? "Latest"}
+
+• Bug fixes
+• Performance improvements
+• New features
+
+Update now for the best experience.`}
+        confirmText="Update"
+        cancelText="Later"
+        onConfirm={async () => {
+          track("update_accepted");
+
+          setUpdateModalVisible(false);
+
+          await startUpdate();
+        }}
+        onCancel={() => {
+          track("update_dismissed");
+
+          setUpdateModalVisible(false);
+        }}
+      />
     </RemoteConfigProvider>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

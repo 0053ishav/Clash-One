@@ -11,7 +11,6 @@ import { create } from "zustand";
 type AccountState = {
   activeTag: string | null;
   accounts: Account[];
-  // profile: PlayerProfile | null;
   profilesByTag: Record<
     string,
     PlayerProfile
@@ -31,7 +30,6 @@ type AccountState = {
   loadActiveAccount: () => Promise<void>;
   switchAccount: (tag: string) => Promise<void>;
   removeAccount: (tag: string) => Promise<void>;
-  // setProfile: (profile: PlayerProfile) => void;
 
   setProfile: (
     tag: string,
@@ -52,7 +50,6 @@ type AccountState = {
 export const useAccountStore = create<AccountState>((set) => ({
   activeTag: null,
   accounts: [],
-  // profile: null,
   profilesByTag: {},
 
   isLoadingProfile: false,
@@ -297,16 +294,6 @@ export const useAccountStore = create<AccountState>((set) => ({
           widgetPrefs: updatedPrefs,
           activeTag: newActiveTag,
           profilesByTag: updatedProfiles,
-          // profilesByTag:
-          //   newActiveTag
-          //     ? {
-          //       ...state.profilesByTag,
-          //       [newActiveTag]:
-          //         getPlayerProfile(
-          //           newActiveTag,
-          //         )!,
-          //     }
-          //     : state.profilesByTag,
         };
       });
 

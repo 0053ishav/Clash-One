@@ -39,10 +39,6 @@ interface EntityStore {
     entities: EntityData[],
   ) => void;
 
-  // setEntities: (
-  //   entities: Record<number, EntityData>,
-  // ) => void;
-
   getEntity: (
     id: number,
   ) => EntityData | undefined;
@@ -65,55 +61,6 @@ export const useEntityStore =
         manifest,
       }),
 
-    // setEntities: (entities) => {
-    //   const mapped: Record<
-    //     number,
-    //     EntityData
-    //   > = {};
-
-    //   for (const entity of entities) {
-    //     mapped[entity.id] = entity;
-    //   }
-
-    //   set((state) => ({
-    //     entitiesById: {
-    //       ...state.entitiesById,
-    //       ...mapped,
-    //     },
-    //   }));
-    // },
-
-    //     setEntities: (entities) =>
-
-    //       set((state) => {
-    //         const byName: Record<string, number> = {};
-    // console.log(
-    //   "SET ENTITIES",
-    //   Object.keys(entities).length
-    // );
-    // console.log(
-    //   "FIRST",
-    //   Object.values(entities)[0]
-    // );
-    //         for (const entity of Object.values(entities)) {
-    //           byName[
-    //             `${entity.name.en.trim().toLowerCase()}|${entity.village}`
-    //           ] = entity.id;
-    //         }
-
-    //         return {
-    //           entitiesById: {
-    //             ...state.entitiesById,
-    //             ...entities,
-    //           },
-
-    //           entitiesByName: {
-    //             ...state.entitiesByName,
-    //             ...byName,
-    //           },
-    //         };
-    //       }),
-
     setEntities: (entities) =>
       set((state) => {
         const mapped: Record<
@@ -126,16 +73,7 @@ export const useEntityStore =
           number
         > = {};
 
-        // console.log(
-        //   "SET ENTITIES",
-        //   entities.length,
-        // );
-
-        // console.log(
-        //   "FIRST",
-        //   entities[0],
-        // );
-
+      
         for (const entity of entities) {
           mapped[entity.id] =
             entity;

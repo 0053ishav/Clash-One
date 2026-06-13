@@ -14,7 +14,7 @@ export function ChiefCard() {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>
-            {isPremium ? "Chief Member" : "Become Chief"}
+            {isPremium ? "Chief" : "Become Chief"}
           </Text>
 
           <Text style={styles.subtitle}>
@@ -24,22 +24,27 @@ export function ChiefCard() {
           </Text>
         </View>
       </View>
+      {!isPremium && (
+        <>
+          <View style={styles.features}>
+            <Text style={styles.feature}>✓ No Ads</Text>
 
-      <View style={styles.features}>
-        <Text style={styles.feature}>✓ No Ads</Text>
+            <Text style={styles.feature}>✓ Unlimited Widget Accounts</Text>
 
-        <Text style={styles.feature}>✓ Unlimited Widget Accounts</Text>
+            <Text style={styles.feature}>
+              ✓ Support Independent Development
+            </Text>
 
-        <Text style={styles.feature}>✓ Support Independent Development</Text>
+            {isPremium && <Text style={styles.feature}>✓ Early Supporter</Text>}
+          </View>
 
-        {isPremium && <Text style={styles.feature}>✓ Early Supporter</Text>}
-      </View>
-
-      <Pressable onPress={() => router.push("/pro")} style={styles.button}>
-        <Text style={styles.buttonText}>
-          {!isPremium ? "Support" : "👑 Lifetime Support Active"}
-        </Text>
-      </Pressable>
+          <Pressable onPress={() => router.push("/pro")} style={styles.button}>
+            <Text style={styles.buttonText}>
+              {!isPremium ? "Support" : "👑 Lifetime Support Active"}
+            </Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }

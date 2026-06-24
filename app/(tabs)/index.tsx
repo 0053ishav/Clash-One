@@ -3,6 +3,7 @@ import { LabSection } from "@/components/home/LabSection";
 import { PetSection } from "@/components/home/PetSection";
 import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet";
 import { SupportModal } from "@/components/SupportModal";
+import { XPBadge } from "@/components/XPBadge";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -340,7 +341,7 @@ export default function HomeScreen() {
     statusIcon = resolveEntityIcon(nextUpgrade.dataId, {
       isCrafted: nextUpgrade.isCrafted,
       context: {
-        townHallLevel: profile.townHallLevel,
+        hallLevel: profile.townHallLevel,
       },
     });
   }
@@ -448,31 +449,55 @@ export default function HomeScreen() {
 
               {/* Secondary Line */}
               {profile.playerTag && (
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  <View style={styles.leagueIcon}>
-                    <Image
-                      source={{
-                        uri: resolveEntityIcon(1000001, {
-                          context: {
-                            townHallLevel: profile.townHallLevel,
-                          },
-                        }),
-                      }}
-                      style={styles.leagueIcon}
-                      contentFit="contain"
-                      cachePolicy="memory-disk"
-                    />
-                  </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  {/* Hall */}
+                  <Image
+                    source={{
+                      uri: resolveEntityIcon(1000001, {
+                        context: {
+                          hallLevel: profile.townHallLevel,
+                        },
+                      }),
+                    }}
+                    style={styles.leagueIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+
                   <Text style={styles.profileSub}>
                     TH{profile.townHallLevel}
-                    {typeof profile.trophies === "number"
-                      ? ` • ${profile.trophies} 🏆`
-                      : ""}
                   </Text>
 
-                  {/* EXP Level */}
+                  {/* Trophies */}
+                  {typeof profile.trophies === "number" && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Image
+                        source={require("@/assets/images/clash/trophy.png")}
+                        style={{
+                          width: 16,
+                          height: 16,
+                        }}
+                        contentFit="contain"
+                      />
+                      <Text style={styles.profileSub}>{profile.trophies}</Text>
+                    </View>
+                  )}
+
+                  {/* XP */}
                   {typeof profile.expLevel === "number" && (
-                    <Text style={styles.profileSub}>Lv {profile.expLevel}</Text>
+                    <XPBadge level={profile.expLevel} />
                   )}
                 </View>
               )}
@@ -720,7 +745,7 @@ export default function HomeScreen() {
                                     subType: u.subType,
                                     isCrafted: u.isCrafted,
                                     context: {
-                                      townHallLevel: profile.townHallLevel,
+                                      hallLevel: profile.townHallLevel,
                                     },
                                   })
                                 : FALLBACK_ICON,

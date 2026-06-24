@@ -5,13 +5,18 @@ import { useEntityStore } from "@/stores/entityStore";
 export const FALLBACK_ICON =
   "https://cdn.clashwidget.online/entities/fallbacks/fallback.png";
 
+const HALL_TYPES = [
+  "TOWNHALL",
+  "BUILDERHALL",
+] as const;
+
 interface ResolveEntityIconOptions {
   subType?: string;
 
   isCrafted?: boolean;
 
   context?: {
-    townHallLevel?: number;
+    hallLevel?: number;
   };
 }
 
@@ -26,9 +31,9 @@ export function resolveEntityIcon(
   const crafted =
     useCraftedStore.getState();
 
-  // -----------------------------------
-  // Crafted defense special case
-  // -----------------------------------
+  /**
+   * Crafted defense special case
+   */
 
   if (options?.isCrafted) {
     const craftedIcon =
@@ -42,9 +47,9 @@ export function resolveEntityIcon(
     return FALLBACK_ICON;
   }
 
-  // -----------------------------------
-  // Entity lookup
-  // -----------------------------------
+  /**
+   * Entity Lookup
+   */
 
   const entity =
     entities[entityId];
@@ -53,31 +58,33 @@ export function resolveEntityIcon(
     return FALLBACK_ICON;
   }
 
-  // -----------------------------------
-  // TownHall special case
-  // -----------------------------------
+  /**
+   * -----------------------------------
+   * Town Hall / Builder Hall
+   * level-specific icon
+   * -----------------------------------
+   */
+
+  const subType =
+    options?.subType ??
+    entity.subType ??
+    "";
 
   if (
-    options?.subType ===
-      "TOWNHALL" ||
-    entity.subType ===
-      "TOWNHALL"
+    HALL_TYPES.includes(
+      subType as (typeof HALL_TYPES)[number],
+    )
   ) {
     const level =
       options?.context
-        ?.townHallLevel;
+        ?.hallLevel;
 
-    if (
-      level &&
-      entity.levels?.[
-        String(level)
-      ]
-    ) {
-      return (
-        entity.levels[
-          String(level)
-        ].icon
-      );
+    if (level) {
+      const levelIcon = entity.levels?.[String(level)]?.icon;
+
+      if (levelIcon) {
+        return levelIcon;
+      }
     }
   }
 

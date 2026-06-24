@@ -4,6 +4,7 @@ import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
+import { XPBadge } from "../XPBadge";
 
 export default function ProfileHeroCard({
   data,
@@ -24,14 +25,17 @@ export default function ProfileHeroCard({
       <View style={styles.heroTop}>
         <View style={styles.nameSection}>
           <Text style={styles.name}>{data.name}</Text>
-          <Text style={styles.tag}>{data.tag}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={styles.tag}>{data.tag}</Text>
+            {data.expLevel && <XPBadge level={data.expLevel} />}
+          </View>
         </View>
         <View style={styles.thBadge}>
           <Image
             source={{
               uri: resolveEntityIcon(1000001, {
                 context: {
-                  townHallLevel: data.townHallLevel,
+                  hallLevel: data.townHallLevel,
                 },
               }),
             }}
@@ -62,8 +66,13 @@ export default function ProfileHeroCard({
           <Text style={styles.leagueName}>{data.leagueTier?.name}</Text>
           <View style={styles.trophyRow}>
             <View style={styles.trophyBadge}>
+              <Image
+                source={require("@/assets/images/clash/trophy.png")}
+                style={styles.trophyIcon}
+                contentFit="contain"
+              />
+
               <Text style={styles.trophyText}>{data.trophies}</Text>
-              <Text style={styles.trophyEmoji}>🏆</Text>
             </View>
             <Text style={styles.bestText}>
               Legacy Best: {data.bestTrophies}
@@ -282,6 +291,12 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
   },
 
+  expLevel: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+
   thBadge: {
     backgroundColor: "rgba(251, 191, 36, 0.15)",
     paddingHorizontal: 12,
@@ -346,6 +361,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+  },
+
+  trophyIcon: {
+    width: 16,
+    height: 16,
   },
 
   trophyText: {

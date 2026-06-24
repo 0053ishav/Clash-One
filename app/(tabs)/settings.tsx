@@ -30,6 +30,7 @@ import * as Application from "expo-application";
 
 import { ChiefCard } from "@/components/ChiefCard";
 import { SupportModal } from "@/components/SupportModal";
+import { XPBadge } from "@/components/XPBadge";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { restorePurchases } from "@/services/revenueCat/purchase";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
@@ -322,10 +323,26 @@ export default function SettingsScreen() {
                   <Text style={styles.activeAccountName}>
                     {profile.playerName}
                   </Text>
-                  <Text style={styles.activeAccountMeta}>
-                    {profile.playerTag}
-                    {profile.expLevel ? ` • Lv ${profile.expLevel}` : ""}
-                  </Text>
+                  <View style={styles.activeAccountMetaRow}>
+                    <Text style={styles.activeAccountMeta}>
+                      {profile.playerTag}
+                    </Text>
+
+                    {typeof profile.trophies === "number" && (
+                      <View style={styles.trophyRow}>
+                        <Image
+                          source={require("@/assets/images/clash/trophy.png")}
+                          style={styles.trophyIcon}
+                          contentFit="contain"
+                        />
+                        <Text style={styles.activeAccountMeta}>
+                          {profile.trophies}
+                        </Text>
+                      </View>
+                    )}
+
+                    {profile.expLevel && <XPBadge level={profile.expLevel} />}
+                  </View>
                 </View>
                 {isPremium && (
                   <View
@@ -361,7 +378,7 @@ export default function SettingsScreen() {
                     source={{
                       uri: resolveEntityIcon(1000001, {
                         context: {
-                          townHallLevel: profile.townHallLevel,
+                          hallLevel: profile.townHallLevel,
                         },
                       }),
                     }}
@@ -1224,10 +1241,27 @@ const styles = StyleSheet.create({
     color: "#f1f5f9",
   },
 
+  activeAccountMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
   activeAccountMeta: {
     fontSize: 12,
     color: "#64748b",
     marginTop: 2,
+  },
+
+  trophyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+
+  trophyIcon: {
+    width: 14,
+    height: 14,
   },
 
   leagueIcon: {

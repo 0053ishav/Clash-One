@@ -62,7 +62,7 @@ export default function GoblinEventBanner({ eventEndsAt, onDismiss }: Props) {
       <View style={styles.leftSection}>
         <View style={styles.iconWrapper}>
           <Image
-            source={require("@/assets/images/clash/resources/gem.webp")}
+            source={require("@/assets/images/clash/resources/gem.png")}
             style={{ width: 18, height: 18 }}
             resizeMode="contain"
           />

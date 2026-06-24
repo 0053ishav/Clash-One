@@ -162,7 +162,7 @@ export default function ValueScreen() {
                         subType: "TOWNHALL",
 
                         context: {
-                          townHallLevel: profile.townHallLevel,
+                          hallLevel: profile.townHallLevel,
                         },
                       }),
                     }}
@@ -237,7 +237,7 @@ export default function ValueScreen() {
                         subType: nextUpgrade.subType,
 
                         context: {
-                          townHallLevel: profile?.townHallLevel,
+                          hallLevel: profile?.townHallLevel,
                         },
                       }),
                     }}
@@ -299,7 +299,7 @@ export default function ValueScreen() {
                           subType: u.subType,
 
                           context: {
-                            townHallLevel: profile?.townHallLevel,
+                            hallLevel: profile?.townHallLevel,
                           },
                         }),
                       }}

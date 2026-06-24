@@ -5,6 +5,7 @@ import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
+import { XPBadge } from "../XPBadge";
 
 export default function ProfileHeader({
   profile,
@@ -30,23 +31,17 @@ export default function ProfileHeader({
   const hasHelpers = helpers.length > 0;
   const hasGuardians = guardians.length > 0;
 
-  // console.log("🧠 PROFILE HEADER", {
-  //   tag: profile.playerTag,
-  //   guardians: guardians.length,
-  //   guardiansDataId: guardians.map((g) => g.dataId),
-  //   icon: resolveEntityIcon(107000008),
-  // });
-
   return (
     <View style={styles.container}>
       {/* Top Row - Name & Tier Icon */}
       <View style={styles.topRow}>
         <View style={styles.nameSection}>
           <Text style={styles.playerName}>{profile.playerName || "Chief"}</Text>
-          <Text style={styles.playerTag}>{profile.playerTag}</Text>
-          {profile.expLevel && (
-            <Text style={styles.expLevel}>Exp Level {profile.expLevel}</Text>
-          )}
+
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={styles.playerTag}>{profile.playerTag}</Text>
+            {profile.expLevel && <XPBadge level={profile.expLevel} />}
+          </View>
         </View>
 
         <View style={styles.thBadge}>
@@ -54,7 +49,7 @@ export default function ProfileHeader({
             source={{
               uri: resolveEntityIcon(1000001, {
                 context: {
-                  townHallLevel: profile.townHallLevel,
+                  hallLevel: profile.townHallLevel,
                 },
               }),
             }}
@@ -63,17 +58,6 @@ export default function ProfileHeader({
             cachePolicy="memory-disk"
           />
         </View>
-
-        {/* {profile.leagueTierIconUrl && (
-          <View style={styles.tierIconWrapper}>
-            <Image
-              source={{ uri: profile.leagueTierIconUrl }}
-              style={styles.tierIcon}
-              contentFit="contain"
-              cachePolicy="memory-disk"
-            />
-          </View>
-        )} */}
       </View>
 
       {/* League & TH Row */}
@@ -93,9 +77,13 @@ export default function ProfileHeader({
           <View style={styles.trophyRow}>
             {typeof profile.trophies === "number" && (
               <View style={styles.trophyBadge}>
-                <Text style={styles.trophyText}>{profile.trophies}</Text>
+                <Image
+                  source={require("@/assets/images/clash/trophy.png")}
+                  style={styles.trophyIcon}
+                  contentFit="contain"
+                />
 
-                <Text style={styles.trophyEmoji}>🏆</Text>
+                <Text style={styles.trophyText}>{profile.trophies}</Text>
               </View>
             )}
 
@@ -388,6 +376,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+  },
+
+  trophyIcon: {
+    width: 16,
+    height: 16,
   },
 
   trophyText: {

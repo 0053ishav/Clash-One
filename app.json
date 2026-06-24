@@ -2,7 +2,7 @@
   "expo": {
     "name": "Clash One",
     "slug": "clash-one",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "clashone",
@@ -45,6 +45,18 @@
         "react-native-android-widget",
         {
           "widgets": [
+            {
+              "name": "UpcomingUpgradesWidget",
+              "label": "Upcoming Upgrades",
+              "description": "View all active builder, lab and pet upgrades sorted by completion time.",
+              "minWidth": "250dp",
+              "minHeight": "140dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "resizeMode": "horizontal|vertical",
+              "previewImage": "./assets/images/widget/upcomingUpgrades.png",
+              "updatePeriodMillis": 1800000
+            },
             {
               "name": "BuilderStatusWidget",
               "label": "Builder Status",
@@ -92,7 +104,7 @@
               "resizeMode": "horizontal",
               "previewImage": "./assets/images/widget/pet.png",
               "updatePeriodMillis": 1800000
-            }
+            }            
           ]
         }
       ],

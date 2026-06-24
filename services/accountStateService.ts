@@ -29,7 +29,6 @@ export async function getAccountState(tag: string) {
   if (!goblinEventActive && labGoblinRaw) {
     console.warn("⚠️ Stale goblin lab upgrade detected (event inactive)");
   }
-
   return {
     upgrades,
     activeUpgrades,

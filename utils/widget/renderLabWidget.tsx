@@ -8,8 +8,6 @@ import { getLabWidgetData } from "@/widget/getLabWidgetData";
 
 export async function renderLabWidget() {
   try {
-    // const { activeTag, widgetPrefs, accounts } = useAccountStore.getState();
-
     const accounts = await getAccounts();
 
     const activeTag = getActiveAccount();

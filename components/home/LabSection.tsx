@@ -28,8 +28,15 @@ export function LabSection({
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
-            <Text style={styles.emoji}>🧪</Text>
-            <Text style={styles.sectionTitle}>Research Lab</Text>
+            <View style={{}}>
+              <Image
+                source={require("@/assets/images/clash/1000007.png")}
+                style={{ width: 40, height: 40 }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <Text style={styles.sectionTitle}>Laboratory</Text>
           </View>
 
           <View

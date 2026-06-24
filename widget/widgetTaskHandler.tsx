@@ -57,6 +57,31 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
 
     const widgetName = props.widgetInfo?.widgetName;
 
+    if (widgetName === "UpcomingUpgradesWidget") {
+      const { renderUpcomingUpgradesWidget } =
+        await import("@/utils/widget/renderUpcomingUpgradesWidget");
+
+      const { getUpcomingWidgetCache } =
+        await import("@/utils/widget/widgetCache");
+
+      const cached = getUpcomingWidgetCache();
+
+      if (cached && !isWidgetCacheStale(cached, "upcoming")) {
+        const { UpcomingUpgradesWidget } =
+          await import("@/widget/UpcomingUpgradesWidget");
+
+        props.renderWidget(<UpcomingUpgradesWidget rows={cached.rows} />);
+
+        renderUpcomingUpgradesWidget().then(props.renderWidget);
+
+        return;
+      }
+
+      props.renderWidget(await renderUpcomingUpgradesWidget());
+
+      return;
+    }
+
     if (widgetName === "MultiAccountWidget") {
       props.renderWidget(await renderMultiWidget());
       return;

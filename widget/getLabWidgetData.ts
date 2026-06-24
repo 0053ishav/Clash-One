@@ -8,9 +8,6 @@ import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 
 export async function getLabWidgetData(inputTag?: string) {
-  // const { activeTag, widgetPrefs, accounts, lastJsonSyncMap } =
-  //   useAccountStore.getState();
-
     const accounts = await getAccounts();
   
     const activeTag = getActiveAccount();
@@ -29,7 +26,6 @@ export async function getLabWidgetData(inputTag?: string) {
   }
 
   const account = accounts.find((a) => a.tag === tag);
-  // const updatedAt = lastJsonSyncMap[tag] ?? null;
     const updatedAt = tag ? getLastJsonSync(tag) : undefined;
   
 

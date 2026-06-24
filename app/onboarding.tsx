@@ -240,10 +240,10 @@ export default function OnboardingScreen() {
           setShowPermissionModal(false);
           Linking.openSettings();
         }}
-        onCancel={() => {
+        onCancel={async () => {
           setShowPermissionModal(false);
           setNotificationsEnabled(false);
-          setOnboardingComplete();
+          await setOnboardingComplete();
           emitWidgetUpdate();
           router.replace("/add-account");
         }}

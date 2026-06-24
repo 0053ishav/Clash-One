@@ -40,7 +40,14 @@ export function PetSection({
       <View style={styles.sectionHeader}>
         <View style={styles.headerLeft}>
           <View style={styles.titleRow}>
-            <Text style={styles.emoji}>🐾</Text>
+            <View style={{}}>
+              <Image
+                source={require("@/assets/images/clash/1000068.png")}
+                style={{ width: 40, height: 40 }}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
             <Text style={styles.sectionTitle}>Pet House</Text>
           </View>
           <View

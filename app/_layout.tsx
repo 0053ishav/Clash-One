@@ -51,7 +51,7 @@ export default Sentry.wrap(function RootLayout() {
   );
 
   const pathname = usePathname();
-  const [complete] = useState(isOnboardingComplete());
+  const complete = isOnboardingComplete();
 
   const isOnboardingRoute = pathname === "/onboarding";
 
@@ -97,8 +97,12 @@ export default Sentry.wrap(function RootLayout() {
   }, []);
 
   useEffect(() => {
-    runBootstrap();
-  }, []);
+    if (complete) {
+      runBootstrap();
+    } else {
+      setBootState("ready");
+    }
+  }, [complete]);
 
   const {
     updateModalVisible,
@@ -176,6 +180,10 @@ export default Sentry.wrap(function RootLayout() {
     };
   }, []);
 
+  if (!complete && !isOnboardingRoute) {
+    return <Redirect href="/onboarding" />;
+  }
+
   if (bootState === "loading") {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
@@ -248,11 +256,6 @@ export default Sentry.wrap(function RootLayout() {
       </View>
     );
   }
-
-  if (!complete && !isOnboardingRoute) {
-    return <Redirect href="/onboarding" />;
-  }
-
   return (
     <RemoteConfigProvider>
       <Stack

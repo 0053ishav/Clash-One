@@ -163,23 +163,6 @@ export default function HomeScreen() {
     return () => clearTimeout(timeout);
   }, [completedId]);
 
-  // useEffect(() => {
-  //   (async () => {
-  //     try {
-  //       if (!activeTag) return;
-  //       const widgetData = await getBuilderWidgetData(activeTag);
-  //       setData(widgetData);
-  //     } catch {
-  //       setData({
-  //         title: "Builders",
-  //         subtitle: "Preview unavailable",
-  //         progress: 0,
-  //         showProgress: false,
-  //       });
-  //     }
-  //   })();
-  // }, [activeTag, profile?.townHallLevel]);
-
   useFocusEffect(
     useCallback(() => {
       refreshState();
@@ -661,7 +644,7 @@ export default function HomeScreen() {
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <View style={{}}>
                   <Image
-                    source={require("@/assets/images/clash/hammer.png")}
+                    source={require("@/assets/images/clash/1000015.png")}
                     style={{ width: 40, height: 40 }}
                     contentFit="contain"
                     cachePolicy="memory-disk"

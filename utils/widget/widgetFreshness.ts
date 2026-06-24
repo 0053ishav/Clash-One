@@ -5,6 +5,7 @@ const STALE_MS = {
   lab: 1000 * 60 * 15,
   pet: 1000 * 60 * 10,
   multi: 1000 * 60 * 5,
+  upcoming: 1000 * 60 * 5,
 };
 
 export function isWidgetCacheStale(

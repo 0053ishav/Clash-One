@@ -14,7 +14,6 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     `SELECT * FROM upgrades WHERE account_player_tag=?`,
     [tag]
   );
-
   const normalized: Upgrade[] = rows.map((r: any) => ({
     id: r.id,
     accountTag: r.account_player_tag,

@@ -1,5 +1,6 @@
 export const ENV = {
   APP_LINK: process.env.EXPO_PUBLIC_APP_LINK || "",
+  CDN_BASE: process.env.EXPO_PUBLIC_CDN_BASE || "",
 
   ADS: {
     ENABLED: process.env.EXPO_PUBLIC_SHOW_ADS === "true",

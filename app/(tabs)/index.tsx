@@ -106,7 +106,10 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const builders = useMemo(() => accountState?.builders ?? [], [accountState]);
+  const builders = useMemo(
+    () => accountState?.builders.home ?? [],
+    [accountState],
+  );
 
   const pet = useMemo(() => accountState?.pet ?? null, [accountState]);
   const lab = accountState?.lab;
@@ -273,6 +276,7 @@ export default function HomeScreen() {
   const isStale = lastSync && Date.now() - lastSync > 1000 * 60 * 60 * 12;
 
   const status = getBuilderStatus({
+    village: "home",
     normalBuilderCount: builderCount,
     goblinBuilderUnlocked: isGoblinActive,
     activeUpgrades: builders,
@@ -351,8 +355,8 @@ export default function HomeScreen() {
     builders,
     builderCount,
     pet: townHall >= 14 ? pet : null,
-    labNormal: lab?.normal,
-    labGoblin: lab?.goblin,
+    labNormal: lab?.home.normal,
+    labGoblin: lab?.home.goblin,
   });
 
   let insightParts: string[] = [];
@@ -869,8 +873,8 @@ export default function HomeScreen() {
         )}
 
         <LabSection
-          labNormal={lab?.normal}
-          labGoblin={lab?.goblin}
+          labNormal={lab?.home.normal}
+          labGoblin={lab?.home.goblin}
           // onAddPress={() => {
           //   setSessionSource("app");
           //   router.push("/add-upgrade?type=lab");

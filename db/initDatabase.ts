@@ -168,6 +168,27 @@ export async function initDatabase() {
     version = 2;
   }
 
+  if (version < 3) {
+
+    try {
+      await db.execAsync(`
+        ALTER TABLE upgrades
+        ADD COLUMN village TEXT DEFAULT 'home'`);
+    } catch (e) {
+      log("⏭️ village already exist ", e)
+    }
+
+    try {
+      await db.execAsync(`
+        ALTER TABLE accounts
+        ADD COLUMN builder_base_builder_count INTEGER DEFAULT 1`);
+    } catch (e) {
+      log("⏭️ builder_base_builder_count already exist", e)
+    }
+    await setSchemaVersion(db, 3);
+    version = 3;
+  }
+
   // log("✅ Database ready. Version:", version);
 
   // Debug only

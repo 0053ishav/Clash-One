@@ -4,7 +4,7 @@ import { ensureCraftedLoaded } from "@/services/craftedService";
 import { setLastJsonSync } from "@/storage/jsonSyncStorage";
 import { syncProfileFromApi } from "@/storage/playerProfile";
 import { useAccountStore } from "@/stores/accountStore";
-import { EntityType } from "@/types/entity";
+import { EntityType, Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { getSessionSource, track } from "@/utils/analytics/analytics";
 import { getEntity } from "@/utils/getEntity";
@@ -21,6 +21,7 @@ type RawExport = {
   buildings?: {
     data: number;
     lvl: number;
+    cnt?: number;
     timer?: number;
     extra?: boolean;
     helper_timer?: number;
@@ -46,6 +47,7 @@ type RawExport = {
     helper_timer?: number;
     helper_recurrent?: boolean;
   }[];
+
   heroes?: {
     data: number;
     lvl: number;
@@ -75,6 +77,7 @@ type RawExport = {
     helper_timer?: number;
     helper_recurrent?: boolean;
   }[];
+
   spells?: {
     data: number;
     lvl: number;
@@ -83,6 +86,7 @@ type RawExport = {
     helper_timer?: number;
     helper_recurrent?: boolean;
   }[];
+
   siege_machines?: {
     data: number;
     lvl: number;
@@ -91,6 +95,31 @@ type RawExport = {
     helper_timer?: number;
     helper_recurrent?: boolean;
   }[];
+
+  buildings2?: {
+    data: number;
+    lvl: number;
+    cnt?: number;
+    timer?: number;
+  }[];
+
+  traps2?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+  }[];
+
+  heroes2?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+  }[];
+
+  units2?: {
+    data: number;
+    lvl: number;
+    timer?: number;
+  }[];
 };
 
 type ActiveTask = {
@@ -98,6 +127,7 @@ type ActiveTask = {
   lvl: number;
   timer: number;
   extra?: boolean;
+  village: Village;
 
   helper_timer?: number;
   helper_recurrent?: boolean;
@@ -110,6 +140,72 @@ type ActiveTask = {
   moduleId?: number;
 };
 
+function getBuilderCounts(
+  parsed: RawExport
+) {
+  const builderHutCount =
+    parsed.buildings
+      ?.filter(
+        (b) => b.data === 1000015
+      )
+      .reduce(
+        (sum, b) => sum + (b.cnt ?? 0),
+        0
+      ) ?? 0;
+
+  const hasBobControl =
+    parsed.buildings2?.some(
+      (b) =>
+        b.data === 1000065 &&
+        b.lvl >= 5
+    ) ?? false;
+
+  const hasOtto =
+    parsed.buildings2?.some(
+      (b) =>
+        b.data === 1000078 &&
+        b.lvl >= 1
+    ) ?? false;
+
+  const hasBoto =
+    parsed.buildings2?.some(
+      (b) =>
+        b.data === 1000047 &&
+        b.lvl >= 1
+    ) ?? false;
+
+    console.log(
+  "Builders:",
+  {
+    homeBuilders:
+      builderHutCount +
+      (hasBobControl ? 1 : 0),
+
+    builderBaseBuilders:
+      1 +
+      (hasOtto ? 1 : 0) +
+      (hasBoto ? 1 : 0),
+
+    hasBobControl,
+    hasOtto,
+    hasBoto,
+  }
+);
+
+  return {
+    // Builder Huts + B.O.B Control
+    homeBuilders:
+      builderHutCount +
+      (hasBobControl ? 1 : 0),
+
+    // Master Builder + O.T.T.O + B.O.T.O
+    builderBaseBuilders:
+      1 +
+      (hasOtto ? 1 : 0) +
+      (hasBoto ? 1 : 0),
+  };
+}
+
 
 type ImportResult =
   | { status: "NO_ACTIVE_BUILDERS"; tag: string }
@@ -120,6 +216,8 @@ type ImportResult =
     tag: string;
   };
 
+const HOME_VILLAGE: Village = "home";
+const BUILDER_BASE_VILLAGE: Village = "builderBase";
 
 function validateJson(data: any) {
   if (!data || typeof data !== "object") {
@@ -208,6 +306,11 @@ export async function importVillageJson(
   const exportTimestampMs = parsed.timestamp * 1000;
   const now = Date.now();
 
+  const {
+    homeBuilders: totalHomeBuilders,
+    builderBaseBuilders: totalBuilderBaseBuilders,
+  } = getBuilderCounts(parsed);
+
   // =========================================================
   // 🔥 STEP 1: BUILD ACTIVE TASK LIST (NORMAL + CRAFTED)
   // =========================================================
@@ -267,10 +370,12 @@ export async function importVillageJson(
     ...(parsed.buildings
       ?.filter((b) => typeof b.timer === "number")
       .map((b) => ({
+        village: HOME_VILLAGE,
         data: b.data,
         lvl: b.lvl,
         timer: b.timer!,
         extra: b.extra,
+
 
         helper_timer: b.helper_timer,
         helper_recurrent: b.helper_recurrent,
@@ -282,6 +387,7 @@ export async function importVillageJson(
     ...(parsed.traps
       ?.filter((t) => typeof t.timer === "number")
       .map((t) => ({
+        village: HOME_VILLAGE,
         data: t.data,
         lvl: t.lvl,
         timer: t.timer!,
@@ -297,6 +403,7 @@ export async function importVillageJson(
     ...(parsed.heroes
       ?.filter((h) => typeof h.timer === "number")
       .map((h) => ({
+        village: HOME_VILLAGE,
         data: h.data,
         lvl: h.lvl,
         timer: h.timer!,
@@ -312,6 +419,7 @@ export async function importVillageJson(
     ...(parsed.pets
       ?.filter((p) => typeof p.timer === "number")
       .map((p) => ({
+        village: HOME_VILLAGE,
         data: p.data,
         lvl: p.lvl,
         timer: p.timer!,
@@ -320,6 +428,7 @@ export async function importVillageJson(
     ...(parsed.guardians
       ?.filter((g) => typeof g.timer === "number")
       .map((g) => ({
+        village: HOME_VILLAGE,
         data: g.data,
         lvl: g.lvl,
         timer: g.timer!,
@@ -329,6 +438,33 @@ export async function importVillageJson(
         hasHelper:
           g.helper_timer != null ||
           g.helper_recurrent === true
+      })) ?? []),
+
+    ...(parsed.buildings2
+      ?.filter((b) => typeof b.timer === "number")
+      .map((b) => ({
+        village: BUILDER_BASE_VILLAGE,
+        data: b.data,
+        lvl: b.lvl,
+        timer: b.timer!,
+      })) ?? []),
+
+    ...(parsed.traps2
+      ?.filter((b) => typeof b.timer === "number")
+      .map((b) => ({
+        village: BUILDER_BASE_VILLAGE,
+        data: b.data,
+        lvl: b.lvl,
+        timer: b.timer!,
+      })) ?? []),
+
+    ...(parsed.heroes2
+      ?.filter((b) => typeof b.timer === "number")
+      .map((b) => ({
+        village: BUILDER_BASE_VILLAGE,
+        data: b.data,
+        lvl: b.lvl,
+        timer: b.timer!,
       })) ?? []),
   );
 
@@ -344,7 +480,7 @@ export async function importVillageJson(
             data: type.data, // defense ID
             lvl: module.lvl ?? 1,
             timer: module.timer,
-
+            village: HOME_VILLAGE,
             isCrafted: true,
             moduleId: module.data,
 
@@ -359,10 +495,38 @@ export async function importVillageJson(
     }
   }
 
-  const labSources = [
-    ...(parsed.units ?? []),
-    ...(parsed.spells ?? []),
-    ...(parsed.siege_machines ?? []),
+  type LabSource = {
+    data: number;
+    lvl: number;
+    timer?: number;
+
+    village: Village;
+
+    extra?: boolean;
+    helper_timer?: number;
+    helper_recurrent?: boolean;
+  };
+
+  const labSources: LabSource[] = [
+    ...(parsed.units ?? []).map((u) => ({
+      ...u,
+      village: HOME_VILLAGE,
+    })),
+
+    ...(parsed.spells ?? []).map((u) => ({
+      ...u,
+      village: HOME_VILLAGE,
+    })),
+
+    ...(parsed.siege_machines ?? []).map((u) => ({
+      ...u,
+      village: HOME_VILLAGE,
+    })),
+
+    ...(parsed.units2 ?? []).map((u) => ({
+      ...u,
+      village: BUILDER_BASE_VILLAGE,
+    })),
   ];
 
   const activeLabs = labSources.filter(
@@ -377,6 +541,7 @@ export async function importVillageJson(
       lvl: lab.lvl,
       timer: lab.timer!,
       extra: lab.extra,
+      village: lab.village,
 
       helper_timer: lab.helper_timer,
       helper_recurrent: lab.helper_recurrent,
@@ -391,6 +556,7 @@ export async function importVillageJson(
   // =========================================================
 
   const validUpgrades: {
+    village: Village;
     data: number;
     remainingNow: number;
     lvl: number;
@@ -432,7 +598,7 @@ export async function importVillageJson(
         0,
         item.timer - projectedTimer
       );
- 
+
     const remainingMsAtExport = projectedTimer * 1000;
     const realEndTime = exportTimestampMs + remainingMsAtExport;
     const remainingNow = Math.max(0, realEndTime - now);
@@ -443,6 +609,7 @@ export async function importVillageJson(
     }
 
     validUpgrades.push({
+      village: item.village,
       data: item.data,
       remainingNow,
       lvl: item.lvl,
@@ -496,6 +663,7 @@ export async function importVillageJson(
 
     validLabTasks.push({
       ...lab,
+      village: lab.village,
       timer: remainingNow / 1000,
       recurrentHelper: lab.helper_recurrent === true,
       helperAppliedSeconds,
@@ -507,21 +675,31 @@ export async function importVillageJson(
   // 🔥 API SYNC (UNCHANGED)
   // =========================================================
 
-  const busyBuildersFromJson = validUpgrades.filter((u) => {
-    const entity = getEntity(u.data);
+  // const busyHomeBuilders = validUpgrades.filter((u) => {
+  //   const entity = getEntity(u.data);
 
+  //   if (!entity) return false;
 
-    if (!entity) {
-      console.warn("Missing entity:", u.data);
-      return false;
-    }
+  //   return (
+  //     resolveUpgradeType(entity.type) === "BUILDER" &&
+  //     entity.village === "home"
+  //   );
+  // }).length;
 
-    const type = resolveUpgradeType(entity.type);
+  // const busyBuilderBaseBuilders = validUpgrades.filter((u) => {
+  //   const entity = getEntity(u.data);
 
-    return type === "BUILDER";
-  }).length;
+  //   if (!entity) return false;
 
-  const totalBuilders = Math.max(1, Math.min(busyBuildersFromJson, 6));
+  //   return (
+  //     resolveUpgradeType(entity.type) === "BUILDER" &&
+  //     entity.village === "builderBase"
+  //   );
+  // }).length;
+
+  // const totalHomeBuilders = Math.max(1, Math.min(busyHomeBuilders, 6));
+
+  // const totalBuilderBaseBuilders = Math.max(1, Math.min(busyBuilderBaseBuilders, 3));
 
 
   try {
@@ -548,14 +726,15 @@ export async function importVillageJson(
       apiData?.name ?? "Chief",
       "#fbbf24",
       apiData?.townHallLevel ?? 1,
-      6
+      totalHomeBuilders,
+      totalBuilderBaseBuilders,
     );
   } else {
     await updateAccount(
       parsed.tag,
       apiData?.name ?? existing.name,
       existing.color,
-      apiData?.townHallLevel ?? existing.townhall
+      apiData?.townHallLevel ?? existing.townhall,
     );
   }
 
@@ -589,7 +768,8 @@ export async function importVillageJson(
   validUpgrades.sort((a, b) => a.remainingNow - b.remainingNow);
 
   const newUpgrades: Upgrade[] = [];
-  let normalUsed = 0;
+  let homeBuilderUsed = 0;
+  let builderBaseBuilderUsed = 0;
 
   for (const item of validUpgrades) {
     const startTime = now;
@@ -604,7 +784,7 @@ export async function importVillageJson(
       entity = {
         id: 1000097,
         slug: "crafted-defense",
-        village: "home",
+        village: HOME_VILLAGE,
         type: "building" as EntityType,
         name: {
           en: "Crafted Defense"
@@ -624,20 +804,39 @@ export async function importVillageJson(
     let builderSlot: number | "G" | undefined;
 
     if (upgradeType === "BUILDER") {
-      if (item.isGoblin) {
+      if (
+        item.village === HOME_VILLAGE &&
+        item.isGoblin
+      ) {
         builderSlot = "G";
-      } else if (normalUsed < totalBuilders) {
-        builderSlot = normalUsed;
-        normalUsed++;
+      } else if (
+        item.village === HOME_VILLAGE
+      ) {
+        if (homeBuilderUsed >= totalHomeBuilders) {
+          continue;
+        }
+
+        builderSlot = homeBuilderUsed;
+        homeBuilderUsed++;
       } else {
-        continue;
+        if (
+          builderBaseBuilderUsed >=
+          totalBuilderBaseBuilders
+        ) {
+          continue;
+        }
+
+        builderSlot =
+          builderBaseBuilderUsed;
+
+        builderBaseBuilderUsed++;
       }
     }
 
     newUpgrades.push({
       id: randomUUID(),
       accountTag: parsed.tag,
-
+      village: item.village,
       dataId: item.data,
       entity: entity.name.en,
 
@@ -689,6 +888,7 @@ export async function importVillageJson(
       id: randomUUID(),
       accountTag: parsed.tag,
 
+      village: lab.village,
       dataId: lab.data,
       entity: entity.name.en,
 
@@ -707,7 +907,12 @@ export async function importVillageJson(
       builderSlot: undefined,
       builderType: undefined,
 
-      labSlot: lab.extra === true ? "GOBLIN" : "NORMAL",
+      labSlot: 
+        lab.village === HOME_VILLAGE
+        ? lab.extra === true 
+          ? "GOBLIN" 
+          : "NORMAL"
+        : "NORMAL",
 
       currentLevel: lab.lvl,
       nextLevel: lab.lvl + 1,
@@ -727,7 +932,7 @@ export async function importVillageJson(
     });
 
   } catch (e) {
-      Sentry.captureException(e);
+    Sentry.captureException(e);
 
     track("json_pipeline", {
       step: "import",

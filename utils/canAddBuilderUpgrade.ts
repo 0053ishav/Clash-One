@@ -7,6 +7,7 @@ export function canAddBuilderUpgrade(params: {
   goblinBuilderUnlocked: boolean;
 }) {
   const status = getBuilderStatus({
+    village: "home",
     normalBuilderCount: params.normalBuilderCount,
     goblinBuilderUnlocked: params.goblinBuilderUnlocked,
     activeUpgrades: params.activeUpgrades,

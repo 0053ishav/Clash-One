@@ -1,4 +1,4 @@
-import { EntityType, SubType } from "./entity";
+import { EntityType, SubType, Village } from "./entity";
 
 export type UpgradeType = "BUILDER" | "LAB";
 
@@ -7,6 +7,7 @@ export type Upgrade = {
 
   accountTag: string;
 
+  village: Village;
   dataId?: number;
   entity: string;
 

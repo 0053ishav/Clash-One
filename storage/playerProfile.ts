@@ -50,7 +50,18 @@ type ClashApiPlayer = {
     iconUrls?: {
       small?: string;
     };
+
   }[];
+
+  builderHallLevel?: number;
+  builderBaseTrophies?: number;
+  bestBuilderBaseTrophies?: number;
+
+  builderBaseLeague?: {
+    id?: number;
+    name?: string;
+  };
+
 };
 
 function createDefaultProfile(): PlayerProfile {
@@ -64,6 +75,7 @@ function createDefaultProfile(): PlayerProfile {
     townHallLevel: 1,
 
     normalBuilderCount: 1,
+    builderBaseBuilderCount: 1,
 
     leagueName: undefined,
     leagueIconUrl: undefined,
@@ -92,6 +104,12 @@ function createDefaultProfile(): PlayerProfile {
 
     labels: undefined,
 
+    builderHallLevel: undefined,
+
+    builderBaseTrophies: undefined,
+    bestBuilderBaseTrophies: undefined,
+
+    builderBaseLeague: undefined,
     lastSyncedAt: undefined,
     playerApiConnected: false,
   };
@@ -184,10 +202,10 @@ export function syncProfileFromApi(
 
   const profile =
     getPlayerProfile(tag);
-    console.log(
-  "Builder Count Profile:",
-  profile.normalBuilderCount
-);
+  console.log(
+    "Builder Count Profile:",
+    profile.normalBuilderCount
+  );
 
   const merged = {
     ...profile,
@@ -301,6 +319,26 @@ export function syncProfileFromApi(
         )
       : profile.labels,
 
+    builderHallLevel:
+      api.builderHallLevel ??
+      profile.builderHallLevel,
+
+    builderBaseTrophies:
+      api.builderBaseTrophies ??
+      profile.builderBaseTrophies,
+
+    bestBuilderBaseTrophies:
+      api.bestBuilderBaseTrophies ??
+      profile.bestBuilderBaseTrophies,
+
+    builderBaseLeague:
+      api.builderBaseLeague
+        ? {
+          id: api.builderBaseLeague.id,
+          name: api.builderBaseLeague.name,
+        }
+        : profile.builderBaseLeague,
+
     lastSyncedAt:
       Date.now(),
 
@@ -337,6 +375,26 @@ export function updateLocalBuilderCount(
   savePlayerProfile(tag, {
     ...profile,
     normalBuilderCount:
+      safeCount,
+  });
+}
+
+export function updateLocalBuilderBaseBuilderCount(
+  tag: string,
+  count: number,
+) {
+  const profile =
+    getPlayerProfile(tag);
+
+  const safeCount =
+    Math.max(
+      1,
+      Math.min(count, 2),
+    );
+
+  savePlayerProfile(tag, {
+    ...profile,
+    builderBaseBuilderCount:
       safeCount,
   });
 }

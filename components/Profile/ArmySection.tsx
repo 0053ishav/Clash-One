@@ -16,13 +16,13 @@ interface ArmyEntity {
 export default function ArmySection({ data }: { data: PlayerFull }) {
   const router = useRouter();
 
-  const { troops, pets, heroes, siegeMachines } = parseArmy(data);
+  const army = parseArmy(data);
 
   if (
-    !troops?.length &&
-    !heroes?.length &&
-    !pets?.length &&
-    !siegeMachines?.length
+    !army.home.troops?.length &&
+    !army.home.heroes?.length &&
+    !army.home.pets?.length &&
+    !army.home.siegeMachines?.length
   )
     return null;
   return (
@@ -37,41 +37,67 @@ export default function ArmySection({ data }: { data: PlayerFull }) {
       </View>
 
       {/* Troops */}
-      {troops.length > 0 && (
+      {army.home.troops.length > 0 && (
         <EntitySection
-          title="Troops"
+          title="Home Troops"
           icon="flash"
-          count={troops.length}
+          count={army.home.troops.length}
           onViewAll={
-            troops.length > 6 ? () => router.push("/profile/troops") : undefined
+            army.home.troops.length > 6
+              ? () => router.push("/profile/troops")
+              : undefined
           }
         >
-          <Grid items={troops.slice(0, 6)} />
+          <Grid items={army.home.troops.slice(0, 6)} />
+        </EntitySection>
+      )}
+
+      {army.builderBase.troops.length > 0 && (
+        <EntitySection
+          title="Builder Base Troops"
+          icon="construct"
+          count={army.builderBase.troops.length}
+        >
+          <Grid items={army.builderBase.troops} />
         </EntitySection>
       )}
 
       {/* Heroes */}
-      {heroes.length > 0 && (
-        <EntitySection title="Heroes" icon="person" count={heroes.length}>
-          <Grid items={heroes} />
+      {army.home.heroes.length > 0 && (
+        <EntitySection
+          title="Heroes"
+          icon="person"
+          count={army.home.heroes.length}
+        >
+          <Grid items={army.home.heroes} />
+        </EntitySection>
+      )}
+      {/* Heroes */}
+      {army.builderBase.heroes.length > 0 && (
+        <EntitySection
+          title="Builder Base Heroes"
+          icon="person"
+          count={army.builderBase.heroes.length}
+        >
+          <Grid items={army.builderBase.heroes} />
         </EntitySection>
       )}
 
       {/* Pets */}
-      {pets.length > 0 && (
-        <EntitySection title="Pets" icon="paw" count={pets.length}>
-          <Grid items={pets} />
+      {army.home.pets.length > 0 && (
+        <EntitySection title="Pets" icon="paw" count={army.home.pets.length}>
+          <Grid items={army.home.pets} />
         </EntitySection>
       )}
 
       {/* Siege Machines */}
-      {siegeMachines.length > 0 && (
+      {army.home.siegeMachines.length > 0 && (
         <EntitySection
           title="Siege Machines"
           icon="hammer"
-          count={siegeMachines.length}
+          count={army.home.siegeMachines.length}
         >
-          <Grid items={siegeMachines} />
+          <Grid items={army.home.siegeMachines} />
         </EntitySection>
       )}
     </View>

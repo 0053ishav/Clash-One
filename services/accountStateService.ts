@@ -11,8 +11,28 @@ export async function getAccountState(tag: string) {
     (u) => !u.isCompleted && u.endTime > now
   );
 
-  const labUpgrades = activeUpgrades.filter(
-    (u) => u.upgradeType === "LAB"
+  const homeBuilders = activeUpgrades.filter(
+    (u) =>
+      u.upgradeType === "BUILDER" &&
+      u.village === "home"
+  );
+
+  const builderBaseBuilders = activeUpgrades.filter(
+    (u) =>
+      u.upgradeType === "BUILDER" &&
+      u.village === "builderBase"
+  );
+
+  const homeLabs = activeUpgrades.filter(
+    (u) =>
+      u.upgradeType === "LAB" &&
+      u.village === "home"
+  );
+
+  const builderBaseLabs = activeUpgrades.filter(
+    (u) =>
+      u.upgradeType === "LAB" &&
+      u.village === "builderBase"
   );
 
   const petUpgrade = activeUpgrades.find(
@@ -21,26 +41,38 @@ export async function getAccountState(tag: string) {
 
   const goblinEventActive = isWorkForHireActive();
 
-  const labNormal = labUpgrades.find((u) => u.labSlot === "NORMAL");
-  const labGoblinRaw = labUpgrades.find((u) => u.labSlot === "GOBLIN");
+  const homeLabNormal = homeLabs.find((u) => u.labSlot === "NORMAL");
+  const homeLabGoblinRaw = homeLabs.find((u) => u.labSlot === "GOBLIN");
 
-  const labGoblin = goblinEventActive ? labGoblinRaw : null;
+  const homeLabGoblin = goblinEventActive ? homeLabGoblinRaw : null;
 
-  if (!goblinEventActive && labGoblinRaw) {
+  const builderBaseLab =
+    builderBaseLabs.find(
+      (u) => u.labSlot === "NORMAL"
+    );
+
+  if (!goblinEventActive && homeLabGoblinRaw) {
     console.warn("⚠️ Stale goblin lab upgrade detected (event inactive)");
   }
   return {
     upgrades,
     activeUpgrades,
 
-    builders: activeUpgrades.filter(
-      (u) => u.upgradeType === "BUILDER" && u.builderSlot !== undefined
-    ),
+    builders: {
+      home: homeBuilders,
+      builderBase: builderBaseBuilders,
+    },
 
     lab: {
-      normal: labNormal ?? null,
-      goblin: labGoblin ?? null,
-      goblinAvailable: goblinEventActive,
+      home: {
+        normal: homeLabNormal ?? null,
+        goblin: homeLabGoblin ?? null,
+        goblinAvailable: goblinEventActive,
+      },
+
+      builderBase: {
+        normal: builderBaseLab ?? null,
+      }
     },
 
     pet: petUpgrade ?? null,

@@ -29,10 +29,10 @@ export async function getUpcomingUpgradesWidgetData() {
     if (!state) continue;
 
     const upgrades = [
-      ...(state.builders ?? []),
+      ...(state.builders.home ?? []),
 
-      ...(state.lab?.normal ? [state.lab.normal] : []),
-      ...(state.lab?.goblin ? [state.lab.goblin] : []),
+      ...(state.lab?.home.normal ? [state.lab.home.normal] : []),
+      ...(state.lab?.home.goblin ? [state.lab.home.goblin] : []),
 
       ...(state.pet ? [state.pet] : []),
     ];

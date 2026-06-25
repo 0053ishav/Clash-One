@@ -86,6 +86,7 @@
 //     1000044: { name: "Cannon", type: "building", village: "builder", resource: "builder-gold" },
 //     1000045: { name: "Multi Mortar", type: "building", village: "builder" , resource: "builder-gold"},
 //     1000046: { name: "Star Laboratory", type: "building", village: "builder" , resource: "builder-elixir"},
+//     1000047: { name: "B.O.T.O's Shack", type: "building", village: "builder" , resource: "builder-elixir"},
 //     1000048: { name: "Archer Tower", type: "building", village: "builder" , resource: "builder-gold"},
 //     1000049: { name: "Reinforcement Camp", type: "building", village: "builder" , resource: "builder-elixir"},
 //     1000050: { name: "Firecrackers", type: "building", village: "builder" , resource: "builder-gold"},

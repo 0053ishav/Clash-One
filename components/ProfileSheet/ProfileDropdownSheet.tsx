@@ -74,13 +74,6 @@ export default function ProfileDropdownSheet({
     };
   }, [visible, activeTag]);
 
-  // useEffect(() => {
-  //   if (!visible) return;
-  //   if (!activeTag) return;
-
-  //   getEntities(activeTag).then(setEntities).catch(console.error);
-  // }, [visible, activeTag]);
-
   async function handleAccountSwitch(tag: string) {
     if (tag === activeTag) return;
 
@@ -100,13 +93,6 @@ export default function ProfileDropdownSheet({
   const guardians = entities.filter(
     (e) => e.type?.toLowerCase() === "guardian",
   );
-  // console.log(
-  //   "ENTITY TYPES:",
-  //   entities.map((e) => e.type),
-  // );
-  // console.log("here", activeTag);
-  // console.log("here", helpers);
-  // console.log("here", guardians);
 
   return (
     <Modal
@@ -138,7 +124,6 @@ export default function ProfileDropdownSheet({
               helpers={helpers}
               guardians={guardians}
             />
-
             {accounts.length > 0 && (
               <View style={styles.accountsSection}>
                 <Text style={styles.sectionTitle}>Accounts</Text>

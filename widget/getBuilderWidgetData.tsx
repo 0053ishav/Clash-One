@@ -58,13 +58,14 @@ export async function getBuilderWidgetData(inputTag?: string) {
     };
   }
 
-  const activeUpgrades = state.builders ?? [];
+  const activeUpgrades = state.builders.home ?? [];
   // const activeUpgrades = (await getAccountState(tag)).builders;
 
   const builderCount = account.builderCount;
   const goblinBuilder = isWorkForHireActive();
 
   const status = getBuilderStatus({
+    village: "home",
     normalBuilderCount: builderCount,
     goblinBuilderUnlocked: goblinBuilder,
     activeUpgrades,

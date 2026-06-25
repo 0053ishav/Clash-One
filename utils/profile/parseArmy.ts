@@ -29,8 +29,8 @@ export function parseArmy(data: any) {
 
   const mappedTroops =
     data.troops?.map(attachId) ?? [];
-const mappedHeroes = 
-  data.heroes?.map(attachId) ?? []
+  const mappedHeroes =
+    data.heroes?.map(attachId) ?? []
 
   const validHeroes =
     mappedHeroes.filter(
@@ -51,9 +51,9 @@ const mappedHeroes =
           entity.subType !== "SUPER_TROOP"
         );
       })
-      .sort((a: any, b: any) =>
-        a.name.localeCompare(b.name),
-      ) ?? [];
+      // .sort((a: any, b: any) =>
+      //   a.name.localeCompare(b.name),
+      // ) ?? [];
 
   // const superTroops =
   //   data.troops
@@ -92,10 +92,28 @@ const mappedHeroes =
       }) ?? [];
 
   return {
-    troops,
-    pets,
-    // superTroops,
-    siegeMachines,
-    heroes,
+    home: {
+      troops: troops.filter(
+        (t: any) => t.village === "home",
+      ),
+
+      pets,
+
+      siegeMachines,
+
+      heroes: heroes.filter(
+        (h: any) => h.village === "home",
+      ),
+    },
+
+    builderBase: {
+      troops: troops.filter(
+        (t: any) => t.village === "builderBase",
+      ),
+
+      heroes: heroes.filter(
+        (h: any) => h.village === "builderBase",
+      ),
+    },
   };
 }

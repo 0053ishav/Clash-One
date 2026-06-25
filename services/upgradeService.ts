@@ -17,6 +17,7 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
   const normalized: Upgrade[] = rows.map((r: any) => ({
     id: r.id,
     accountTag: r.account_player_tag,
+    village: r.village ?? "home",
     dataId: r.data_id,
     entity: r.entity,
 
@@ -44,7 +45,7 @@ export async function getUpgrades(tag: string): Promise<Upgrade[]> {
     durationMinutes: Number(r.duration_minutes),
     endTime: Number(r.finish_timestamp),
 
-    
+
     hasHelper: r.has_helper === 1,
     recurrentHelper: r.recurrent_helper === 1,
     helperAppliedSeconds: Number(r.helper_applied_seconds ?? 0),
@@ -78,6 +79,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
   return rows.map((r: any) => ({
     id: r.id,
     accountTag: r.account_player_tag,
+    village: r.village ?? "home",
 
     dataId: r.data_id,
     entity: r.entity,
@@ -106,7 +108,7 @@ export async function getActiveUpgrades(tag: string): Promise<Upgrade[]> {
     endTime: r.finish_timestamp,
 
     hasHelper: r.has_helper === 1,
-    recurrentHelper: r.recurrent_helper ===1,
+    recurrentHelper: r.recurrent_helper === 1,
     helperAppliedSeconds: Number(r.helper_applied_seconds ?? 0),
     currentLevel: r.current_level ?? undefined,
     nextLevel: r.next_level ?? undefined,
@@ -129,11 +131,13 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
 
   if (upgrade.upgradeType === "BUILDER") {
     const existing = await db.getFirstAsync(
-      `SELECT id FROM upgrades
-   WHERE account_player_tag=? 
-   AND builder_slot=?
-   AND is_completed=0`,
-      [tag, String(upgrade.builderSlot)]
+      `SELECT id 
+      FROM upgrades
+      WHERE account_player_tag=? 
+      AND village=?
+      AND builder_slot=?
+      AND is_completed=0`,
+      [tag, upgrade.village, String(upgrade.builderSlot)]
     );
 
     if (existing) {
@@ -143,11 +147,13 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
 
   if (upgrade.upgradeType === "LAB") {
     const existing = await db.getFirstAsync(
-      `SELECT id FROM upgrades
-     WHERE account_player_tag=? 
-     AND upgrade_type='LAB'
-     AND is_completed=0`,
-      [tag]
+      `SELECT id 
+      FROM upgrades
+      WHERE account_player_tag=?
+      AND village=? 
+      AND upgrade_type='LAB'
+      AND is_completed=0`,
+      [tag, upgrade.village]
     );
 
     if (existing) throw new Error("LAB_ALREADY_RUNNING");
@@ -170,6 +176,7 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
   (
     id,
     account_player_tag,
+    village,
     data_id,
     entity,
     type,
@@ -191,10 +198,11 @@ export async function addUpgrade(tag: string, upgrade: Upgrade) {
     is_crafted,
     module_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       upgrade.id,
       tag,
+      upgrade.village ?? "home",
       upgrade.dataId ?? null,
       upgrade.entity,
 

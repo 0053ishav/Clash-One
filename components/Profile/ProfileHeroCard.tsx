@@ -1,6 +1,9 @@
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
-import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import {
+  resolveBuilderBaseLeagueIcon,
+  resolveEntityIcon,
+} from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
@@ -18,62 +21,101 @@ export default function ProfileHeroCard({
   const hasLabels = data.labels && data.labels.length > 0;
   const hasHelpers = helpers.length > 0;
   const hasGuardians = guardians.length > 0;
+  const hasBuilderBase = !!data.builderHallLevel;
 
   return (
     <View style={styles.container}>
-      {/* Name & TH */}
+      {/* ── Name & Tag ── */}
       <View style={styles.heroTop}>
         <View style={styles.nameSection}>
           <Text style={styles.name}>{data.name}</Text>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={styles.tagRow}>
             <Text style={styles.tag}>{data.tag}</Text>
             {data.expLevel && <XPBadge level={data.expLevel} />}
           </View>
         </View>
-        <View style={styles.thBadge}>
-          <Image
-            source={{
-              uri: resolveEntityIcon(1000001, {
-                context: {
-                  hallLevel: data.townHallLevel,
-                },
-              }),
-            }}
-            style={styles.thBadgeIcon}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
-        </View>
-      </View>
 
-      {/* League & Trophies */}
-      <View style={styles.heroMid}>
-        {data.leagueTier?.iconUrls.large && (
-          <View style={styles.tierIconWrapper}>
+        {/* TH + BH icons stacked */}
+        <View style={styles.hallBadgesRow}>
+          <View style={styles.hallBadge}>
             <Image
               source={{
-                uri:
-                  data.leagueTier.iconUrls.large ??
-                  data.leagueTier.iconUrls.small,
+                uri: resolveEntityIcon(1000001, {
+                  context: { hallLevel: data.townHallLevel },
+                }),
               }}
-              style={styles.tierIcon}
+              style={styles.hallIcon}
               contentFit="contain"
               cachePolicy="memory-disk"
             />
           </View>
-        )}
-        <View style={styles.leagueInfo}>
-          <Text style={styles.leagueName}>{data.leagueTier?.name}</Text>
-          <View style={styles.trophyRow}>
-            <View style={styles.trophyBadge}>
+          {hasBuilderBase && (
+            <View style={[styles.hallBadge, styles.hallBadgeBuilder]}>
               <Image
-                source={require("@/assets/images/clash/trophy.png")}
-                style={styles.trophyIcon}
+                source={{
+                  uri: resolveEntityIcon(1000034, {
+                    context: { hallLevel: data.builderHallLevel },
+                  }),
+                }}
+                style={styles.hallIcon}
                 contentFit="contain"
+                cachePolicy="memory-disk"
               />
-
-              <Text style={styles.trophyText}>{data.trophies}</Text>
             </View>
+          )}
+        </View>
+      </View>
+
+      {/* ── Dual Village Row ── */}
+      <View style={styles.villageRow}>
+        {/* Home Village */}
+        <View style={[styles.villageCard, styles.villageCardHome]}>
+          <View style={styles.villageCardHeader}>
+            <View
+              style={[
+                styles.villageLeagueIconWrapper,
+                styles.homeLeagueIconWrapper,
+              ]}
+            >
+              <Image
+                source={{
+                  uri:
+                    data.leagueTier?.iconUrls.large ??
+                    data.leagueTier?.iconUrls.small ??
+                    data.league?.iconUrls.small,
+                }}
+                style={styles.villageLeagueIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+            <Text style={[styles.villageLabel, styles.homeTitleText]}>
+              Home
+            </Text>
+          </View>
+          <Text
+            style={[styles.villageLeagueName, styles.homeLeagueName]}
+            numberOfLines={1}
+          >
+            {data.leagueTier?.name ?? data.league?.name ?? "Unranked"}
+          </Text>
+          <View style={styles.trophyRow}>
+            <Image
+              source={require("@/assets/images/clash/trophy.png")}
+              style={styles.trophyIcon}
+              contentFit="contain"
+            />
+            <Text style={styles.trophyText}>{data.trophies}</Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              padding: 10,
+            }}
+          >
             <Text style={styles.bestText}>
               Legacy Best: {data.bestTrophies}
             </Text>
@@ -88,9 +130,74 @@ export default function ProfileHeroCard({
             />
           </View>
         </View>
+
+        {/* Divider */}
+        <View style={styles.villageDivider} />
+
+        {/* Builder Base */}
+        {hasBuilderBase ? (
+          <View style={[styles.villageCard, styles.villageCardBuilder]}>
+            <View style={styles.villageCardHeader}>
+              <View
+                style={[
+                  styles.villageLeagueIconWrapper,
+                  styles.builderLeagueIconWrapper,
+                ]}
+              >
+                <Image
+                  source={{
+                    uri: resolveBuilderBaseLeagueIcon(
+                      data.builderBaseLeague?.id,
+                    ),
+                  }}
+                  style={styles.villageLeagueIcon}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
+              </View>
+              <Text style={[styles.villageLabel, styles.builderTitleText]}>
+                Builder
+              </Text>
+            </View>
+
+            <Text
+              style={[styles.villageLeagueName, styles.builderLeagueName]}
+              numberOfLines={1}
+            >
+              {data.builderBaseLeague?.name ?? "Unranked"}
+            </Text>
+
+            <View style={styles.trophyRow}>
+              <Image
+                source={require("@/assets/images/clash/trophy.png")}
+                style={styles.trophyIcon}
+                contentFit="contain"
+              />
+              <Text style={styles.trophyText}>{data.builderBaseTrophies}</Text>
+            </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                padding: 10,
+              }}
+            >
+              <Text style={styles.bestText}>
+                Best {data.bestBuilderBaseTrophies}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.villageCard, styles.villageCardBuilderEmpty]}>
+            <Ionicons name="construct-outline" size={22} color="#475569" />
+            <Text style={styles.villageEmptyText}>No Builder Base</Text>
+          </View>
+        )}
       </View>
 
-      {/* Helpers & Guardians */}
+      {/* ── Helpers & Guardians ── */}
       {(hasHelpers || hasGuardians) && (
         <View style={styles.entityContainer}>
           {hasHelpers && (
@@ -105,9 +212,7 @@ export default function ProfileHeroCard({
                 {helpers.map((helper) => (
                   <View key={`helper-${helper.id}`} style={styles.helperBadge}>
                     <Image
-                      source={{
-                        uri: resolveEntityIcon(helper.dataId),
-                      }}
+                      source={{ uri: resolveEntityIcon(helper.dataId) }}
                       style={styles.helperIcon}
                       contentFit="contain"
                       cachePolicy="memory-disk"
@@ -134,9 +239,7 @@ export default function ProfileHeroCard({
                     style={styles.guardianBadge}
                   >
                     <Image
-                      source={{
-                        uri: resolveEntityIcon(guardian.dataId),
-                      }}
+                      source={{ uri: resolveEntityIcon(guardian.dataId) }}
                       style={styles.helperIcon}
                       contentFit="contain"
                       cachePolicy="memory-disk"
@@ -150,7 +253,7 @@ export default function ProfileHeroCard({
         </View>
       )}
 
-      {/* Clan */}
+      {/* ── Clan ── */}
       {data.clan && (
         <View style={styles.clanCard}>
           {data.clan.badgeUrls.medium && (
@@ -164,9 +267,7 @@ export default function ProfileHeroCard({
             </View>
           )}
           <View style={styles.clanText}>
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
+            <View style={styles.clanNameRow}>
               <Text style={styles.clanName}>{data.clan.name}</Text>
               <Text style={styles.clanTag}>{data.clan.tag}</Text>
             </View>
@@ -189,7 +290,7 @@ export default function ProfileHeroCard({
         </View>
       )}
 
-      {/* Labels */}
+      {/* ── Labels ── */}
       {hasLabels && (
         <View style={styles.labelsSection}>
           <View style={styles.labelsSectionHeader}>
@@ -218,6 +319,7 @@ export default function ProfileHeroCard({
         </View>
       )}
 
+      {/* ── War Preference ── */}
       <View style={styles.warContainer}>
         <View
           style={[
@@ -230,7 +332,6 @@ export default function ProfileHeroCard({
             size={14}
             color={data.warPreference === "in" ? "#22c55e" : "#ef4444"}
           />
-
           <Text
             style={[
               styles.warText,
@@ -251,8 +352,8 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: "#1e293b",
     borderRadius: 20,
-    padding: 20,
-    gap: 16,
+    padding: 16,
+    gap: 12,
     borderWidth: 1,
     borderColor: "#334155",
     marginBottom: 20,
@@ -263,27 +364,30 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 
+  // ── Header ──────────────────────────────────────────────
   heroTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    paddingBottom: 16,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(51, 65, 85, 0.5)",
   },
-
   nameSection: {
     flex: 1,
     gap: 6,
   },
-
   name: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "800",
     color: "#fbbf24",
     letterSpacing: -0.5,
   },
-
+  tagRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   tag: {
     fontSize: 13,
     color: "#94a3b8",
@@ -291,114 +395,156 @@ const styles = StyleSheet.create({
     fontFamily: "monospace",
   },
 
-  expLevel: {
-    fontSize: 11,
-    color: "#64748b",
-    fontWeight: "500",
+  // Hall badges (TH + BH stacked)
+  hallBadgesRow: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
   },
-
-  thBadge: {
+  hallBadge: {
     backgroundColor: "rgba(251, 191, 36, 0.15)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "rgba(251, 191, 36, 0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hallBadgeBuilder: {
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    borderColor: "rgba(168, 85, 247, 0.3)",
+  },
+  hallIcon: {
+    width: 40,
+    height: 40,
   },
 
-  thBadgeIcon: {
-    width: 48,
-    height: 48,
+  // ── Dual Village Row ─────────────────────────────────────
+  villageRow: {
+    flexDirection: "row",
+    gap: 0,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(51, 65, 85, 0.6)",
+  },
+  villageCard: {
+    flex: 1,
+    padding: 12,
+    gap: 6,
+    justifyContent: "center",
+  },
+  villageCardHome: {
+    backgroundColor: "rgba(14, 165, 233, 0.08)",
+  },
+  villageCardBuilder: {
+    backgroundColor: "rgba(168, 85, 247, 0.08)",
+  },
+  villageCardBuilderEmpty: {
+    backgroundColor: "rgba(71, 85, 105, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  tierIcon: {
+    width: 20,
+    height: 20,
+  },
+  villageDivider: {
+    width: 1,
+    backgroundColor: "rgba(51, 65, 85, 0.6)",
   },
 
-  heroMid: {
+  // Village card inner
+  villageCardHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    backgroundColor: "rgba(14, 165, 233, 0.1)",
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(14, 165, 233, 0.25)",
+    gap: 8,
+    marginBottom: 2,
   },
-
-  tierIconWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(14, 165, 233, 0.15)",
+  villageLeagueIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },
-
-  tierIcon: {
-    width: 32,
-    height: 32,
+  homeLeagueIconWrapper: {
+    backgroundColor: "rgba(14, 165, 233, 0.15)",
   },
-
-  leagueInfo: {
-    flex: 1,
-    gap: 6,
+  builderLeagueIconWrapper: {
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
   },
-
-  leagueName: {
-    fontSize: 15,
+  villageLeagueIcon: {
+    width: 26,
+    height: 26,
+  },
+  villageLabel: {
+    fontSize: 11,
     fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+  homeTitleText: {
+    color: "#38bdf8",
+  },
+  builderTitleText: {
+    color: "#c084fc",
+  },
+  villageLeagueName: {
+    fontSize: 13,
+    minHeight: 34,
+    fontWeight: "700",
+  },
+  homeLeagueName: {
     color: "#0ea5e9",
   },
-
+  builderLeagueName: {
+    color: "#a855f7",
+  },
   trophyRow: {
     flexDirection: "row",
-    gap: 10,
     alignItems: "center",
-  },
-
-  trophyBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(241, 245, 249, 0.1)",
+    gap: 5,
+    backgroundColor: "rgba(241, 245, 249, 0.07)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
-
   trophyIcon: {
-    width: 16,
-    height: 16,
+    width: 14,
+    height: 14,
   },
-
   trophyText: {
     fontSize: 14,
     fontWeight: "700",
     color: "#f1f5f9",
   },
-
-  trophyEmoji: {
-    fontSize: 13,
-  },
-
   bestText: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  villageEmptyText: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: "#475569",
     fontWeight: "500",
   },
 
+  // ── Helpers & Guardians ──────────────────────────────────
   entityContainer: {
     gap: 14,
     flexDirection: "column",
   },
-
   entityColumn: {
     gap: 6,
   },
-
   entityHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-
   entityTitle: {
     fontSize: 12,
     fontWeight: "700",
@@ -406,12 +552,11 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-
   entityList: {
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
   },
-
   helperBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -423,7 +568,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(249, 115, 22, 0.2)",
   },
-
   guardianBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -435,35 +579,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(6, 182, 212, 0.2)",
   },
-
   helperIcon: {
     width: 20,
     height: 20,
   },
-
   helperLevel: {
     fontSize: 12,
     fontWeight: "700",
     color: "#f97316",
   },
-
   guardianLevel: {
     fontSize: 12,
     fontWeight: "700",
     color: "#06b6d4",
   },
 
+  // ── Clan ────────────────────────────────────────────────
   clanCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     backgroundColor: "rgba(34, 197, 94, 0.08)",
-    padding: 14,
+    padding: 10,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(34, 197, 94, 0.25)",
   },
-
   clanBadgeWrapper: {
     width: 48,
     height: 48,
@@ -472,23 +613,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   clanBadge: {
     width: 40,
-    height: 40,
+    height: 32,
   },
-
   clanText: {
     flex: 1,
     gap: 6,
   },
-
+  clanNameRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   clanName: {
     fontSize: 14,
     fontWeight: "700",
     color: "#22c55e",
   },
-
   clanTag: {
     fontSize: 10,
     color: "#94a3b8",
@@ -497,49 +639,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    alignSelf: "flex-start",
   },
-
   clanDetailsRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-
   clanLevelBadge: {
     backgroundColor: "rgba(34, 197, 94, 0.2)",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
-
   clanLevelText: {
     fontSize: 11,
     fontWeight: "600",
     color: "#22c55e",
   },
-
   clanDivider: {
     fontSize: 11,
     color: "#64748b",
   },
-
   clanRole: {
     fontSize: 11,
     color: "#94a3b8",
     fontWeight: "500",
   },
 
+  // ── Labels ──────────────────────────────────────────────
   labelsSection: {
     gap: 10,
   },
-
   labelsSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-
   labelsTitle: {
     fontSize: 12,
     fontWeight: "700",
@@ -547,12 +682,11 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-
   labelsList: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
-
   labelBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -564,12 +698,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(139, 92, 246, 0.2)",
   },
-
   labelIcon: {
     width: 18,
     height: 18,
   },
-
   labelText: {
     fontSize: 12,
     fontWeight: "600",
@@ -577,10 +709,10 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
 
+  // ── War ─────────────────────────────────────────────────
   warContainer: {
-    marginTop: 6,
+    marginTop: 4,
   },
-
   warBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -591,26 +723,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignSelf: "flex-start",
   },
-
   warIn: {
     backgroundColor: "rgba(34, 197, 94, 0.1)",
     borderColor: "rgba(34, 197, 94, 0.3)",
   },
-
   warOut: {
     backgroundColor: "rgba(239, 68, 68, 0.1)",
     borderColor: "rgba(239, 68, 68, 0.3)",
   },
-
   warText: {
     fontSize: 12,
     fontWeight: "700",
   },
-
   warTextIn: {
     color: "#22c55e",
   },
-
   warTextOut: {
     color: "#ef4444",
   },

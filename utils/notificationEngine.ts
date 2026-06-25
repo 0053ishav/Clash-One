@@ -122,7 +122,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
       const PRE_ALERT_MS = 10 * 60 * 1000;   // 10 min before
       const IDLE_ALERT_MS = 10 * 60 * 1000;  // 10 min after
       // BUILDERS
-      for (const b of state.builders) {
+      for (const b of state.builders.home) {
         if (!b.endTime) continue;
 
         allEvents.push({
@@ -180,7 +180,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
       }
 
       // LAB (normal + goblin)
-      const labs = [state.lab.normal, state.lab.goblin].filter(Boolean);
+      const labs = [state.lab.home.normal, state.lab.home.goblin].filter(Boolean);
 
       for (const l of labs) {
         if (!l || !l.endTime) continue;

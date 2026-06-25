@@ -209,7 +209,8 @@ export default function SettingsScreen() {
 
     const current = activeAccount.builderCount;
 
-    const busyBuilders = (await getAccountState(activeTag)).builders.length;
+    const busyBuilders = (await getAccountState(activeTag)).builders.home
+      .length;
 
     if (count < busyBuilders) {
       setRequiredBuilders(busyBuilders);

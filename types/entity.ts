@@ -1,4 +1,4 @@
-export type Village = "home" | "builder" | "global";
+export type Village = "home" | "builderBase" | "global";
 export type Resource = "gold" | "elixir" | "dark" ;
 export type EntityType =
     | "building"

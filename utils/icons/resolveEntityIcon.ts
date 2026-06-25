@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { useCraftedStore } from "@/stores/craftedEventStore";
 
 import { useEntityStore } from "@/stores/entityStore";
@@ -95,4 +96,12 @@ export function resolveEntityIcon(
     entity.icon ??
     FALLBACK_ICON
   );
+}
+
+export function resolveBuilderBaseLeagueIcon(
+  leagueId?: number,
+) {
+  if (!leagueId || !ENV.CDN_BASE) return undefined;
+
+  return `${ENV.CDN_BASE}/entities/builder/leagues/${leagueId}.png`;
 }

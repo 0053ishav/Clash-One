@@ -16,6 +16,7 @@ import {
 
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { getAccountState } from "@/services/accountStateService";
+import { Upgrade } from "@/types/upgrade";
 import { track } from "@/utils/analytics/analytics";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
@@ -28,6 +29,8 @@ export default function ValueScreen() {
   const { profile } = usePlayerProfile();
 
   const [activeUpgrades, setActiveUpgrades] = useState<any[]>([]);
+
+  const [builderBaseBuilders, setBuilderBaseBuilders] = useState<Upgrade[]>([]);
 
   const params = useLocalSearchParams();
   const paramTag = params.tag as string | undefined;
@@ -50,16 +53,16 @@ export default function ValueScreen() {
     if (!effectiveTag) return;
 
     (async () => {
-      const upgrades = (await getAccountState(effectiveTag)).builders;
-      setActiveUpgrades(upgrades);
+      const state = await getAccountState(effectiveTag);
+
+      setBuilderBaseBuilders(state.builders.builderBase);
+
+      setActiveUpgrades([
+        ...state.builders.home,
+        ...state.builders.builderBase,
+      ]);
     })();
   }, [effectiveTag]);
-
-  // useEffect(() => {
-  //   if (!account) {
-  //     router.replace("/(tabs)");
-  //   }
-  // }, [account]);
 
   const isLoadingAccounts = useAccountStore((s) => s.isLoadingAccounts);
 
@@ -69,44 +72,76 @@ export default function ValueScreen() {
     }
   }, [account, effectiveTag, isLoadingAccounts]);
 
-  const { status, remainingMs, busyCount, nextUpgrade } = useMemo(() => {
-    if (!account) {
-      return {
-        status: { allFree: true },
-        nextUpgrade: null,
-        remainingMs: 0,
-        busyCount: 0,
-      };
-    }
+  const { status, builderBaseStatus, remainingMs, nextUpgrade } =
+    useMemo(() => {
+      if (!account) {
+        return {
+          status: {
+            maxBuilders: 0,
+            busyBuilders: 0,
+            freeBuilders: 0,
+            freeNormal: 0,
+            freeGoblin: 0,
+            goblinBusy: false,
+            allFree: true,
+          },
 
-    const builderStatus = getBuilderStatus({
-      normalBuilderCount: account.builderCount,
-      goblinBuilderUnlocked: false,
-      activeUpgrades,
-    });
+          builderBaseStatus: {
+            maxBuilders: 0,
+            busyBuilders: 0,
+            freeBuilders: 0,
+            freeNormal: 0,
+            freeGoblin: 0,
+            goblinBusy: false,
+            allFree: true,
+          },
 
-    const next =
-      activeUpgrades.length > 0
-        ? activeUpgrades.reduce((prev: any, curr: any) =>
-            prev.endTime! < curr.endTime! ? prev : curr,
-          )
+          nextUpgrade: null,
+          remainingMs: 0,
+        };
+      }
+
+      const homeBuilderUpgrades = activeUpgrades.filter(
+        (u) => u.village === "home" && u.upgradeType === "BUILDER",
+      );
+
+      const builderStatus = getBuilderStatus({
+        village: "home",
+        normalBuilderCount: account.builderCount,
+        goblinBuilderUnlocked: false,
+        activeUpgrades,
+      });
+
+      const builderBaseStatus = account
+        ? getBuilderStatus({
+            village: "builderBase",
+            normalBuilderCount: account.builderBaseBuilderCount,
+            goblinBuilderUnlocked: false,
+            activeUpgrades,
+          })
         : null;
 
-    const remaining = next ? Math.max(next.endTime! - Date.now(), 0) : 0;
+      const next =
+        homeBuilderUpgrades.length > 0
+          ? homeBuilderUpgrades.reduce((prev: any, curr: any) =>
+              prev.endTime! < curr.endTime! ? prev : curr,
+            )
+          : null;
 
-    return {
-      status: builderStatus,
-      nextUpgrade: next,
-      remainingMs: remaining,
-      busyCount: activeUpgrades.length,
-    };
-  }, [account, activeUpgrades]);
+      const remaining = next ? Math.max(next.endTime! - Date.now(), 0) : 0;
+
+      return {
+        status: builderStatus,
+        builderBaseStatus,
+        nextUpgrade: next,
+        remainingMs: remaining,
+      };
+    }, [account, activeUpgrades]);
 
   if (!account) {
     return null;
   }
   const totalBuilders = account.builderCount;
-  const idleCount = totalBuilders - busyCount;
 
   return (
     <View style={styles.root}>
@@ -209,7 +244,7 @@ export default function ValueScreen() {
             </View>
             <View style={styles.builderCount}>
               <Text style={styles.builderCountText}>
-                {busyCount}/{totalBuilders}
+                {status.busyBuilders}/{totalBuilders}
               </Text>
             </View>
           </View>
@@ -259,7 +294,7 @@ export default function ValueScreen() {
                   {formatCountdown(remainingMs)}
                 </Text>
                 <Text style={styles.statusMessage}>
-                  {idleCount > 0
+                  {status.freeBuilders > 0
                     ? "Some builders are idle"
                     : "All builders are working"}
                 </Text>
@@ -270,7 +305,76 @@ export default function ValueScreen() {
           {/* Builder Indicators */}
           <View style={styles.builderIndicators}>
             {Array.from({ length: totalBuilders }).map((_, i) => {
-              const isBusy = activeUpgrades.some((u) => u.builderSlot === i);
+              const isBusy = activeUpgrades.some(
+                (u) =>
+                  u.village === "home" &&
+                  u.upgradeType === "BUILDER" &&
+                  u.builderSlot === i,
+              );
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.builderDot,
+                    isBusy ? styles.builderDotBusy : styles.builderDotFree,
+                  ]}
+                />
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.statusCard}>
+          <View style={styles.statusHeader}>
+            <View>
+              <Text style={styles.statusTitleMain}>Builder Base</Text>
+
+              <Text style={styles.statusSubText}>
+                Active builder base upgrades
+              </Text>
+            </View>
+
+            <View style={styles.builderCount}>
+              <Text style={styles.builderCountText}>
+                {builderBaseBuilders.length}/{account.builderBaseBuilderCount}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.statusContent}>
+            <View style={styles.timerIcon}>
+              <Image
+                source={{
+                  uri: resolveEntityIcon(1000002, {
+                    subType: "BUILDERHALL",
+                  }),
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                }}
+              />
+            </View>
+
+            <View style={styles.statusInfo}>
+              <Text style={styles.statusTitle}>Builder Base</Text>
+
+              <Text style={styles.statusMessage}>
+                {builderBaseStatus?.freeBuilders
+                  ? `${builderBaseStatus.freeBuilders} builders available`
+                  : "All builders working"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.builderIndicators}>
+            {Array.from({
+              length: account.builderBaseBuilderCount,
+            }).map((_, i) => {
+              const isBusy = builderBaseBuilders.some(
+                (u) => u.builderSlot === i,
+              );
+
               return (
                 <View
                   key={i}
@@ -285,7 +389,7 @@ export default function ValueScreen() {
         </View>
         {activeUpgrades.length > 0 && (
           <View style={styles.liveCard}>
-            <Text style={styles.liveTitle}>Live Upgrades</Text>
+            <Text style={styles.liveTitle}>Active Upgrades</Text>
 
             {activeUpgrades.map((u) => {
               return (
@@ -309,6 +413,27 @@ export default function ValueScreen() {
 
                   <View style={{ flex: 1 }}>
                     <Text style={styles.liveName}>{u.entity}</Text>
+                    <View
+                      style={{
+                        alignSelf: "flex-start",
+                        backgroundColor:
+                          u.village === "builderBase" ? "#7c3aed" : "#2563eb",
+                        borderRadius: 8,
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        marginTop: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: "white",
+                          fontSize: 10,
+                          fontWeight: "700",
+                        }}
+                      >
+                        {u.village === "builderBase" ? "BUILDER BASE" : "HOME"}
+                      </Text>
+                    </View>
                     <Text style={styles.liveTime}>
                       {formatCountdown(u.endTime - Date.now())}
                     </Text>

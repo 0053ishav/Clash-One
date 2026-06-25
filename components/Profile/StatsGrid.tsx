@@ -75,7 +75,10 @@ const styles = StyleSheet.create({
   },
 
   statItem: {
-    width: "31.5%",
+    width: "48%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: "#111827",
     borderRadius: 12,
     paddingVertical: 12,
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
   },
 
   value: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "700",
     color: "#f8fafc",
     letterSpacing: -0.3,

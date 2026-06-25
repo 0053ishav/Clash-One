@@ -28,13 +28,6 @@ interface Troop {
   village: string;
 }
 
-const STATUS_PRIORITY: Record<Troop["status"], number> = {
-  max: 0,
-  near: 1,
-  mid: 2,
-  low: 3,
-};
-
 export default function TroopsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -71,21 +64,16 @@ export default function TroopsScreen() {
 
       const parsed = parseArmy(data);
 
-      const homeTroops: Troop[] =
-        parsed.troops
-          ?.filter((t: any) => t.village === "home")
-          .map((t: any) => ({
-            dataId: t.dataId,
-            name: t.name,
-            level: t.level,
-            maxLevel: t.maxLevel,
-            village: t.village,
-            status: getUpgradeStatus(t.level, t.maxLevel),
-          }))
-          .sort(
-            (a: Troop, b: Troop) =>
-              STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status],
-          ) ?? [];
+      const homeTroops: Troop[] = parsed.home.troops
+        ?.filter((t: any) => t.village === "home")
+        .map((t: any) => ({
+          dataId: t.dataId,
+          name: t.name,
+          level: t.level,
+          maxLevel: t.maxLevel,
+          village: t.village,
+          status: getUpgradeStatus(t.level, t.maxLevel),
+        }));
 
       setTroops(homeTroops);
     } catch (err) {

@@ -1,7 +1,10 @@
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord } from "@/types/upgrade";
 import { formatCountdown } from "@/utils/formatCountdown";
-import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
+import {
+  resolveBuilderBaseLeagueIcon,
+  resolveEntityIcon,
+} from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
@@ -44,64 +47,155 @@ export default function ProfileHeader({
           </View>
         </View>
 
-        <View style={styles.thBadge}>
-          <Image
-            source={{
-              uri: resolveEntityIcon(1000001, {
-                context: {
-                  hallLevel: profile.townHallLevel,
-                },
-              }),
-            }}
-            style={styles.thBadgeIcon}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
+        <View style={styles.hallBadgesRow}>
+          <View style={styles.thBadge}>
+            <Image
+              source={{
+                uri: resolveEntityIcon(1000001, {
+                  context: {
+                    hallLevel: profile.townHallLevel,
+                  },
+                }),
+              }}
+              style={styles.thBadgeIcon}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+          </View>
+
+          {!!profile.builderHallLevel && (
+            <View style={[styles.thBadge, styles.bhBadge]}>
+              <Image
+                source={{
+                  uri: resolveEntityIcon(1000034, {
+                    context: {
+                      hallLevel: profile.builderHallLevel,
+                    },
+                  }),
+                }}
+                style={styles.thBadgeIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+          )}
         </View>
       </View>
 
-      {/* League & TH Row */}
-      <View style={styles.leagueThRow}>
-        <View style={styles.tierIconWrapper}>
-          <Image
-            source={{ uri: profile.leagueTierIconUrl }}
-            style={styles.tierIcon}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
-        </View>
-        <View style={styles.leagueInfo}>
-          {profile.leagueTierName && (
-            <Text style={styles.leagueName}>{profile.leagueTierName}</Text>
-          )}
+      <View style={styles.villageRow}>
+        {/* Home Village */}
+        <View style={[styles.villageCard, styles.villageCardHome]}>
+          <View style={styles.villageCardHeader}>
+            <View
+              style={[
+                styles.villageLeagueIconWrapper,
+                styles.homeLeagueIconWrapper,
+              ]}
+            >
+              <Image
+                source={{ uri: profile.leagueTierIconUrl }}
+                style={styles.villageLeagueIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            </View>
+
+            <Text style={[styles.villageLabel, styles.homeTitleText]}>
+              Home
+            </Text>
+          </View>
+
+          <Text
+            style={[styles.villageLeagueName, styles.homeLeagueName]}
+            numberOfLines={1}
+          >
+            {profile.leagueTierName ?? "Unranked"}
+          </Text>
+
           <View style={styles.trophyRow}>
-            {typeof profile.trophies === "number" && (
-              <View style={styles.trophyBadge}>
-                <Image
-                  source={require("@/assets/images/clash/trophy.png")}
-                  style={styles.trophyIcon}
-                  contentFit="contain"
-                />
+            <Image
+              source={require("@/assets/images/clash/trophy.png")}
+              style={styles.trophyIcon}
+              contentFit="contain"
+            />
+            <Text style={styles.trophyText}>{profile.trophies ?? 0}</Text>
+          </View>
 
-                <Text style={styles.trophyText}>{profile.trophies}</Text>
-              </View>
+          <View style={styles.bestRow}>
+            <Text style={styles.bestText}>
+              Legacy Best: {profile.bestTrophies ?? 0}
+            </Text>
+
+            {!!profile.leagueIconUrl && (
+              <Image
+                source={{ uri: profile.leagueIconUrl }}
+                style={styles.smallLeagueIcon}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
             )}
+          </View>
+        </View>
 
-            {typeof profile.bestTrophies === "number" && (
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={styles.bestTrophies}>
-                  Legacy Best: {profile.bestTrophies}
-                </Text>
+        <View style={styles.villageDivider} />
+
+        {/* Builder Base */}
+        {!!profile.builderHallLevel ? (
+          <View style={[styles.villageCard, styles.villageCardBuilder]}>
+            <View style={styles.villageCardHeader}>
+              <View
+                style={[
+                  styles.villageLeagueIconWrapper,
+                  styles.builderLeagueIconWrapper,
+                ]}
+              >
                 <Image
-                  source={{ uri: profile.leagueIconUrl }}
-                  style={styles.tierIcon}
+                  source={{
+                    uri: resolveBuilderBaseLeagueIcon(
+                      profile.builderBaseLeague?.id,
+                    ),
+                  }}
+                  style={styles.villageLeagueIcon}
                   contentFit="contain"
                   cachePolicy="memory-disk"
                 />
               </View>
-            )}
+
+              <Text style={[styles.villageLabel, styles.builderTitleText]}>
+                Builder
+              </Text>
+            </View>
+
+            <Text
+              style={[styles.villageLeagueName, styles.builderLeagueName]}
+              numberOfLines={1}
+            >
+              {profile.builderBaseLeague?.name ?? "Unranked"}
+            </Text>
+
+            <View style={styles.trophyRow}>
+              <Image
+                source={require("@/assets/images/clash/trophy.png")}
+                style={styles.trophyIcon}
+                contentFit="contain"
+              />
+              <Text style={styles.trophyText}>
+                {profile.builderBaseTrophies ?? 0}
+              </Text>
+            </View>
+
+            <View style={styles.bestRow}>
+              <Text style={styles.bestText}>
+                Best {profile.bestBuilderBaseTrophies ?? 0}
+              </Text>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.villageCard, styles.villageCardBuilderEmpty]}>
+            <Ionicons name="construct-outline" size={22} color="#475569" />
+            <Text style={styles.villageEmptyText}>No Builder Base</Text>
+          </View>
+        )}
       </View>
 
       {/* Clan Card */}
@@ -402,6 +496,144 @@ const styles = StyleSheet.create({
   bestTrophies: {
     fontSize: 11,
     color: "#94a3b8",
+    fontWeight: "500",
+  },
+
+  hallBadgesRow: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+  },
+
+  bhBadge: {
+    backgroundColor: "rgba(168, 85, 247, 0.15)",
+    borderColor: "rgba(168, 85, 247, 0.3)",
+  },
+
+  builderLeagueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "rgba(168, 85, 247, 0.1)",
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(168, 85, 247, 0.25)",
+  },
+
+  villageRow: {
+    flexDirection: "row",
+    gap: 0,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(51,65,85,0.6)",
+  },
+
+  villageCard: {
+    flex: 1,
+    padding: 12,
+    gap: 6,
+    justifyContent: "center",
+  },
+
+  villageCardHome: {
+    backgroundColor: "rgba(14,165,233,0.08)",
+  },
+
+  villageCardBuilder: {
+    backgroundColor: "rgba(168,85,247,0.08)",
+  },
+
+  villageCardBuilderEmpty: {
+    backgroundColor: "rgba(71,85,105,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  villageDivider: {
+    width: 1,
+    backgroundColor: "rgba(51,65,85,0.6)",
+  },
+
+  villageCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  villageLeagueIconWrapper: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  homeLeagueIconWrapper: {
+    backgroundColor: "rgba(14,165,233,0.15)",
+  },
+
+  builderLeagueIconWrapper: {
+    backgroundColor: "rgba(168,85,247,0.15)",
+  },
+
+  villageLeagueIcon: {
+    width: 26,
+    height: 26,
+  },
+
+  villageLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+
+  homeTitleText: {
+    color: "#38bdf8",
+  },
+
+  builderTitleText: {
+    color: "#c084fc",
+  },
+
+  villageLeagueName: {
+    fontSize: 13,
+    minHeight: 34,
+    fontWeight: "700",
+  },
+
+  homeLeagueName: {
+    color: "#0ea5e9",
+  },
+
+  builderLeagueName: {
+    color: "#a855f7",
+  },
+
+  bestRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 4,
+  },
+
+  bestText: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+
+  smallLeagueIcon: {
+    width: 18,
+    height: 18,
+    marginLeft: 4,
+  },
+
+  villageEmptyText: {
+    fontSize: 12,
+    color: "#475569",
     fontWeight: "500",
   },
 

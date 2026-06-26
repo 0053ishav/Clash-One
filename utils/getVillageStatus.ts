@@ -1,5 +1,4 @@
 import { Upgrade } from "@/types/upgrade";
-import { isWorkForHireActive } from "./goblin";
 
 export function getVillageStatus({
   townHall,
@@ -8,6 +7,7 @@ export function getVillageStatus({
   pet,
   labNormal,
   labGoblin,
+  goblinAvailable,
 }: {
   townHall: number,
   builders: Upgrade[];
@@ -15,6 +15,7 @@ export function getVillageStatus({
   pet?: Upgrade | null;
   labNormal?: Upgrade | null;
   labGoblin?: Upgrade | null;
+  goblinAvailable?: boolean;
 }) {
   const normalBusyBuilders = builders.filter(
     (b) => b.builderSlot !== "G"
@@ -39,12 +40,12 @@ export function getVillageStatus({
   const labIdle = !isNormalLabBusy;
 
   const goblinLabIdle =
-    isWorkForHireActive() &&
+    goblinAvailable &&
     !labIdle &&
     !isGoblinLabBusy;
 
   const goblinBuilderIdle =
-    isWorkForHireActive() &&
+    goblinAvailable &&
     freeBuilders <= 0 &&
     !goblinBuilderBusy;
 

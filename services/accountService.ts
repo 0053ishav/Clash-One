@@ -72,28 +72,33 @@ export const updateAccount = async (
   tag: string,
   name: string,
   color: string,
-  townhall?: number
+  townhall: number,
+  builderCount: number,
+  builderBaseBuilderCount: number,
 ) => {
   const db = await getDB();
 
-  if (typeof townhall === "number") {
-    await db.runAsync(
-      `UPDATE accounts
-       SET account_name=?, display_color=?, townhall_level=?, last_updated=?
-       WHERE player_tag=?`,
-      [name, color, townhall, Date.now(), tag]
-    );
-    return;
-  }
-
   await db.runAsync(
     `UPDATE accounts
-     SET account_name=?, display_color=?, last_updated=?
-     WHERE player_tag=?`,
-    [name, color, Date.now(), tag]
+     SET
+       account_name = ?,
+       display_color = ?,
+       townhall_level = ?,
+       builder_count = ?,
+       builder_base_builder_count = ?,
+       last_updated = ?
+     WHERE player_tag = ?`,
+    [
+      name,
+      color,
+      townhall,
+      builderCount,
+      builderBaseBuilderCount,
+      Date.now(),
+      tag,
+    ]
   );
 };
-
 export const deleteAccount = async (tag: string) => {
   const db = await getDB();
 
@@ -132,7 +137,7 @@ export const updateAccountColor = async (tag: string, color: string) => {
 // };
 
 export const updateBuilderCount = async (
-  tag: string, 
+  tag: string,
   homeCount: number,
 ) => {
   const db = await getDB();
@@ -140,7 +145,7 @@ export const updateBuilderCount = async (
   await db.runAsync(
     `UPDATE accounts
       SET 
-        builder_count = ?,
+        builder_count = ?
       WHERE player_tag = ?`,
     [homeCount, tag]
   );

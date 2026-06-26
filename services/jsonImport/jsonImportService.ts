@@ -174,23 +174,23 @@ function getBuilderCounts(
         b.lvl >= 1
     ) ?? false;
 
-    console.log(
-  "Builders:",
-  {
-    homeBuilders:
-      builderHutCount +
-      (hasBobControl ? 1 : 0),
+  console.log(
+    "Builders:",
+    {
+      homeBuilders:
+        builderHutCount +
+        (hasBobControl ? 1 : 0),
 
-    builderBaseBuilders:
-      1 +
-      (hasOtto ? 1 : 0) +
-      (hasBoto ? 1 : 0),
+      builderBaseBuilders:
+        1 +
+        (hasOtto ? 1 : 0) +
+        (hasBoto ? 1 : 0),
 
-    hasBobControl,
-    hasOtto,
-    hasBoto,
-  }
-);
+      hasBobControl,
+      hasOtto,
+      hasBoto,
+    }
+  );
 
   return {
     // Builder Huts + B.O.B Control
@@ -719,7 +719,6 @@ export async function importVillageJson(
   }
 
   const existing = await getAccountByTag(parsed.tag);
-
   if (!existing) {
     await addAccount(
       parsed.tag,
@@ -735,6 +734,8 @@ export async function importVillageJson(
       apiData?.name ?? existing.name,
       existing.color,
       apiData?.townHallLevel ?? existing.townhall,
+      totalHomeBuilders,
+      totalBuilderBaseBuilders,
     );
   }
 
@@ -907,12 +908,12 @@ export async function importVillageJson(
       builderSlot: undefined,
       builderType: undefined,
 
-      labSlot: 
+      labSlot:
         lab.village === HOME_VILLAGE
-        ? lab.extra === true 
-          ? "GOBLIN" 
-          : "NORMAL"
-        : "NORMAL",
+          ? lab.extra === true
+            ? "GOBLIN"
+            : "NORMAL"
+          : "NORMAL",
 
       currentLevel: lab.lvl,
       nextLevel: lab.lvl + 1,

@@ -5,26 +5,22 @@ import { getBuilderStatus } from "@/utils/builderStatus";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { XPBadge } from "@/components/XPBadge";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { getAccountState } from "@/services/accountStateService";
 import { Upgrade } from "@/types/upgrade";
 import { track } from "@/utils/analytics/analytics";
 import { resolveEntityIcon } from "@/utils/icons/resolveEntityIcon";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 
 export default function ValueScreen() {
   const router = useRouter();
 
   const accounts = useAccountStore((s) => s.accounts);
+
   const activeTag = useAccountStore((s) => s.activeTag);
   const { profile } = usePlayerProfile();
 
@@ -55,12 +51,11 @@ export default function ValueScreen() {
     (async () => {
       const state = await getAccountState(effectiveTag);
 
-      setBuilderBaseBuilders(state.builders.builderBase);
+      const bbBuilders = state.builders.builderBase;
 
-      setActiveUpgrades([
-        ...state.builders.home,
-        ...state.builders.builderBase,
-      ]);
+      setBuilderBaseBuilders(bbBuilders);
+
+      setActiveUpgrades([...state.builders.home, ...bbBuilders]);
     })();
   }, [effectiveTag]);
 
@@ -72,71 +67,91 @@ export default function ValueScreen() {
     }
   }, [account, effectiveTag, isLoadingAccounts]);
 
-  const { status, builderBaseStatus, remainingMs, nextUpgrade } =
-    useMemo(() => {
-      if (!account) {
-        return {
-          status: {
-            maxBuilders: 0,
-            busyBuilders: 0,
-            freeBuilders: 0,
-            freeNormal: 0,
-            freeGoblin: 0,
-            goblinBusy: false,
-            allFree: true,
-          },
+  const {
+    status,
+    builderBaseStatus,
+    remainingMs,
+    nextUpgrade,
+    builderBaseRemainingMs,
+    builderBaseNextUpgrade,
+  } = useMemo(() => {
+    if (!account) {
+      return {
+        status: {
+          maxBuilders: 0,
+          busyBuilders: 0,
+          freeBuilders: 0,
+          freeNormal: 0,
+          freeGoblin: 0,
+          goblinBusy: false,
+          allFree: true,
+        },
 
-          builderBaseStatus: {
-            maxBuilders: 0,
-            busyBuilders: 0,
-            freeBuilders: 0,
-            freeNormal: 0,
-            freeGoblin: 0,
-            goblinBusy: false,
-            allFree: true,
-          },
+        builderBaseStatus: {
+          maxBuilders: 0,
+          busyBuilders: 0,
+          freeBuilders: 0,
+          freeNormal: 0,
+          freeGoblin: 0,
+          goblinBusy: false,
+          allFree: true,
+        },
 
-          nextUpgrade: null,
-          remainingMs: 0,
-        };
-      }
+        nextUpgrade: null,
+        remainingMs: 0,
 
-      const homeBuilderUpgrades = activeUpgrades.filter(
-        (u) => u.village === "home" && u.upgradeType === "BUILDER",
-      );
+        builderBaseNextUpgrade: null,
+        builderBaseRemainingMs: 0,
+      };
+    }
 
-      const builderStatus = getBuilderStatus({
-        village: "home",
-        normalBuilderCount: account.builderCount,
-        goblinBuilderUnlocked: false,
-        activeUpgrades,
-      });
+    const homeBuilderUpgrades = activeUpgrades.filter(
+      (u) => u.village === "home" && u.upgradeType === "BUILDER",
+    );
 
-      const builderBaseStatus = account
-        ? getBuilderStatus({
-            village: "builderBase",
-            normalBuilderCount: account.builderBaseBuilderCount,
-            goblinBuilderUnlocked: false,
-            activeUpgrades,
-          })
+    const builderStatus = getBuilderStatus({
+      village: "home",
+      normalBuilderCount: account.builderCount,
+      goblinBuilderUnlocked: false,
+      activeUpgrades,
+    });
+
+    const builderBaseStatus = getBuilderStatus({
+      village: "builderBase",
+      normalBuilderCount: account.builderBaseBuilderCount,
+      goblinBuilderUnlocked: false,
+      activeUpgrades,
+    });
+
+    const builderBaseNextUpgrade =
+      builderBaseBuilders.length > 0
+        ? builderBaseBuilders.reduce((prev, curr) =>
+            prev.endTime < curr.endTime ? prev : curr,
+          )
         : null;
 
-      const next =
-        homeBuilderUpgrades.length > 0
-          ? homeBuilderUpgrades.reduce((prev: any, curr: any) =>
-              prev.endTime! < curr.endTime! ? prev : curr,
-            )
-          : null;
+    const builderBaseRemainingMs = builderBaseNextUpgrade
+      ? Math.max(builderBaseNextUpgrade.endTime - Date.now(), 0)
+      : 0;
 
-      const remaining = next ? Math.max(next.endTime! - Date.now(), 0) : 0;
+    const next =
+      homeBuilderUpgrades.length > 0
+        ? homeBuilderUpgrades.reduce((prev: any, curr: any) =>
+            prev.endTime! < curr.endTime! ? prev : curr,
+          )
+        : null;
 
-      return {
-        status: builderStatus,
-        builderBaseStatus,
-        nextUpgrade: next,
-        remainingMs: remaining,
-      };
-    }, [account, activeUpgrades]);
+    const remaining = next ? Math.max(next.endTime! - Date.now(), 0) : 0;
+
+    return {
+      status: builderStatus,
+      builderBaseStatus,
+      nextUpgrade: next,
+      remainingMs: remaining,
+      builderBaseRemainingMs,
+      builderBaseNextUpgrade,
+    };
+  }, [account, activeUpgrades, builderBaseBuilders]);
 
   if (!account) {
     return null;
@@ -189,37 +204,92 @@ export default function ValueScreen() {
 
           {profile && (
             <View style={styles.profileStats}>
-              {profile.townHallLevel && (
-                <View style={styles.statItem}>
-                  <Image
-                    source={{
-                      uri: resolveEntityIcon(1000001, {
-                        subType: "TOWNHALL",
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                {/* XP */}
+                {typeof profile.expLevel === "number" && (
+                  <XPBadge level={profile.expLevel} />
+                )}
 
-                        context: {
-                          hallLevel: profile.townHallLevel,
-                        },
-                      }),
+                {/* Hall */}
+                <Image
+                  source={{
+                    uri: resolveEntityIcon(1000001, {
+                      context: {
+                        hallLevel: profile.townHallLevel,
+                      },
+                    }),
+                  }}
+                  style={styles.statIcon}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
+
+                {/* Trophies */}
+                {typeof profile.trophies === "number" && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
                     }}
-                    style={styles.statIcon}
-                  />
-                  <Text style={styles.statText}>TH{profile.townHallLevel}</Text>
-                </View>
-              )}
+                  >
+                    <Image
+                      source={require("@/assets/images/clash/trophy.png")}
+                      style={{
+                        width: 15,
+                        height: 15,
+                      }}
+                      contentFit="contain"
+                    />
+                    <Text style={styles.statText}>{profile.trophies}</Text>
+                  </View>
+                )}
 
-              {typeof profile.trophies === "number" && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statEmoji}>🏆</Text>
-                  <Text style={styles.statText}>{profile.trophies}</Text>
-                </View>
-              )}
+                <View style={styles.verticalDivider} />
 
-              {typeof profile.expLevel === "number" && (
-                <View style={styles.statItem}>
-                  <Text style={styles.statEmoji}>⭐</Text>
-                  <Text style={styles.statText}>Lv {profile.expLevel}</Text>
-                </View>
-              )}
+                <Image
+                  source={{
+                    uri: resolveEntityIcon(1000034, {
+                      context: {
+                        hallLevel: profile.builderHallLevel,
+                      },
+                    }),
+                  }}
+                  style={styles.statIcon}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                />
+
+                {/* Trophies */}
+                {typeof profile.trophies === "number" && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <Image
+                      source={require("@/assets/images/clash/trophy.png")}
+                      style={{
+                        width: 15,
+                        height: 15,
+                      }}
+                      contentFit="contain"
+                    />
+                    <Text style={styles.statText}>
+                      {profile.builderBaseTrophies}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -228,7 +298,7 @@ export default function ValueScreen() {
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
             <View>
-              <Text style={styles.statusTitleMain}>Upgrades</Text>
+              <Text style={styles.statusTitleMain}>Home Village</Text>
               <Text style={styles.statusSubText}>Based on active upgrades</Text>
               <Text style={styles.statusSubText}>
                 Adjust builders in Settings if needed
@@ -343,27 +413,59 @@ export default function ValueScreen() {
 
           <View style={styles.statusContent}>
             <View style={styles.timerIcon}>
-              <Image
-                source={{
-                  uri: resolveEntityIcon(1000002, {
-                    subType: "BUILDERHALL",
-                  }),
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                }}
-              />
+              {builderBaseNextUpgrade?.dataId != null ? (
+                <Image
+                  source={{
+                    uri: resolveEntityIcon(builderBaseNextUpgrade.dataId, {
+                      isCrafted: builderBaseNextUpgrade.isCrafted,
+                      subType: builderBaseNextUpgrade.subType,
+                      context: {
+                        hallLevel: profile?.builderHallLevel,
+                      },
+                    }),
+                  }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                  }}
+                />
+              ) : (
+                <Image
+                  source={{
+                    uri: resolveEntityIcon(1000002, {
+                      subType: "BUILDERHALL",
+                    }),
+                  }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                  }}
+                />
+              )}
             </View>
 
             <View style={styles.statusInfo}>
-              <Text style={styles.statusTitle}>Builder Base</Text>
-
-              <Text style={styles.statusMessage}>
-                {builderBaseStatus?.freeBuilders
-                  ? `${builderBaseStatus.freeBuilders} builders available`
-                  : "All builders working"}
+              <Text style={styles.statusTitle}>
+                {builderBaseStatus?.allFree
+                  ? "🚨 Builders Idle"
+                  : "Next Builder Ready In"}
               </Text>
+
+              {builderBaseStatus?.allFree ? (
+                <Text style={styles.statusMessage}>Start an upgrade now</Text>
+              ) : (
+                <>
+                  <Text style={styles.statusTime}>
+                    {formatCountdown(builderBaseRemainingMs)}
+                  </Text>
+
+                  <Text style={styles.statusMessage}>
+                    {builderBaseStatus?.freeBuilders
+                      ? `${builderBaseStatus.freeBuilders} builders available`
+                      : "All builders are working"}
+                  </Text>
+                </>
+              )}
             </View>
           </View>
 
@@ -618,9 +720,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
+  verticalDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: "rgba(148, 163, 184, 0.2)",
+    marginHorizontal: 8,
+  },
+
   statIcon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
   },
 
   statEmoji: {
@@ -628,7 +737,7 @@ const styles = StyleSheet.create({
   },
 
   statText: {
-    fontSize: 14,
+    fontSize: 10,
     color: "#cbd5e1",
     fontWeight: "600",
   },

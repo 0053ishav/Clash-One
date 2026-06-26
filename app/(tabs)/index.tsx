@@ -21,6 +21,7 @@ import {
 } from "@/storage/notesStorage";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
+import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { FeatureId, Vote } from "@/types/vote";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
@@ -71,6 +72,8 @@ export default function HomeScreen() {
 
   const [profileSheetVisible, setProfileSheetVisible] = useState(false);
 
+  const [selectedVillage, setSelectedVillage] = useState<Village>("home");
+
   const { getCraftedName, getModuleName } = useCraftedResolver();
 
   const activeTag = useAccountStore((s) => s.activeTag);
@@ -107,12 +110,25 @@ export default function HomeScreen() {
   );
 
   const builders = useMemo(
-    () => accountState?.builders.home ?? [],
-    [accountState],
+    () =>
+      selectedVillage === "home"
+        ? (accountState?.builders.home ?? [])
+        : (accountState?.builders.builderBase ?? []),
+    [accountState, selectedVillage],
   );
 
-  const pet = useMemo(() => accountState?.pet ?? null, [accountState]);
-  const lab = accountState?.lab;
+  const lab = useMemo(
+    () =>
+      selectedVillage === "home"
+        ? accountState?.lab.home
+        : accountState?.lab.builderBase,
+    [accountState, selectedVillage],
+  );
+
+  const pet = useMemo(
+    () => (selectedVillage === "home" ? (accountState?.pet ?? null) : null),
+    [accountState, selectedVillage],
+  );
 
   useEffect(() => {
     track("screen_view", { screen: "home" });
@@ -355,8 +371,9 @@ export default function HomeScreen() {
     builders,
     builderCount,
     pet: townHall >= 14 ? pet : null,
-    labNormal: lab?.home.normal,
-    labGoblin: lab?.home.goblin,
+    labNormal: lab?.normal,
+    labGoblin: lab?.goblin,
+    goblinAvailable: lab?.goblinAvailable,
   });
 
   let insightParts: string[] = [];
@@ -460,6 +477,11 @@ export default function HomeScreen() {
                     gap: 8,
                   }}
                 >
+                  {/* XP */}
+                  {typeof profile.expLevel === "number" && (
+                    <XPBadge level={profile.expLevel} />
+                  )}
+
                   {/* Hall */}
                   <Image
                     source={{
@@ -469,14 +491,10 @@ export default function HomeScreen() {
                         },
                       }),
                     }}
-                    style={styles.leagueIcon}
+                    style={styles.hallIcon}
                     contentFit="contain"
                     cachePolicy="memory-disk"
                   />
-
-                  <Text style={styles.profileSub}>
-                    TH{profile.townHallLevel}
-                  </Text>
 
                   {/* Trophies */}
                   {typeof profile.trophies === "number" && (
@@ -490,8 +508,8 @@ export default function HomeScreen() {
                       <Image
                         source={require("@/assets/images/clash/trophy.png")}
                         style={{
-                          width: 16,
-                          height: 16,
+                          width: 10,
+                          height: 10,
                         }}
                         contentFit="contain"
                       />
@@ -499,9 +517,42 @@ export default function HomeScreen() {
                     </View>
                   )}
 
-                  {/* XP */}
-                  {typeof profile.expLevel === "number" && (
-                    <XPBadge level={profile.expLevel} />
+                  <View style={styles.verticalDivider} />
+
+                  <Image
+                    source={{
+                      uri: resolveEntityIcon(1000034, {
+                        context: {
+                          hallLevel: profile.builderHallLevel,
+                        },
+                      }),
+                    }}
+                    style={styles.hallIcon}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                  />
+
+                  {/* Trophies */}
+                  {typeof profile.trophies === "number" && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Image
+                        source={require("@/assets/images/clash/trophy.png")}
+                        style={{
+                          width: 10,
+                          height: 10,
+                        }}
+                        contentFit="contain"
+                      />
+                      <Text style={styles.profileSub}>
+                        {profile.builderBaseTrophies}
+                      </Text>
+                    </View>
                   )}
                 </View>
               )}
@@ -666,6 +717,59 @@ export default function HomeScreen() {
             <Ionicons name="add-circle" size={24} color="#0f172a" />
             <Text style={styles.addButtonText}>Add Upgrade</Text>
           </Pressable> */}
+
+        <View style={styles.villageTabs}>
+          <Pressable
+            onPress={() => setSelectedVillage("home")}
+            style={[
+              styles.villageTab,
+              selectedVillage === "home" && styles.homeVillageTabActive,
+            ]}
+          >
+            <Image
+              source={{
+                uri: resolveEntityIcon(1000001, {
+                  context: {
+                    hallLevel: profile.townHallLevel,
+                  },
+                }),
+              }}
+              style={[
+                styles.villageIcon,
+                selectedVillage !== "home" && styles.villageIconInactive,
+              ]}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+          </Pressable>
+
+          <View style={styles.verticalDivider} />
+
+          <Pressable
+            onPress={() => setSelectedVillage("builderBase")}
+            style={[
+              styles.villageTab,
+              selectedVillage === "builderBase" &&
+                styles.builderVillageTabActive,
+            ]}
+          >
+            <Image
+              source={{
+                uri: resolveEntityIcon(1000034, {
+                  context: {
+                    hallLevel: profile.builderHallLevel,
+                  },
+                }),
+              }}
+              style={[
+                styles.villageIcon,
+                selectedVillage !== "builderBase" && styles.villageIconInactive,
+              ]}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+          </Pressable>
+        </View>
         {/* Active Upgrades Section */}
         {sortedUpgrades.length > 0 && (
           <View style={styles.upgradesSection}>
@@ -771,46 +875,48 @@ export default function HomeScreen() {
                               : formatBuildingName(u.entity)}
                           </Text>
 
-                          {/* Levels Badge */}
-                          {u.currentLevel !== undefined &&
-                            u.nextLevel !== undefined && (
-                              <View style={styles.levelsBadge}>
-                                <Text style={styles.levelsText}>
-                                  Lv {u.currentLevel} → Lv {u.nextLevel}
-                                </Text>
-                              </View>
-                            )}
-                          {u.hasHelper && (
-                            <View style={styles.helperRow}>
-                              <Image
-                                source={{
-                                  uri: resolveEntityIcon(93000000),
-                                }}
-                                style={styles.helperIcon}
-                                contentFit="contain"
-                                cachePolicy="memory-disk"
-                              />
-
-                              {!!u.helperAppliedSeconds && (
-                                <Text style={styles.helperSaved}>
-                                  -
-                                  {formatCountdown(
-                                    u.helperAppliedSeconds * 1000,
-                                  )}
-                                </Text>
-                              )}
-
-                              {u.recurrentHelper && (
-                                <View style={styles.recurrentBadge}>
-                                  <Ionicons
-                                    name="repeat"
-                                    size={10}
-                                    color="#fbbf24"
-                                  />
+                          <View style={{ flexDirection: "row", gap: 4 }}>
+                            {/* Levels Badge */}
+                            {u.currentLevel !== undefined &&
+                              u.nextLevel !== undefined && (
+                                <View style={styles.levelsBadge}>
+                                  <Text style={styles.levelsText}>
+                                    Lv {u.currentLevel} → Lv {u.nextLevel}
+                                  </Text>
                                 </View>
                               )}
-                            </View>
-                          )}
+                            {u.hasHelper && (
+                              <View style={styles.helperRow}>
+                                <Image
+                                  source={{
+                                    uri: resolveEntityIcon(93000000),
+                                  }}
+                                  style={styles.helperIcon}
+                                  contentFit="contain"
+                                  cachePolicy="memory-disk"
+                                />
+
+                                {!!u.helperAppliedSeconds && (
+                                  <Text style={styles.helperSaved}>
+                                    -
+                                    {formatCountdown(
+                                      u.helperAppliedSeconds * 1000,
+                                    )}
+                                  </Text>
+                                )}
+
+                                {u.recurrentHelper && (
+                                  <View style={styles.recurrentBadge}>
+                                    <Ionicons
+                                      name="repeat"
+                                      size={10}
+                                      color="#fbbf24"
+                                    />
+                                  </View>
+                                )}
+                              </View>
+                            )}
+                          </View>
                         </View>
                       </View>
 
@@ -873,8 +979,9 @@ export default function HomeScreen() {
         )}
 
         <LabSection
-          labNormal={lab?.home.normal}
-          labGoblin={lab?.home.goblin}
+          village={selectedVillage}
+          labNormal={lab?.normal}
+          labGoblin={lab?.goblin}
           // onAddPress={() => {
           //   setSessionSource("app");
           //   router.push("/add-upgrade?type=lab");
@@ -882,7 +989,7 @@ export default function HomeScreen() {
           onLongPress={handleRowLongPress}
         />
 
-        {townHall >= 14 && (
+        {selectedVillage === "home" && townHall >= 14 && (
           <PetSection
             pet={pet}
             townHall={townHall}
@@ -1292,8 +1399,20 @@ const styles = StyleSheet.create({
   },
 
   profileSub: {
-    fontSize: 13,
+    fontSize: 10,
     color: "#94a3b8",
+  },
+
+  verticalDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: "rgba(148, 163, 184, 0.2)",
+    marginHorizontal: 8,
+  },
+
+  hallIcon: {
+    width: 20,
+    height: 20,
   },
 
   leagueIcon: {
@@ -1334,7 +1453,7 @@ const styles = StyleSheet.create({
 
   statusCard: {
     backgroundColor: "#fbbf24",
-    paddingVertical: 20,
+    paddingVertical: 10,
     paddingHorizontal: 20,
   },
 
@@ -1431,6 +1550,41 @@ const styles = StyleSheet.create({
     color: "#0f172a",
   },
 
+  villageTabs: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderRadius: 14,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "#334155",
+    marginBottom: 12,
+  },
+
+  villageTab: {
+    flex: 1,
+    height: 48,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  homeVillageTabActive: {
+    backgroundColor: "rgba(14,165,233,0.18)",
+  },
+
+  builderVillageTabActive: {
+    backgroundColor: "rgba(168,85,247,0.18)",
+  },
+
+  villageIcon: {
+    width: 28,
+    height: 28,
+  },
+
+  villageIconInactive: {
+    opacity: 0.45,
+  },
   upgradesSection: {
     paddingHorizontal: 16,
     gap: 12,
@@ -1484,8 +1638,8 @@ const styles = StyleSheet.create({
 
   upgradeContent: {
     backgroundColor: "#1e293b",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderRadius: 16,
     gap: 12,
   },

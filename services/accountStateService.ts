@@ -1,3 +1,4 @@
+import { Upgrade } from "@/types/upgrade";
 import { isWorkForHireActive } from "@/utils/goblin";
 import { getEntities } from "./entityService";
 import { getUpgrades } from "./upgradeService";
@@ -11,49 +12,69 @@ export async function getAccountState(tag: string) {
     (u) => !u.isCompleted && u.endTime > now
   );
 
-  const homeBuilders = activeUpgrades.filter(
-    (u) =>
-      u.upgradeType === "BUILDER" &&
-      u.village === "home"
-  );
+  const homeBuilders: Upgrade[] = [];
+  const builderBaseBuilders: Upgrade[] = [];
 
-  const builderBaseBuilders = activeUpgrades.filter(
-    (u) =>
-      u.upgradeType === "BUILDER" &&
-      u.village === "builderBase"
-  );
+  const homeLabs: Upgrade[] = [];
+  const builderBaseLabs: Upgrade[] = [];
 
-  const homeLabs = activeUpgrades.filter(
-    (u) =>
-      u.upgradeType === "LAB" &&
-      u.village === "home"
-  );
+  const guardians: Upgrade[] = [];
 
-  const builderBaseLabs = activeUpgrades.filter(
-    (u) =>
-      u.upgradeType === "LAB" &&
-      u.village === "builderBase"
-  );
+  let petUpgrade: Upgrade | null = null;
 
-  const petUpgrade = activeUpgrades.find(
-    (u) => u.upgradeType === "PET"
-  );
+  for (const upgrade of activeUpgrades) {
+    switch (upgrade.upgradeType) {
+      case "BUILDER":
+        if (upgrade.village === "home") {
+          homeBuilders.push(upgrade);
+        } else if (upgrade.village === "builderBase") {
+          builderBaseBuilders.push(upgrade);
+        }
+        break;
+
+      case "LAB":
+        if (upgrade.village === "home") {
+          homeLabs.push(upgrade);
+        } else if (upgrade.village === "builderBase") {
+          builderBaseLabs.push(upgrade);
+        }
+        break;
+
+      case "PET":
+        if (!petUpgrade) {
+          petUpgrade = upgrade;
+        }
+        break;
+    }
+
+    if (upgrade.type === "GUARDIAN") {
+      guardians.push(upgrade);
+    }
+  }
 
   const goblinEventActive = isWorkForHireActive();
 
-  const homeLabNormal = homeLabs.find((u) => u.labSlot === "NORMAL");
-  const homeLabGoblinRaw = homeLabs.find((u) => u.labSlot === "GOBLIN");
+  const homeLabNormal =
+    homeLabs.find((u) => u.labSlot === "NORMAL") ?? null;
 
-  const homeLabGoblin = goblinEventActive ? homeLabGoblinRaw : null;
+  const homeLabGoblinRaw =
+    homeLabs.find((u) => u.labSlot === "GOBLIN") ?? null;
+
+  const homeLabGoblin = goblinEventActive
+    ? homeLabGoblinRaw
+    : null;
 
   const builderBaseLab =
     builderBaseLabs.find(
       (u) => u.labSlot === "NORMAL"
-    );
+    ) ?? null;
 
   if (!goblinEventActive && homeLabGoblinRaw) {
-    console.warn("⚠️ Stale goblin lab upgrade detected (event inactive)");
+    console.warn(
+      "⚠️ Stale goblin lab upgrade detected (event inactive)"
+    );
   }
+
   return {
     upgrades,
     activeUpgrades,
@@ -65,19 +86,21 @@ export async function getAccountState(tag: string) {
 
     lab: {
       home: {
-        normal: homeLabNormal ?? null,
-        goblin: homeLabGoblin ?? null,
+        normal: homeLabNormal,
+        goblin: homeLabGoblin,
         goblinAvailable: goblinEventActive,
       },
 
       builderBase: {
-        normal: builderBaseLab ?? null,
-      }
+        normal: builderBaseLab,
+        goblin: null,
+        goblinAvailable: false,
+      },
     },
 
-    pet: petUpgrade ?? null,
+    pet: petUpgrade,
 
-    guardians: activeUpgrades.filter((u) => u.type === "GUARDIAN"),
+    guardians,
 
     entities,
     helpers: entities.filter((e) => e.type === "helper"),

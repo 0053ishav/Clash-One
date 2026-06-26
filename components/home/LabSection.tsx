@@ -1,3 +1,4 @@
+import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -7,11 +8,13 @@ import { Image } from "expo-image";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export function LabSection({
+  village,
   labNormal,
   labGoblin,
   onAddPress,
   onLongPress,
 }: {
+  village: Village;
   labNormal?: Upgrade | null;
   labGoblin?: Upgrade | null;
   onAddPress?: () => void;
@@ -30,13 +33,19 @@ export function LabSection({
           <View style={styles.titleRow}>
             <View style={{}}>
               <Image
-                source={require("@/assets/images/clash/1000007.png")}
+                source={
+                  village === "home"
+                    ? require("@/assets/images/clash/1000007.png")
+                    : require("@/assets/images/clash/1000046.png")
+                }
                 style={{ width: 40, height: 40 }}
                 contentFit="contain"
                 cachePolicy="memory-disk"
               />
             </View>
-            <Text style={styles.sectionTitle}>Laboratory</Text>
+            <Text style={styles.sectionTitle}>
+              {village === "home" ? "Laboratory" : "Star Laboratory"}
+            </Text>
           </View>
 
           <View
@@ -165,39 +174,40 @@ function LabCard({
                   {lab.entity}
                 </Text>
               </View>
-
-              {lab.currentLevel !== undefined &&
-                lab.nextLevel !== undefined && (
-                  <View style={[styles.levelBadge, styles.labLevelBadge]}>
-                    <Text style={styles.levelText}>
-                      Lv {lab.currentLevel} → {lab.nextLevel}
-                    </Text>
-                  </View>
-                )}
-              {lab.hasHelper && (
-                <View style={styles.helperRow}>
-                  <Image
-                    source={{
-                      uri: resolveEntityIcon(93000001),
-                    }}
-                    style={styles.helperIcon}
-                    contentFit="contain"
-                    cachePolicy="memory-disk"
-                  />
-
-                  {!!lab.helperAppliedSeconds && (
-                    <Text style={styles.helperSaved}>
-                      - {formatCountdown(lab.helperAppliedSeconds * 1000)}
-                    </Text>
-                  )}
-
-                  {lab.recurrentHelper && (
-                    <View style={styles.recurrentBadge}>
-                      <Ionicons name="repeat" size={10} color="#fbbf24" />
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                {lab.currentLevel !== undefined &&
+                  lab.nextLevel !== undefined && (
+                    <View style={[styles.levelBadge, styles.labLevelBadge]}>
+                      <Text style={styles.levelText}>
+                        Lv {lab.currentLevel} → {lab.nextLevel}
+                      </Text>
                     </View>
                   )}
-                </View>
-              )}
+                {lab.hasHelper && (
+                  <View style={styles.helperRow}>
+                    <Image
+                      source={{
+                        uri: resolveEntityIcon(93000001),
+                      }}
+                      style={styles.helperIcon}
+                      contentFit="contain"
+                      cachePolicy="memory-disk"
+                    />
+
+                    {!!lab.helperAppliedSeconds && (
+                      <Text style={styles.helperSaved}>
+                        - {formatCountdown(lab.helperAppliedSeconds * 1000)}
+                      </Text>
+                    )}
+
+                    {lab.recurrentHelper && (
+                      <View style={styles.recurrentBadge}>
+                        <Ionicons name="repeat" size={10} color="#fbbf24" />
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
             </View>
           </View>
 

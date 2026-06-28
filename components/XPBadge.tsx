@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { Image } from "expo-image";
 import { Text, View } from "react-native";
 
@@ -12,7 +13,7 @@ export function XPBadge({ level }: { level: number }) {
       }}
     >
       <Image
-        source={require("@/assets/images/clash/xp.png")}
+        source={{ uri: `${ENV.CDN_BASE}/entities/resources/xp.png` }}
         style={{
           width: 24,
           height: 24,

@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { PlayerProfile } from "@/types/player";
 import { EntityRecord } from "@/types/upgrade";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -114,7 +115,7 @@ export default function ProfileHeader({
 
           <View style={styles.trophyRow}>
             <Image
-              source={require("@/assets/images/clash/trophy.png")}
+              source={{ uri: `${ENV.CDN_BASE}/entities/other/trophy.png` }}
               style={styles.trophyIcon}
               contentFit="contain"
             />
@@ -175,7 +176,7 @@ export default function ProfileHeader({
 
             <View style={styles.trophyRow}>
               <Image
-                source={require("@/assets/images/clash/trophy.png")}
+                source={{ uri: `${ENV.CDN_BASE}/entities/other/trophy.png` }}
                 style={styles.trophyIcon}
                 contentFit="contain"
               />

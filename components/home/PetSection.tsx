@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
 import { formatCountdown } from "@/utils/formatCountdown";
@@ -42,7 +43,9 @@ export function PetSection({
           <View style={styles.titleRow}>
             <View style={{}}>
               <Image
-                source={require("@/assets/images/clash/1000068.png")}
+                source={{
+                  uri: `${ENV.CDN_BASE}/entities/buildings/1000068.png`,
+                }}
                 style={{ width: 40, height: 40 }}
                 contentFit="contain"
                 cachePolicy="memory-disk"

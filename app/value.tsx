@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { XPBadge } from "@/components/XPBadge";
+import { ENV } from "@/config/env";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { getAccountState } from "@/services/accountStateService";
 import { Upgrade } from "@/types/upgrade";
@@ -241,7 +242,9 @@ export default function ValueScreen() {
                     }}
                   >
                     <Image
-                      source={require("@/assets/images/clash/trophy.png")}
+                      source={{
+                        uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                      }}
                       style={{
                         width: 15,
                         height: 15,
@@ -277,7 +280,9 @@ export default function ValueScreen() {
                     }}
                   >
                     <Image
-                      source={require("@/assets/images/clash/trophy.png")}
+                      source={{
+                        uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                      }}
                       style={{
                         width: 15,
                         height: 15,

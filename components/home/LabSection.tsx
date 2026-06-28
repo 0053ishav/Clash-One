@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { calculateProgress } from "@/utils/calculateProgress";
@@ -35,8 +36,10 @@ export function LabSection({
               <Image
                 source={
                   village === "home"
-                    ? require("@/assets/images/clash/1000007.png")
-                    : require("@/assets/images/clash/1000046.png")
+                    ? { uri: `${ENV.CDN_BASE}/entities/buildings/1000007.png` }
+                    : {
+                        uri: `${ENV.CDN_BASE}/entities/builder/buildings/1000046.png`,
+                      }
                 }
                 style={{ width: 40, height: 40 }}
                 contentFit="contain"

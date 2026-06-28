@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { PlayerFull } from "@/types/playerFull";
 import { EntityRecord } from "@/types/upgrade";
 import {
@@ -101,7 +102,7 @@ export default function ProfileHeroCard({
           </Text>
           <View style={styles.trophyRow}>
             <Image
-              source={require("@/assets/images/clash/trophy.png")}
+              source={{ uri: `${ENV.CDN_BASE}/entities/other/trophy.png` }}
               style={styles.trophyIcon}
               contentFit="contain"
             />
@@ -169,7 +170,7 @@ export default function ProfileHeroCard({
 
             <View style={styles.trophyRow}>
               <Image
-                source={require("@/assets/images/clash/trophy.png")}
+                source={{ uri: `${ENV.CDN_BASE}/entities/other/trophy.png` }}
                 style={styles.trophyIcon}
                 contentFit="contain"
               />

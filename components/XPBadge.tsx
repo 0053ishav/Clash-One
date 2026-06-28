@@ -13,7 +13,7 @@ export function XPBadge({ level }: { level: number }) {
       }}
     >
       <Image
-        source={{ uri: `${ENV.CDN_BASE}/entities/resources/xp.png` }}
+        source={{ uri: `${ENV.CDN_BASE}/entities/other/xp.png` }}
         style={{
           width: 24,
           height: 24,

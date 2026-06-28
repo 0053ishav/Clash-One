@@ -31,6 +31,7 @@ import * as Application from "expo-application";
 import { ChiefCard } from "@/components/ChiefCard";
 import { SupportModal } from "@/components/SupportModal";
 import { XPBadge } from "@/components/XPBadge";
+import { ENV } from "@/config/env";
 import { requestNotificationPermissions } from "@/services/notifications/notificationPermissions";
 import { restorePurchases } from "@/services/revenueCat/purchase";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
@@ -332,7 +333,9 @@ export default function SettingsScreen() {
                     {typeof profile.trophies === "number" && (
                       <View style={styles.trophyRow}>
                         <Image
-                          source={require("@/assets/images/clash/trophy.png")}
+                          source={{
+                            uri: `${ENV.CDN_BASE}/entities/other/trophy.png`,
+                          }}
                           style={styles.trophyIcon}
                           contentFit="contain"
                         />

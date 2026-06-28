@@ -1,4 +1,5 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { SupportModal } from "@/components/SupportModal";
 import { initDatabase } from "@/db/initDatabase";
 import { useInAppUpdates } from "@/hooks/useInAppUpdate";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
@@ -6,6 +7,7 @@ import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
 import { syncPremiumStatus } from "@/services/revenueCat/premium";
 import { initRevenueCat } from "@/services/revenueCat/revenueCat";
+import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { isOnboardingComplete } from "@/storage/appConfig";
 import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
@@ -15,12 +17,14 @@ import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
+import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { Redirect, Stack, usePathname, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 Sentry.init({
   dsn: "https://d2e012e1209309eb649f09114ae454a6@o4511557895258112.ingest.us.sentry.io/4511557898272768",
@@ -44,6 +48,15 @@ Sentry.init({
   // spotlight: __DEV__,
 });
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowList: true,
+  }),
+});
+
 export default Sentry.wrap(function RootLayout() {
   const loadActiveAccount = useAccountStore((s) => s.loadActiveAccount);
   const [bootState, setBootState] = useState<"loading" | "ready" | "error">(
@@ -59,30 +72,38 @@ export default Sentry.wrap(function RootLayout() {
   const loadAccounts = useAccountStore((s) => s.loadAccounts);
   const loadLastSync = useAccountStore((s) => s.loadLastSync);
 
+  const [retryCount, setRetryCount] = useState(0);
+  const [showSupport, setShowSupport] = useState(false);
+  const [debugInfo, setDebugInfo] = useState("");
+
+  const openSupport = async () => {
+    const info = await buildSupportInfo();
+    setDebugInfo(info);
+    setShowSupport(true);
+  };
+
   const runBootstrap = useCallback(async () => {
     try {
       await initDatabase();
+
+      await loadAccounts();
+      await loadActiveAccount();
+
       await initRevenueCat();
       await syncPremiumStatus();
-      await loadAccounts();
-      loadLastSync();
-      await loadActiveAccount();
+
       await ensureCraftedLoaded();
+
       await configureNotifications();
 
       await syncEntities();
       await hydrateEntities();
+
       initWidgetManager();
       startSmartWidgetScheduler();
       emitWidgetUpdate();
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowBanner: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
-          shouldShowList: true,
-        }),
-      });
+
+      loadLastSync();
 
       setBootState("ready");
     } catch (e) {
@@ -102,7 +123,7 @@ export default Sentry.wrap(function RootLayout() {
     } else {
       setBootState("ready");
     }
-  }, [complete]);
+  }, [complete, runBootstrap]);
 
   const {
     updateModalVisible,
@@ -178,7 +199,7 @@ export default Sentry.wrap(function RootLayout() {
     return () => {
       sub.remove();
     };
-  }, []);
+  }, [router]);
 
   if (!complete && !isOnboardingRoute) {
     return <Redirect href="/onboarding" />;
@@ -215,13 +236,35 @@ export default Sentry.wrap(function RootLayout() {
   if (bootState === "error") {
     return (
       <View style={[styles.container, styles.loadingOverlay]}>
-        <View style={styles.loadingContent}>
-          <View style={styles.imageWrapper}>
-            <Image
-              source={require("@/assets/images/builder/builder-working.png")}
-              style={styles.builderImage}
-              resizeMode="contain"
+        {retryCount >= 2 && (
+          <Pressable
+            style={styles.supportButton}
+            onPress={openSupport}
+            hitSlop={12}
+          >
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={22}
+              color="#94a3b8"
             />
+          </Pressable>
+        )}
+
+        <SupportModal
+          visible={showSupport}
+          onClose={() => setShowSupport(false)}
+          debugInfo={debugInfo}
+        />
+
+        <View style={styles.loadingContent}>
+          <View style={styles.villagerImageWrapper}>
+            <View style={styles.villagerCrop}>
+              <Image
+                source={require("@/assets/images/clash/villager.png")}
+                style={styles.villagerImage}
+                resizeMode="contain"
+              />
+            </View>
           </View>
 
           <Text style={styles.loadingTitle}>Village Not Ready</Text>
@@ -232,6 +275,7 @@ export default Sentry.wrap(function RootLayout() {
 
           <Pressable
             onPress={() => {
+              setRetryCount((v) => v + 1);
               setBootState("loading");
               runBootstrap();
             }}
@@ -256,46 +300,51 @@ export default Sentry.wrap(function RootLayout() {
       </View>
     );
   }
+
   return (
-    <RemoteConfigProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="upload-json" options={{ headerShown: false }} />
-        {/* <Stack.Screen name="add-upgrade" options={{ headerShown: false }} /> */}
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      </Stack>
-      <ConfirmModal
-        visible={updateModalVisible}
-        title="New Version Available"
-        message={`A newer version of Clash One is available.
+    <GestureHandlerRootView>
+      <RemoteConfigProvider>
+        <>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="upload-json" options={{ headerShown: false }} />
+            {/* <Stack.Screen name="add-upgrade" options={{ headerShown: false }} /> */}
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          </Stack>
+          <ConfirmModal
+            visible={updateModalVisible}
+            title="New Version Available"
+            message={`A newer version of Clash One is available.
 
 Version: ${storeVersion ?? "Latest"}
 
 • Bug fixes
-• Performance improvements
 • New features
+• Performance improvements
 
 Update now for the best experience.`}
-        confirmText="Update"
-        cancelText="Later"
-        onConfirm={async () => {
-          track("update_accepted");
+            confirmText="Update"
+            cancelText="Later"
+            onConfirm={async () => {
+              track("update_accepted");
 
-          setUpdateModalVisible(false);
+              setUpdateModalVisible(false);
 
-          await startUpdate();
-        }}
-        onCancel={() => {
-          track("update_dismissed");
+              await startUpdate();
+            }}
+            onCancel={() => {
+              track("update_dismissed");
 
-          setUpdateModalVisible(false);
-        }}
-      />
-    </RemoteConfigProvider>
+              setUpdateModalVisible(false);
+            }}
+          />
+        </>
+      </RemoteConfigProvider>
+    </GestureHandlerRootView>
   );
 });
 
@@ -308,14 +357,28 @@ const styles = StyleSheet.create({
   loadingOverlay: {
     flex: 1,
     backgroundColor: "#0f172a",
-    justifyContent: "center",
-    alignItems: "center",
   },
 
   loadingContent: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    gap: 16,
+    paddingHorizontal: 32,
+  },
+
+  supportButton: {
+    position: "absolute",
+    top: 60,
+    right: 24,
+    zIndex: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(30,41,59,0.85)",
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   imageWrapper: {
@@ -325,6 +388,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
     zIndex: 1,
+  },
+
+  villagerImageWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+  },
+
+  villagerCrop: {
+    width: 180,
+    height: 120,
+    overflow: "hidden",
+    position: "relative",
+  },
+
+  villagerImage: {
+    width: 180,
+    height: 240,
+  },
+
+  fadeOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 50,
+    backgroundColor: "#0f172a",
+    opacity: 0.8,
   },
 
   builderImage: {

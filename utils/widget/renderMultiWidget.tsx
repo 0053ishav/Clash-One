@@ -7,9 +7,6 @@ import { getWidgetCache, setWidgetCache } from "./widgetCache";
 
 export async function renderMultiWidget() {
   try {
-    // const { accounts } = useAccountStore.getState();
-    // const isPremium = usePremiumStore.getState().isPremium;
-
     const accounts = await getAccounts();
 
     const isPremium = await syncPremium(); // ensures we have the latest premium status before rendering the widget

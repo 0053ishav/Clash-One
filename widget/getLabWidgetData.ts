@@ -41,8 +41,8 @@ export async function getLabWidgetData(inputTag?: string) {
   // ✅ SINGLE SOURCE OF TRUTH
   const state = await getAccountState(tag);
 
-  const normal = state.lab.normal;
-  const goblin = state.lab.goblin;
+  const normal = state.lab.home.normal;
+  const goblin = state.lab.home.goblin;
 
   // 🟢 IDLE
   if (!normal && !goblin) {

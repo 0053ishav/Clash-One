@@ -3,6 +3,7 @@ import { getAccountState } from "@/services/accountStateService";
 import { ENABLE_GROUPING, getNotificationsEnabled, GROUP_WINDOW_MS, MAX_GROUP_BODY_LINES } from "@/storage/notificationConfig";
 import { useCraftedStore } from "@/stores/craftedEventStore";
 import { usePremiumStore } from "@/stores/premiumStore";
+import { Village } from "@/types/entity";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -15,6 +16,7 @@ type EventPhase = "START" | "MID" | "ENDING";
 export type UpgradeEvent = {
   id: string;
   playerTag: string;
+  village: Village;
   accountName: string;
   accountColor: string;
 
@@ -52,9 +54,142 @@ function getChannelId(type: UpgradeEvent["type"]) {
   }
 }
 
+function collectBuilderEvents(
+  allEvents: UpgradeEvent[],
+  state: Awaited<ReturnType<typeof getAccountState>>,
+  acc: any,
+  village: Village,
+  builderCount: number,
+  isPremium: boolean,
+) {
+  const PRE_ALERT_MS = 10 * 60 * 1000;
+  const IDLE_ALERT_MS = 10 * 60 * 1000;
+
+  const builders =
+    village === "home"
+      ? state.builders.home
+      : state.builders.builderBase;
+
+  for (const b of builders) {
+    if (!b.endTime) continue;
+
+    const slot =
+      typeof b.builderSlot === "number"
+        ? b.builderSlot
+        : "builder";
+
+    allEvents.push({
+      id: `builder-${village}-${acc.tag}-${slot}`,
+
+      village,
+
+      playerTag: acc.tag,
+      accountName: acc.name,
+      accountColor: acc.color,
+
+      type: "BUILDER",
+
+      entityId: String(slot),
+      entityName: b.entity,
+
+      level: b.currentLevel,
+      nextLevel: b.nextLevel,
+
+      finishTimestamp: b.endTime,
+    });
+
+    if (!isPremium) continue;
+
+    const preTime = b.endTime - PRE_ALERT_MS;
+    const idleTime = b.endTime + IDLE_ALERT_MS;
+
+    if (preTime > Date.now()) {
+      allEvents.push({
+        id: `builder-pre-${village}-${acc.tag}-${slot}`,
+        village,
+
+        playerTag: acc.tag,
+        accountName: acc.name,
+        accountColor: acc.color,
+
+        type: "BUILDER",
+
+        entityId: String(slot),
+        entityName: b.entity,
+
+        level: b.currentLevel,
+        nextLevel: b.nextLevel,
+
+        finishTimestamp: preTime,
+      });
+    }
+
+    if (idleTime > Date.now()) {
+      allEvents.push({
+        id: `builder-idle-${village}-${acc.tag}-${slot}`,
+        village,
+
+        playerTag: acc.tag,
+        accountName: acc.name,
+        accountColor: acc.color,
+
+        type: "BUILDER",
+
+        entityId: String(slot),
+        entityName: b.entity,
+
+        level: b.currentLevel,
+        nextLevel: b.nextLevel,
+
+        finishTimestamp: idleTime,
+      });
+    }
+  }
+}
+
+function collectLabEvents(
+  allEvents: UpgradeEvent[],
+  state: Awaited<ReturnType<typeof getAccountState>>,
+  acc: any,
+  village: Village,
+) {
+  const labs =
+    village === "home"
+      ? [
+        state.lab.home.normal,
+        state.lab.home.goblin,
+      ].filter(Boolean)
+      : [state.lab.builderBase.normal].filter(Boolean);
+
+  for (const l of labs) {
+    if (!l?.endTime) continue;
+
+    allEvents.push({
+      id: `lab-${village}-${acc.tag}-${l.labSlot ?? "lab"}`,
+
+      village,
+
+      playerTag: acc.tag,
+      accountName: acc.name,
+      accountColor: acc.color,
+
+      type: "LAB",
+
+      entityId: l.labSlot ?? "lab",
+
+      entityName: l.entity,
+
+      level: l.currentLevel,
+      nextLevel: l.nextLevel,
+
+      finishTimestamp: l.endTime,
+    });
+  }
+}
+
 export async function configureNotifications() {
   if (Platform.OS === "android") {
- 
+
     await Notifications.setNotificationChannelAsync("builder", {
       name: "Builder Alerts",
       importance: Notifications.AndroidImportance.HIGH,
@@ -87,9 +222,9 @@ export async function configureNotifications() {
       sound: "default",
     });
 
-          const channels = await Notifications.getNotificationChannelsAsync();
+    const channels = await Notifications.getNotificationChannelsAsync();
 
-          
+
     // log(
     //   "🔔 created CHANNELS",
     //   channels.map(c => ({
@@ -100,6 +235,7 @@ export async function configureNotifications() {
     // );
   }
 }
+
 /**
  * MAIN ENTRY POINT
  */
@@ -122,90 +258,122 @@ export async function scheduleAllNotifications(accounts: any[]) {
       const PRE_ALERT_MS = 10 * 60 * 1000;   // 10 min before
       const IDLE_ALERT_MS = 10 * 60 * 1000;  // 10 min after
       // BUILDERS
-      for (const b of state.builders.home) {
-        if (!b.endTime) continue;
+      // for (const b of state.builders.home) {
+      //   if (!b.endTime) continue;
 
-        allEvents.push({
-          id: `builder-${acc.tag}-${b.builderSlot}`,
+      //   allEvents.push({
+      //     id: `builder-${acc.tag}-${b.builderSlot}`,
 
-          playerTag: acc.tag,
-          accountName: acc.name,
-          accountColor: acc.color,
+      //     playerTag: acc.tag,
+      //     accountName: acc.name,
+      //     accountColor: acc.color,
 
-          type: "BUILDER",
-          entityId: b.builderSlot !== undefined ? String(b.builderSlot) : `fallback-${b.id}`,
-          entityName: b.entity,
-          level: b.currentLevel,
-          nextLevel: b.nextLevel,
+      //     type: "BUILDER",
+      //     entityId: b.builderSlot !== undefined ? String(b.builderSlot) : `fallback-${b.id}`,
+      //     entityName: b.entity,
+      //     level: b.currentLevel,
+      //     nextLevel: b.nextLevel,
 
-          finishTimestamp: b.endTime,
-        });
+      //     finishTimestamp: b.endTime,
+      //   });
 
-        if (isPremium) {
-          const preTime = b.endTime - PRE_ALERT_MS;
-          const idleTime = b.endTime + IDLE_ALERT_MS;
+      //   if (isPremium) {
+      //     const preTime = b.endTime - PRE_ALERT_MS;
+      //     const idleTime = b.endTime + IDLE_ALERT_MS;
 
-          // PRE ALERT
-          if (preTime > Date.now()) {
-            allEvents.push({
-              id: `builder-pre-${acc.tag}-${b.builderSlot}`,
-              playerTag: acc.tag,
-              accountName: acc.name,
-              accountColor: acc.color,
-              type: "BUILDER",
-              entityId: String(b.builderSlot),
-              entityName: b.entity,
-              level: b.currentLevel,
-              nextLevel: b.nextLevel,
-              finishTimestamp: preTime,
-            });
-          }
+      //     // PRE ALERT
+      //     if (preTime > Date.now()) {
+      //       allEvents.push({
+      //         id: `builder-pre-${acc.tag}-${b.builderSlot}`,
+      //         playerTag: acc.tag,
+      //         accountName: acc.name,
+      //         accountColor: acc.color,
+      //         type: "BUILDER",
+      //         entityId: String(b.builderSlot),
+      //         entityName: b.entity,
+      //         level: b.currentLevel,
+      //         nextLevel: b.nextLevel,
+      //         finishTimestamp: preTime,
+      //       });
+      //     }
 
-          // IDLE WARNING
-          if (idleTime > Date.now()) {
-            allEvents.push({
-              id: `builder-idle-${acc.tag}-${b.builderSlot}`,
-              playerTag: acc.tag,
-              accountName: acc.name,
-              accountColor: acc.color,
-              type: "BUILDER",
-              entityId: String(b.builderSlot),
-              entityName: b.entity,
-              level: b.currentLevel,
-              nextLevel: b.nextLevel,
-              finishTimestamp: idleTime,
-            });
-          }
-        }
-      }
+      //     // IDLE WARNING
+      //     if (idleTime > Date.now()) {
+      //       allEvents.push({
+      //         id: `builder-idle-${acc.tag}-${b.builderSlot}`,
+      //         playerTag: acc.tag,
+      //         accountName: acc.name,
+      //         accountColor: acc.color,
+      //         type: "BUILDER",
+      //         entityId: String(b.builderSlot),
+      //         entityName: b.entity,
+      //         level: b.currentLevel,
+      //         nextLevel: b.nextLevel,
+      //         finishTimestamp: idleTime,
+      //       });
+      //     }
+      //   }
+      // }
+
+      collectBuilderEvents(
+        allEvents,
+        state,
+        acc,
+        "home",
+        acc.builderCount ?? 6,
+        isPremium,
+      );
+
+      collectBuilderEvents(
+        allEvents,
+        state,
+        acc,
+        "builderBase",
+        acc.builderBaseBuilderCount ?? 2,
+        isPremium,
+      );
 
       // LAB (normal + goblin)
-      const labs = [state.lab.home.normal, state.lab.home.goblin].filter(Boolean);
+      // const labs = [state.lab.home.normal, state.lab.home.goblin].filter(Boolean);
 
-      for (const l of labs) {
-        if (!l || !l.endTime) continue;
-        allEvents.push({
-          id: `lab-${acc.tag}-${l.labSlot}`,
+      // for (const l of labs) {
+      //   if (!l || !l.endTime) continue;
+      //   allEvents.push({
+      //     id: `lab-${acc.tag}-${l.labSlot}`,
 
-          playerTag: acc.tag,
-          accountName: acc.name,
-          accountColor: acc.color,
+      //     playerTag: acc.tag,
+      //     accountName: acc.name,
+      //     accountColor: acc.color,
 
-          type: "LAB",
-          entityId: l.labSlot ?? "lab",
-          entityName: l.entity,
-          level: l.currentLevel,
-          nextLevel: l.nextLevel,
+      //     type: "LAB",
+      //     entityId: l.labSlot ?? "lab",
+      //     entityName: l.entity,
+      //     level: l.currentLevel,
+      //     nextLevel: l.nextLevel,
 
-          finishTimestamp: l.endTime,
-        });
-      }
+      //     finishTimestamp: l.endTime,
+      //   });
+      // }
+
+      collectLabEvents(
+        allEvents,
+        state,
+        acc,
+        "home",
+      );
+
+      collectLabEvents(
+        allEvents,
+        state,
+        acc,
+        "builderBase",
+      );
 
       // PET
       if (state.pet?.endTime) {
         allEvents.push({
           id: `pet-${acc.tag}`,
-
+          village: "home",
           playerTag: acc.tag,
           accountName: acc.name,
           accountColor: acc.color,
@@ -245,6 +413,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
         if (crafted.hasNewEvent) {
           allEvents.push({
             id: `crafted-start-${acc.tag}-${end}`,
+            village: "home",
             playerTag: acc.tag,
             accountName: acc.name,
             accountColor: acc.color,
@@ -260,6 +429,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
         if (mid > Date.now()) {
           allEvents.push({
             id: `crafted-mid-${acc.tag}-${end}`,
+            village: "home",
             playerTag: acc.tag,
             accountName: acc.name,
             accountColor: acc.color,
@@ -275,6 +445,7 @@ export async function scheduleAllNotifications(accounts: any[]) {
         if (endingSoon > Date.now()) {
           allEvents.push({
             id: `crafted-ending-${acc.tag}-${end}`,
+            village: "home",
             playerTag: acc.tag,
             accountName: acc.name,
             accountColor: acc.color,
@@ -327,10 +498,10 @@ export async function scheduleAllNotifications(accounts: any[]) {
     const scheduled =
       await Notifications.getAllScheduledNotificationsAsync();
 
-//  log(
-//   "📦 AFTER SCHEDULE",
-//   scheduled
-// );
+    //  log(
+    //   "📦 AFTER SCHEDULE",
+    //   scheduled
+    // );
   } catch (e) {
     console.error("NotificationEngine error:", e);
   }
@@ -344,16 +515,16 @@ export async function scheduleAllNotifications(accounts: any[]) {
 async function cancelAllScheduledNotifications() {
   const scheduled =
     await Notifications.getAllScheduledNotificationsAsync();
-// log(
-//   "🗑️ CANCELLING",
-//   scheduled.map(n => ({
-//     id: n.identifier,
-//     fireAt:
-//       "value" in (n.trigger as any)
-//         ? new Date((n.trigger as any).value).toISOString()
-//         : null,
-//   }))
-// );
+  // log(
+  //   "🗑️ CANCELLING",
+  //   scheduled.map(n => ({
+  //     id: n.identifier,
+  //     fireAt:
+  //       "value" in (n.trigger as any)
+  //         ? new Date((n.trigger as any).value).toISOString()
+  //         : null,
+  //   }))
+  // );
   await Promise.all(
     scheduled.map((n) =>
       Notifications.cancelScheduledNotificationAsync(n.identifier)
@@ -408,18 +579,26 @@ function groupEvents(
   return groups;
 }
 
-function getTitle(type: UpgradeEvent["type"]) {
-  switch (type) {
+function getTitle(event: UpgradeEvent) {
+  switch (event.type) {
     case "BUILDER":
-      return "Builder free ⚡";
+      return event.village === "builderBase"
+        ? "Builder Base Ready ⚡"
+        : "Builder Ready ⚡";
+
     case "LAB":
-      return "Research ready 🧪";
+      return event.village === "builderBase"
+        ? "Star Laboratory Ready 🧪"
+        : "Research Ready 🧪";
+
     case "PET":
-      return "Pet ready 🐾";
+      return "Pet Ready 🐾";
+
     case "CRAFTED_EVENT":
-      return "🔥 Limited Event Live";
+      return "🔥 Limited Event";
   }
 }
+
 /**
  * SCHEDULE GROUP NOTIFICATION
  */
@@ -430,7 +609,7 @@ async function scheduleGroupNotification(group: {
   const now = Date.now();
 
   if (group.time <= now - 30000) return;
-  
+
   // log("SCHEDULING:", 
   //   new Date(group.time).toISOString(), 
   //   group.time - Date.now(),
@@ -516,33 +695,52 @@ async function scheduleGroupNotification(group: {
     let title = "";
     let body = "";
 
+    const villageLabel =
+      e.village === "builderBase"
+        ? "🛠 Builder Base"
+        : "🏠 Home";
+
     if (isPre) {
       title = "⏳ Almost Done";
-      body = `${e.accountName} • ${e.entityName} finishing soon\nPrepare next upgrade`;
+
+      body =
+        `${e.accountName} • ${villageLabel}\n` +
+        `${e.entityName} finishing soon\n` +
+        `Prepare next upgrade`;
+
     } else if (isIdle) {
       title = "🚨 Builder Idle";
-      body = `${e.accountName} • ${e.entityName} finished\nYou’re wasting time`;
+
+      body =
+        `${e.accountName} • ${villageLabel}\n` +
+        `${e.entityName} finished\n` +
+        `You are wasting time`;
+
     } else {
-      title = getTitle(e.type);
-      body = `${e.accountName} • ${e.entityName}${e.nextLevel ? ` → Lv ${e.nextLevel}` : ""}\nStart next upgrade`;
+      title = getTitle(e);
+
+      body =
+        `${e.accountName} • ${villageLabel}\n` +
+        `${e.entityName}${e.nextLevel ? ` → Lv ${e.nextLevel}` : ""}` +
+        `\nStart next upgrade`;
     }
 
-//     log(
-//   "📅 SCHEDULE",
-//   {
-//     id,
-//     title,
-//     channel:
-//       Platform.OS === "android"
-//         ? getChannelId(e.type)
-//         : "ios",
-//     fireInMinutes: Math.round(
-//       (group.time - Date.now()) / 60000
-//     ),
-//     fireAt: new Date(group.time).toISOString(),
-//   }
-// );
-   const notificationId =  await Notifications.scheduleNotificationAsync({
+    //     log(
+    //   "📅 SCHEDULE",
+    //   {
+    //     id,
+    //     title,
+    //     channel:
+    //       Platform.OS === "android"
+    //         ? getChannelId(e.type)
+    //         : "ios",
+    //     fireInMinutes: Math.round(
+    //       (group.time - Date.now()) / 60000
+    //     ),
+    //     fireAt: new Date(group.time).toISOString(),
+    //   }
+    // );
+    const notificationId = await Notifications.scheduleNotificationAsync({
       identifier: id,
       content: {
         title,
@@ -563,11 +761,11 @@ async function scheduleGroupNotification(group: {
       },
     });
 
-//     log(
-//   "✅ SCHEDULED",
-//   notificationId,
-//   title
-// );
+    //     log(
+    //   "✅ SCHEDULED",
+    //   notificationId,
+    //   title
+    // );
     return;
   }
 
@@ -609,7 +807,12 @@ async function scheduleGroupNotification(group: {
         return `🔥 Event active • ${e.accountName}`;
       }
 
-      return `${e.entityName}${e.nextLevel ? ` → Lv ${e.nextLevel}` : ""
+      const village =
+        e.village === "builderBase"
+          ? "🛠"
+          : "🏠";
+
+      return `${village} ${e.entityName}${e.nextLevel ? ` → Lv ${e.nextLevel}` : ""
         } • ${e.accountName}`;
     })
     .join("\n");
@@ -637,15 +840,15 @@ async function scheduleGroupNotification(group: {
         : counts.LAB > 0
           ? "LAB"
           : "PET";
-// log(
-//   "📦 GROUPED",
-//   title,
-//   group.events.map(e => ({
-//     id: e.id,
-//     type: e.type,
-//     entity: e.entityName,
-//   }))
-// );
+  // log(
+  //   "📦 GROUPED",
+  //   title,
+  //   group.events.map(e => ({
+  //     id: e.id,
+  //     type: e.type,
+  //     entity: e.entityName,
+  //   }))
+  // );
   await Notifications.scheduleNotificationAsync({
     identifier: id,
     content: {

@@ -1,3 +1,4 @@
+import { ENV } from "@/config/env";
 import { requestGalleryPermission } from "@/services/images/imagePicker";
 import { convertImagesToBase64 } from "@/services/images/supportAttachmentService";
 import { track } from "@/utils/analytics/analytics";
@@ -11,6 +12,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -39,6 +41,7 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
   const [category, setCategory] = useState("Bug Report");
 
   const [message, setMessage] = useState("");
+  const [replyEmail, setReplyEmail] = useState("");
 
   const [sending, setSending] = useState(false);
 
@@ -46,6 +49,10 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
 
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
+
+  const [includeDebugInfo, setIncludeDebugInfo] = useState(true);
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   const sendEmail = async () => {
     if (sending) return;
@@ -61,16 +68,17 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
       });
 
       const screenshots = await convertImagesToBase64(attachments);
-      const response = await fetch("https://support.clashwidget.online", {
+      const response = await fetch(ENV.BACKEND_EMAIL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           supportId,
+          replyEmail,
           category,
           message,
-          debugInfo,
+          debugInfo: includeDebugInfo ? debugInfo : undefined,
           screenshots,
         }),
       });
@@ -174,6 +182,19 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               style={styles.input}
             /> */}
 
+              <Text style={styles.label}>Reply Email (Recommended)</Text>
+
+              <TextInput
+                value={replyEmail}
+                onChangeText={setReplyEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="you@example.com"
+                placeholderTextColor="#64748b"
+                style={styles.input}
+              />
+
               <Text style={styles.label}>Message</Text>
 
               <TextInput
@@ -259,6 +280,73 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 </ScrollView>
               )}
 
+              <Text style={styles.label}>Privacy</Text>
+
+              <View style={styles.privacyCard}>
+                <Text style={styles.privacyText}>
+                  Diagnostic information helps us investigate issues faster. You
+                  can review exactly what will be shared before sending.
+                </Text>
+
+                <Pressable
+                  style={styles.checkboxRow}
+                  onPress={() => setIncludeDebugInfo(!includeDebugInfo)}
+                >
+                  <Ionicons
+                    name={includeDebugInfo ? "checkbox" : "square-outline"}
+                    size={22}
+                    color="#fbbf24"
+                  />
+
+                  <Text style={styles.checkboxText}>
+                    Include diagnostic information (Recommended)
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.debugButton}
+                  onPress={() => setShowDebugInfo(true)}
+                >
+                  <Ionicons
+                    name="document-text-outline"
+                    size={18}
+                    color="#fbbf24"
+                  />
+
+                  <Text style={styles.debugText}>
+                    Review Diagnostic Information
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.debugButton}
+                  onPress={() => Clipboard.setStringAsync(debugInfo)}
+                >
+                  <Ionicons name="copy-outline" size={18} color="#fbbf24" />
+
+                  <Text style={styles.debugText}>
+                    Copy Diagnostic Information
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable
+                style={styles.checkboxRow}
+                onPress={() => setConsentGiven(!consentGiven)}
+              >
+                <Ionicons
+                  name={consentGiven ? "checkbox" : "square-outline"}
+                  size={22}
+                  color="#fbbf24"
+                />
+
+                <Text style={styles.checkboxText}>
+                  I consent to Clash One processing the information I choose to
+                  submit, including my message, optional diagnostic information
+                  and any screenshots, to investigate my support request.
+                </Text>
+              </Pressable>
+
               <View style={styles.guidelines}>
                 <Text style={styles.guidelineTitle}>Helpful Information</Text>
 
@@ -273,18 +361,49 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                 </Text>
 
                 <Text style={styles.guidelineText}>
-                  We automatically include app and device information to help
-                  diagnose issues. No personal information is shared.
+                  Diagnostic information helps us investigate issues faster.
+                  Before sending, you can review exactly what information will
+                  be shared. Only information required to troubleshoot your
+                  request is included.
                 </Text>
               </View>
 
               <Pressable
-                style={styles.debugButton}
-                onPress={() => Clipboard.setStringAsync(debugInfo)}
+                style={styles.checkboxRow}
+                onPress={() => setConsentGiven(!consentGiven)}
               >
-                <Ionicons name="copy-outline" size={18} color="#fbbf24" />
+                <Ionicons
+                  name={consentGiven ? "checkbox" : "square-outline"}
+                  size={22}
+                  color="#fbbf24"
+                />
 
-                <Text style={styles.debugText}>Copy Debug Info</Text>
+                <Text style={styles.checkboxText}>
+                  I consent to sending the diagnostic information shown above,
+                  my game account information and any screenshots I attach to
+                  Clash One Support for troubleshooting.
+                </Text>
+              </Pressable>
+
+              <Pressable
+                disabled={
+                  message.trim().length < 10 || sending || !consentGiven
+                }
+                style={[
+                  styles.sendButton,
+                  (message.trim().length < 10 || sending || !consentGiven) && {
+                    opacity: 0.45,
+                  },
+                ]}
+                onPress={sendEmail}
+              >
+                <Text style={styles.sendText}>
+                  {sending ? "Sending Feedback..." : "Send Feedback"}
+                </Text>
+              </Pressable>
+
+              <Pressable style={styles.cancelButton} onPress={onClose}>
+                <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
 
               <View
@@ -321,25 +440,6 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
                   We typically respond within 48 hours.
                 </Text>
               </View>
-
-              <Pressable
-                style={[
-                  styles.sendButton,
-                  (message.trim().length < 10 || sending) && {
-                    opacity: 0.5,
-                  },
-                ]}
-                disabled={message.trim().length < 10 || sending}
-                onPress={sendEmail}
-              >
-                <Text style={styles.sendText}>
-                  {sending ? "Sending Feedback..." : "Send Feedback"}
-                </Text>
-              </Pressable>
-
-              <Pressable style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
             </ScrollView>
           </View>
         </View>
@@ -354,8 +454,11 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
           setShowSuccessModal(false);
 
           setMessage("");
-
           setCategory("Bug Report");
+          setAttachments([]);
+          setIncludeDebugInfo(true);
+          setConsentGiven(false);
+          setShowDebugInfo(false);
           onClose();
         }}
         onCancel={() => {}}
@@ -371,6 +474,30 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
         }}
         onCancel={() => {}}
       />
+
+      <Modal visible={showDebugInfo} animationType="slide">
+        <View style={styles.debugContainer}>
+          <View style={styles.debugHeader}>
+            <Text style={styles.title}>Diagnostic Information</Text>
+
+            <Pressable onPress={() => setShowDebugInfo(false)}>
+              <Ionicons name="close" size={24} color="#94a3b8" />
+            </Pressable>
+          </View>
+          <ScrollView>
+            <Text style={styles.debugInfo}>{debugInfo}</Text>
+          </ScrollView>
+
+          <Pressable
+            style={styles.debugButton}
+            onPress={() => Clipboard.setStringAsync(debugInfo)}
+          >
+            <Ionicons name="copy-outline" size={18} color="#fbbf24" />
+
+            <Text style={styles.debugText}>Copy Diagnostic Information</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -411,6 +538,69 @@ const styles = StyleSheet.create({
     color: "#cbd5e1",
     marginBottom: 8,
     marginTop: 16,
+  },
+
+  privacyCard: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#1e293b",
+  },
+
+  privacyText: {
+    color: "#94a3b8",
+    fontSize: 13,
+    lineHeight: 20,
+  },
+
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#1e293b",
+  },
+
+  checkboxText: {
+    flex: 1,
+    color: "#cbd5e1",
+    fontSize: 13,
+    lineHeight: 20,
+  },
+
+  debugContainer: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 24,
+  },
+
+  debugHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  debugInfo: {
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#1e293b",
+
+    color: "#cbd5e1",
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
 
   attachButton: {

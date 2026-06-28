@@ -150,7 +150,12 @@ export default function ProfileDropdownSheet({
                               { borderColor: acc.color },
                             ]}
                           >
-                            <Text style={styles.avatarInitials}>
+                            <Text
+                              style={[
+                                styles.avatarInitials,
+                                { color: acc.color },
+                              ]}
+                            >
                               {initials}
                             </Text>
                           </View>
@@ -184,7 +189,14 @@ export default function ProfileDropdownSheet({
                         TH{activeAccount.townhall} • {activeAccount.tag}
                       </Text>
                     </View>
-                    <Text style={styles.activeLabel}>ACTIVE</Text>
+                    <Text
+                      style={[
+                        styles.activeLabel,
+                        { color: activeAccount.color },
+                      ]}
+                    >
+                      ACTIVE
+                    </Text>
                   </View>
                 )}
               </View>

@@ -1,5 +1,5 @@
 import { Upgrade } from "@/types/upgrade";
-import { getBuilderStatus } from "@/utils/builderStatus";
+import { getBuilderStatus } from "@/utils/status/builderStatus";
 
 export function canAddBuilderUpgrade(params: {
   activeUpgrades: Upgrade[];

@@ -1,8 +1,8 @@
 "use no memo";
 
 import { useAccountStore } from "@/stores/accountStore";
-import { getBuilderStatus } from "@/utils/builderStatus";
 import { formatCountdown } from "@/utils/formatCountdown";
+import { getBuilderStatus } from "@/utils/status/home/builderStatus";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";

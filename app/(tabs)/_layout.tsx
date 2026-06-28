@@ -1,7 +1,7 @@
 import { ENV } from "@/config/env";
 import { syncPremium } from "@/services/revenueCat/syncPremium";
 import { usePremiumStore } from "@/stores/premiumStore";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
@@ -11,9 +11,7 @@ import {
   TestIds,
 } from "react-native-google-mobile-ads";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 export default function TabLayout() {
-  const TAB_BAR_HEIGHT = 60;
   const adUnitId = __DEV__ ? TestIds.BANNER : ENV.ADS.BANNER_ID;
 
   const insets = useSafeAreaInsets();
@@ -26,9 +24,6 @@ export default function TabLayout() {
   const showBanner = !isPremium;
   const [bannerHeight, setBannerHeight] = useState(0);
 
-  const bottomReserve =
-    insets.bottom + TAB_BAR_HEIGHT + (showBanner ? bannerHeight : 0);
-
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
       <Tabs
@@ -37,11 +32,11 @@ export default function TabLayout() {
           tabBarInactiveTintColor: "#64748b",
 
           tabBarStyle: {
-            backgroundColor: "#1e293b",
+            position: "absolute",
+            backgroundColor: "rgba(30,41,59,0.95)",
             borderTopWidth: 1,
             borderTopColor: "#334155",
 
-            height: bottomReserve,
             paddingBottom: insets.bottom + (showBanner ? bannerHeight : 0),
           },
 
@@ -131,7 +126,10 @@ export default function TabLayout() {
             position: "absolute",
             left: 0,
             right: 0,
-            bottom: insets.bottom,
+            bottom: 0,
+            alignItems: "center",
+            pointerEvents: "box-none",
+            // bottom: insets.bottom,
           }}
         >
           <BannerAd

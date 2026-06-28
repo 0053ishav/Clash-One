@@ -1,19 +1,15 @@
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
-import { posthog } from "@/utils/analytics/posthog";
 import * as Application from "expo-application";
 import * as Device from "expo-device";
 import * as Localization from "expo-localization";
 import * as Notifications from "expo-notifications";
-import { Dimensions, PixelRatio, Platform } from "react-native";
+import { Platform } from "react-native";
 import Purchases from "react-native-purchases";
 
 export async function buildSupportInfo() {
   const state = useAccountStore.getState();
-const { width, height } = Dimensions.get("window");
-const fontScale = PixelRatio.getFontScale();
-const density = PixelRatio.get();
   const notificationsEnabled =
     getNotificationsEnabled?.() ?? false;
 
@@ -25,7 +21,6 @@ const density = PixelRatio.get();
       ? state.profilesByTag?.[state.activeTag]
       : null;
 
-  const posthogId = posthog.getDistinctId();
   const isPremium = usePremiumStore.getState().isPremium;
 
   let revenueCatInfo = `
@@ -33,26 +28,14 @@ RevenueCat:
 Unavailable
 `;
 
-try {
-  const configured = Purchases.isConfigured();
+  try {
+    const configured = Purchases.isConfigured();
 
-  const customerInfo = await configured
-    ? await Purchases.getCustomerInfo()
-    : null;
+    const customerInfo = await configured
+      ? await Purchases.getCustomerInfo()
+      : null;
 
-  const offerings = await configured
-    ? await Purchases.getOfferings()
-    : null;
-
-  const activeEntitlements = customerInfo
-    ? Object.keys(customerInfo.entitlements.active)
-    : [];
-
-  const activeSubscriptions = customerInfo
-    ? customerInfo.activeSubscriptions
-    : [];
-
-  revenueCatInfo = `
+    revenueCatInfo = `
 ------------------------
 RevenueCat
 ------------------------
@@ -60,44 +43,14 @@ RevenueCat
 Configured: ${await configured ? "Yes" : "No"}
 
 RC User ID:
-${customerInfo?.originalAppUserId ?? "Unknown"}
+${await configured ? customerInfo?.originalAppUserId ?? "Unknown" : "N/A"}
 
 Chief Entitlement:
-${customerInfo?.entitlements.active["chief"] ? "Active" : "Inactive"}
-
-Active Entitlements:
-${activeEntitlements.length > 0
-      ? activeEntitlements.join(", ")
-      : "None"}
-
-Active Subscriptions:
-${activeSubscriptions.length > 0
-      ? activeSubscriptions.join(", ")
-      : "None"}
-
-Original Purchase Date:
-${customerInfo?.originalPurchaseDate ?? "Never"}
-
-First Seen:
-${customerInfo?.firstSeen ?? "Unknown"}
-
-Latest Expiration:
-${customerInfo?.latestExpirationDate ?? "N/A"}
-
-Management URL:
-${customerInfo?.managementURL ?? "N/A"}
-
-Current Offering:
-${offerings?.current?.identifier ?? "None"}
-
-Available Packages:
-${offerings?.current?.availablePackages
-      ?.map((p) => p.identifier)
-      .join(", ") || "None"}
+${await configured ? customerInfo?.entitlements.active["chief"] ? "Active" : "Inactive" : "N/A"}
 
 `;
-} catch (e: any) {
-  revenueCatInfo = `
+  } catch (e: any) {
+    revenueCatInfo = `
 ------------------------
 RevenueCat
 ------------------------
@@ -105,7 +58,7 @@ RevenueCat
 Error:
 ${e?.message ?? "Unknown"}
 `;
-}
+  }
 
   return `
 ------------------------
@@ -118,8 +71,7 @@ Android Package:
 ${Application.applicationId ?? "Unknown"}
 
 Platform: ${Platform.OS}
-Android API Level:
-${Platform.OS === "android" ? Device.platformApiLevel : "N/A"}
+Android API Level: ${Platform.OS === "android" ? Device.platformApiLevel : "N/A"}
 OS Version: ${Device.osVersion ?? "Unknown"}
 
 Manufacturer: ${Device.manufacturer ?? "Unknown"}
@@ -131,7 +83,7 @@ Is Physical Device: ${Device.isDevice ? "Yes" : "No"}
 
 Installation Time:
 ${Application.getInstallationTimeAsync
-      ? (await Application.getInstallationTimeAsync()).toLocaleString()
+      ? (await Application.getInstallationTimeAsync()).toISOString()
       : "Unknown"
     }
     
@@ -140,12 +92,6 @@ Timezone: ${Localization.getCalendars()?.[0]?.timeZone ?? "Unknown"}
 Language:
     ${Localization.getLocales()?.[0]?.languageTag ?? "Unknown"}
 
-Screen Width: ${width}
-Screen Height: ${height}
-Font Scale: ${fontScale}
-Pixel Density: ${density}
-Active Profile Exists:
-${activeProfile ? "Yes" : "No"}
 Active Account: ${state.activeTag
       ? state.activeTag : "None"
     }
@@ -164,10 +110,12 @@ Notifications MMKV Enabled: ${notificationsEnabled ? "Yes" : "No"
   Notification Permission:
 ${notificationPermissions.granted ? "Granted" : "Denied"}
 
+Notification Status:
+${notificationPermissions.status}
 
 Last JSON Sync: 
 ${state.activeTag && state.lastJsonSyncMap?.[state.activeTag]
-      ? new Date(state.lastJsonSyncMap[state.activeTag]).toLocaleString()
+      ? new Date(state.lastJsonSyncMap[state.activeTag]).toISOString()
       : "Never"
     }
 
@@ -182,7 +130,6 @@ ${state.activeTag && state.lastJsonSyncMap?.[state.activeTag]
     }
 
 Has Premium: ${isPremium}
-PostHog ID: ${posthogId}
 
 ${revenueCatInfo}
 

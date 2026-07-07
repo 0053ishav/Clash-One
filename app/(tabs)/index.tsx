@@ -169,10 +169,7 @@ export default function HomeScreen() {
         ),
       );
       deleteUpgrade(completedId);
-      await refreshState();
-      emitWidgetUpdate();
-      startSmartWidgetScheduler();
-      await resyncNotifications();
+      await performSync();
       setCompletedId(null);
     }, 800);
     return () => clearTimeout(timeout);
@@ -196,6 +193,24 @@ export default function HomeScreen() {
       duration: 0,
     });
   });
+
+  const performSync = useCallback(async () => {
+    await refreshState();
+    emitWidgetUpdate();
+    startSmartWidgetScheduler();
+    await resyncNotifications();
+  }, [refreshState]);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+
+    try {
+      setRefreshing(true);
+      await performSync();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [performSync, refreshing]);
 
   const { config } = useRemoteConfig();
 
@@ -363,14 +378,6 @@ export default function HomeScreen() {
   const handleRowLongPress = (upgrade: Upgrade) => {
     setSelectedUpgrade(upgrade);
     setActionModalVisible(true);
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshState();
-    emitWidgetUpdate();
-    startSmartWidgetScheduler();
-    setRefreshing(false);
   };
 
   let statusIcon = require("@/assets/images/builder/builder-idle.png");
@@ -624,6 +631,8 @@ export default function HomeScreen() {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="#fbbf24"
+            colors={["#fbbf24"]}
+            progressBackgroundColor="#1e293b"
           />
         }
       >
@@ -1090,10 +1099,7 @@ export default function HomeScreen() {
               onPress={async () => {
                 if (!selectedUpgrade) return;
                 await deleteUpgrade(selectedUpgrade.id);
-                emitWidgetUpdate();
-                await resyncNotifications();
-                startSmartWidgetScheduler();
-                await refreshState();
+                await performSync();
                 setActionModalVisible(false);
               }}
             >

@@ -50,6 +50,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Linking,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -1005,33 +1006,45 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* Color Picker Modal */}
-      {editColorFor && (
+
+      <Modal
+        visible={!!editColorFor}
+        transparent
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={() => setEditColorFor(null)}
+      >
         <View style={styles.colorPickerOverlay}>
           <Pressable
             style={styles.colorPickerBackdrop}
             onPress={() => setEditColorFor(null)}
           />
+
           <View style={styles.colorPickerSheet}>
             <View style={styles.colorPickerHandle} />
+
             <Text style={styles.colorPickerTitle}>
-              Pick color for {editColorFor.name}
+              Pick color for {editColorFor?.name}
             </Text>
+
             <View style={styles.colorGrid}>
               {ACCOUNT_COLORS.map((color) => (
                 <Pressable
                   key={color}
                   style={[
-                    styles.colorSwatch,
+                    styles.colorSwitch,
                     { backgroundColor: color },
-                    editColorFor.color === color && styles.colorSwatchActive,
+                    editColorFor?.color === color && styles.colorSwitchActive,
                   ]}
                   onPress={async () => {
                     track("account_color_changed", {
-                      account: editColorFor.tag,
+                      account: editColorFor!.tag,
                     });
-                    await updateAccountColor(editColorFor.tag, color);
+
+                    await updateAccountColor(editColorFor!.tag, color);
 
                     setEditColorFor(null);
+
                     await loadAccounts();
 
                     emitWidgetUpdate();
@@ -1041,7 +1054,7 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
-      )}
+      </Modal>
 
       <SupportModal
         visible={showSupport}
@@ -1663,14 +1676,12 @@ const styles = StyleSheet.create({
 
   // Color picker
   colorPickerOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     justifyContent: "flex-end",
-    zIndex: 100,
   },
 
   colorPickerBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
 
   colorPickerSheet: {
@@ -1678,7 +1689,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: 40,
+    paddingBottom: 60,
   },
 
   colorPickerHandle: {
@@ -1703,13 +1714,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  colorSwatch: {
+  colorSwitch: {
     width: 44,
     height: 44,
     borderRadius: 22,
   },
 
-  colorSwatchActive: {
+  colorSwitchActive: {
     borderWidth: 3,
     borderColor: "#fff",
   },

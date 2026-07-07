@@ -1,4 +1,5 @@
 import { getAccounts } from "@/services/accountService";
+import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { getActiveAccount } from "@/storage/activeAccount";
 import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { renderBuilderWidget } from "@/utils/widget/renderBuilderWidget";
@@ -48,6 +49,7 @@ function getWidgetType(widgetName?: string): "builder" | "lab" | "pet" | null {
 
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
   try {
+    await hydrateEntities();
     if (
       props.widgetAction !== "WIDGET_ADDED" &&
       props.widgetAction !== "WIDGET_UPDATE"

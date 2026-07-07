@@ -15,6 +15,9 @@ export async function resolveWidgetEntityIcon(
       options,
     );
 
+     console.log("Entity:", entityId);
+  console.log("Resolved icon:", remoteIcon);
+  
   if (!remoteIcon) {
     return undefined;
   }

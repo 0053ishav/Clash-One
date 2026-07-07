@@ -13,6 +13,7 @@ const CATEGORIES = [
   "helpers",
   "guardians",
   "townhall",
+  "halls",
 ];
 
 export function hydrateEntities() {

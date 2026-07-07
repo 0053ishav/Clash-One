@@ -29,6 +29,16 @@ export function resolveEntityIcon(
     useEntityStore.getState()
       .entitiesById;
 
+console.log(
+  "Entity count:",
+  Object.keys(entities).length,
+);
+
+console.log(
+  "Looking for:",
+  entityId,
+  !!entities[entityId]
+);
   const crafted =
     useCraftedStore.getState();
 

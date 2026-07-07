@@ -369,23 +369,6 @@ export function SupportModal({ visible, onClose, debugInfo }: Props) {
               </View>
 
               <Pressable
-                style={styles.checkboxRow}
-                onPress={() => setConsentGiven(!consentGiven)}
-              >
-                <Ionicons
-                  name={consentGiven ? "checkbox" : "square-outline"}
-                  size={22}
-                  color="#fbbf24"
-                />
-
-                <Text style={styles.checkboxText}>
-                  I consent to sending the diagnostic information shown above,
-                  my game account information and any screenshots I attach to
-                  Clash One Support for troubleshooting.
-                </Text>
-              </Pressable>
-
-              <Pressable
                 disabled={
                   message.trim().length < 10 || sending || !consentGiven
                 }

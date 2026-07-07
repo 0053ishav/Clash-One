@@ -2,7 +2,7 @@
   "expo": {
     "name": "Clash One",
     "slug": "clash-one",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "clashone",
@@ -11,7 +11,7 @@
       "supportsTablet": true
     },
     "android": {
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#0e1c3e",
         "foregroundImage": "./assets/images/icon.png"

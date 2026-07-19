@@ -5,6 +5,7 @@ import ProfileDropdownSheet from "@/components/ProfileSheet/ProfileDropdownSheet
 import { SupportModal } from "@/components/SupportModal";
 import { XPBadge } from "@/components/XPBadge";
 import { ENV } from "@/config/env";
+import { useCraftedResolver } from "@/engine/crafted/craftedResolver";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { useRemoteConfig } from "@/provider/remoteConfigProvider";
 import { getAccountState } from "@/services/accountStateService";
@@ -12,8 +13,8 @@ import { buildSupportInfo } from "@/services/supportDebugInfo";
 import { deleteUpgrade } from "@/services/upgradeService";
 import { setOnboardingIncomplete } from "@/storage/appConfig";
 import {
-  setGoblinBannerDismissedUntil,
-  shouldShowGoblinBanner,
+    setGoblinBannerDismissedUntil,
+    shouldShowGoblinBanner,
 } from "@/storage/goblinStorage";
 import { useAccountStore } from "@/stores/accountStore";
 import { usePremiumStore } from "@/stores/premiumStore";
@@ -21,18 +22,17 @@ import { Village } from "@/types/entity";
 import { Upgrade } from "@/types/upgrade";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { calculateProgress } from "@/utils/calculateProgress";
-import { useCraftedResolver } from "@/utils/craftedResolver";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { formatTimeAgo } from "@/utils/formatTimeAgo";
 import {
-  canUseGoblinBuilder,
-  getCurrentWorkForHireEventEnd,
-  isWorkForHireActive,
+    canUseGoblinBuilder,
+    getCurrentWorkForHireEventEnd,
+    isWorkForHireActive,
 } from "@/utils/goblin";
 import {
-  FALLBACK_ICON,
-  resolveEntityIcon,
+    FALLBACK_ICON,
+    resolveEntityIcon,
 } from "@/utils/icons/resolveEntityIcon";
 import { resyncNotifications } from "@/utils/notificationSync";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
@@ -46,24 +46,24 @@ import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  LayoutAnimation,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
+    LayoutAnimation,
+    Modal,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+    useWindowDimensions,
 } from "react-native";
 
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  FadeIn,
-  FadeOut,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    FadeIn,
+    FadeOut,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";

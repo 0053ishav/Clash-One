@@ -13,4 +13,11 @@ export const STORAGE_KEYS = {
   WIDGET_CACHE: "widget_cache",
   FEATURE_VOTES: "feature_votes",
   ENTITY_MANIFEST: "entity_manifest",
+  PROGRESSION_MANIFEST: "progression_manifest",
+  
+  PROGRESSION: (category: string) =>
+    `progression_${category}`,
+
+  PROGRESSION_VERSION: (category: string) =>
+    `progression_version_${category}`,
 };

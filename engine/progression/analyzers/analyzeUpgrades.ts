@@ -1,5 +1,5 @@
 import { PETS, SIEGE_MACHINES, SUPER_TROOPS } from "@/entities/entityGroups";
-import { getUpgradeStatus } from "./getUpgradeStatus";
+import { getUpgradeStatus } from "../selectors/getUpgradeStatus";
 
 export function analyzeTroopUpgrades(troops: any[]) {
   const result: { low: any[]; mid: any[]; near: any[], max: any[] } = {

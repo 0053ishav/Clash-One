@@ -1,10 +1,10 @@
+import { getCraftedResolver } from "@/engine/crafted/craftedResolver";
 import { getAccounts } from "@/services/accountService";
 import { getAccountState } from "@/services/accountStateService";
 import { getActiveAccount } from "@/storage/activeAccount";
 import { getLastJsonSync } from "@/storage/jsonSyncStorage";
 import { getWidgetPrefs } from "@/storage/widgetPrefs";
 import { calculateProgress } from "@/utils/calculateProgress";
-import { getCraftedResolver } from "@/utils/craftedResolver";
 import { formatBuildingName } from "@/utils/formatBuildingName";
 import { formatCountdown } from "@/utils/formatCountdown";
 import { isWorkForHireActive } from "@/utils/goblin";

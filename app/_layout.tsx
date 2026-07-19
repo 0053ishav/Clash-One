@@ -1,10 +1,12 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { SupportModal } from "@/components/SupportModal";
 import { initDatabase } from "@/db/initDatabase";
+import { configureNotifications } from "@/engine/notifications/notificationEngine";
 import { useInAppUpdates } from "@/hooks/useInAppUpdate";
 import { RemoteConfigProvider } from "@/provider/remoteConfigProvider";
 import { hydrateEntities } from "@/services/cdnEntities/hydrateEntities";
 import { ensureCraftedLoaded } from "@/services/craftedService";
+import { hydrateProgression, syncProgression } from "@/services/progression";
 import { syncPremiumStatus } from "@/services/revenueCat/premium";
 import { initRevenueCat } from "@/services/revenueCat/revenueCat";
 import { buildSupportInfo } from "@/services/supportDebugInfo";
@@ -13,7 +15,6 @@ import { syncEntities } from "@/storage/syncEntities";
 import { useAccountStore } from "@/stores/accountStore";
 import { setSessionSource, track } from "@/utils/analytics/analytics";
 import { log } from "@/utils/logger";
-import { configureNotifications } from "@/utils/notificationEngine";
 import { startSmartWidgetScheduler } from "@/utils/scheduleWidgetRefresh";
 import { emitWidgetUpdate } from "@/utils/widget/widgetEvents";
 import { initWidgetManager } from "@/utils/widget/widgetManager";
@@ -97,7 +98,10 @@ export default Sentry.wrap(function RootLayout() {
       await configureNotifications();
 
       await syncEntities();
-      await hydrateEntities();
+      await syncProgression();
+
+      hydrateEntities();
+      hydrateProgression();
 
       initWidgetManager();
       startSmartWidgetScheduler();
@@ -115,7 +119,7 @@ export default Sentry.wrap(function RootLayout() {
       });
       setBootState("error");
     }
-  }, []);
+  }, [loadAccounts, loadActiveAccount, loadLastSync]);
 
   useEffect(() => {
     if (complete) {

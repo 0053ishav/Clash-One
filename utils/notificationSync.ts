@@ -1,6 +1,6 @@
+import { scheduleAllNotifications } from "@/engine/notifications/notificationEngine";
 import { getAccounts } from "@/services/accountService";
 import { getNotificationsEnabled } from "@/storage/notificationConfig";
-import { scheduleAllNotifications } from "@/utils/notificationEngine";
 
 let isRunning = false;
 

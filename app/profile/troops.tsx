@@ -1,21 +1,21 @@
 import EntityCard from "@/components/EntityCard";
+import { getUpgradeStatus } from "@/engine/progression/selectors/getUpgradeStatus";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
 import { fetchFullPlayer } from "@/services/clashApi";
 import { track } from "@/utils/analytics/analytics";
 import { parseArmy } from "@/utils/profile/parseArmy";
-import { getUpgradeStatus } from "@/utils/progression/getUpgradeStatus";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 

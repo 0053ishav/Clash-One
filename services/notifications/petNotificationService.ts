@@ -1,6 +1,6 @@
 import {
-  UpgradeEvent
-} from "@/utils/notificationEngine";
+    UpgradeEvent
+} from "@/engine/notifications/notificationEngine";
 
 
 export function getPetEvents(account: any): UpgradeEvent[] {

@@ -1,4 +1,9 @@
-export function getUpgradeStatus(level: number, maxLevel: number) {
+import type { UpgradeStatus } from "../models";
+
+export function getUpgradeStatus(
+  level: number,
+  maxLevel: number,
+): UpgradeStatus {
   const progress = level / maxLevel;
 
   if (level === maxLevel) return "max";

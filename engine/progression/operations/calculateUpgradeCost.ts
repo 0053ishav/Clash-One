@@ -1,7 +1,7 @@
 import type { ResolvedProgression } from "../models";
 
-export function getMaxLevel(
+export function calculateUpgradeCost(
   progression: ResolvedProgression,
 ): number {
-  return progression.maxLevel;
+  return progression.next?.cost ?? 0;
 }
